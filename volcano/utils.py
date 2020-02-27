@@ -42,11 +42,6 @@ def get_body_ephemeris(
     defined by the IAU2009 system. Atmospheric effects and oblateness aspect
     are not currently considered in these computations. Light-time is included.
 
-    'illum_defect'
-    ##############
-    Angular width of target circular disk diameter NOT illuminated by Sun.
-    Available only if target radius is known.  Units: ARCSECONDS
-    
     'r'
     ###
     Heliocentric range ("r", light-time compensated) and range-rate ("rdot")
@@ -76,9 +71,8 @@ def get_body_ephemeris(
     these longitudes are based on the Set III prime meridian angle, referred
     to the planet's rotating magnetic field. Latitude is always referred to
     the body dynamical equator.  Note there can be an offset between the
-    dynamical pole and the magnetic pole. The direction of positive longitude
-    (east or west) will be indicated in the description at the end of the
-    requested ephemeris.  Units: DEGREES
+    dynamical pole and the magnetic pole. Positive longitude is to the WEST.
+    Units: DEGREES
     
     'PDSunLong', 'PDSunLat'
     #######################
@@ -96,17 +90,16 @@ def get_body_ephemeris(
     these longitudes are based on the Set III prime meridian angle, referred
     to the planet's rotating magnetic field. Latitude is always referred to
     the body dynamical equator. Note there can be an offset between the
-    dynamical pole and the magnetic pole. The direction of positive longitude
-    (east or west) will be indicated in the descripton at the end of the
-    requested ephemeris. Units: DEGREES
-    
+    dynamical pole and the magnetic pole. Positive longitude is to the WEST.
+    Units: DEGREES
+
     'NPole_ang'
-    ###########
+    #######################
     Target's North Pole position angle (CCW with respect to direction of
     true-of-date Celestial North Pole) and angular distance from the
     "sub-observer" point (center of disk) at print time. Negative distance
     indicates N.P. on hidden hemisphere. Units: DEGREES and ARCSECONDS
-    
+       
     Parameters
     ----------
     times: astropy.time
@@ -143,7 +136,8 @@ def get_body_ephemeris(
 
     start = times.isot[0]
 
-    # because Horizons time range doesn't include the endpoint we need to add some extra time
+    # because Horizons time range doesn't include the endpoint we need to add
+    # some extra time
     if step[-1] == "m":
         padding = 2 * float(step[:-1]) / (60 * 24)
     elif step[-1] == "h":
@@ -183,10 +177,6 @@ def get_body_ephemeris(
             quantities="1,11,12,13,14,15,17, 19", extra_precision=True
         )
 
-        data["illum_defect"] = (
-            np.interp(times.mjd, times_jpl.mjd, eph["illum_defect"])
-            * eph["illum_defect"].unit
-        )
         data["par_ecl"] = np.array(
             np.interp(times.mjd, times_jpl.mjd, eph["sat_vis"] == "p"),
             dtype=bool,
@@ -215,7 +205,8 @@ def get_body_ephemeris(
 
             return np.arctan2(siny, cosy)
 
-        # Inclination of the starry map = 90 - latitude of the central point of the observed disc
+        # Inclination of the starry map = 90 - latitude of the central point of
+        # the observed disc
         data["inc"] = interpolate_angle(
             times.mjd,
             times_jpl.mjd,
@@ -225,21 +216,25 @@ def get_body_ephemeris(
         # Rotational phase of the starry map is the observer longitude
         data["theta"] = (
             interpolate_angle(
-                times.mjd, times_jpl.mjd, eph["PDObsLon"].to(u.rad)
+                times.mjd,
+                times_jpl.mjd,
+                eph["PDObsLon"].to(u.rad) - np.pi * u.rad,
             ).to(u.deg)
-            + u.deg * 180
-        )
+        ) + 180 * u.deg
 
-        # Obliquity of the starry map is minus the CCW angle from the celestial NP to the NP of the target body
+        # Obliquity of the starry map is the CCW angle from the celestial
+        # NP to the NP of the target body
         data["obl"] = interpolate_angle(
-            times.mjd, times_jpl.mjd, -eph["NPole_ang"].to(u.rad),
+            times.mjd, times_jpl.mjd, eph["NPole_ang"].to(u.rad),
         ).to(u.deg)
 
-        # Compute the location of the subsolar point relative to the central point of the disc
+        # Compute the location of the subsolar point relative to the central
+        # point of the disc
         lon_subsolar = subtract_angles(
             np.array(eph["PDSunLon"].to(u.rad)),
             np.array(eph["PDObsLon"].to(u.rad)),
         )
+        lon_subsolar = 2 * np.pi - lon_subsolar  # positive lon. is to the east
 
         lat_subsolar = subtract_angles(
             np.array(eph["PDSunLat"].to(u.rad)),
