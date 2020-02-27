@@ -5,4 +5,4 @@ theano>=1.0.4
 starry>=1.0
 exoplanet>=0.2.0
 astropy>=3.0
-git+git://github.com/astropy/astroquery@master#egg=astroquery
+-e git+git://github.com/astropy/astroquery@master#egg=astroquery
