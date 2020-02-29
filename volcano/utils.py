@@ -113,7 +113,7 @@ def get_body_ephemeris(
         If False, the function returns only the position and the angular
         diameter of the target body, otherwise the function returns all
         parameters needed to determine the location of a Starry map in
-        reflected light.
+        reflected light. By default True.
         
     Returns
     -------
@@ -128,10 +128,14 @@ def get_body_ephemeris(
         of the Sun w.r. to target body as seen from Earth. Boolean flag
         'par_ecl' is True 
         whenever the target body is in a partial eclipse with respect to its
-        primary and similarly for a total eclipse. The flag 'occ_primary' is
-        True whenever the target body is occulted by the primary. In the case
-        of multiple satellites this flag won't capture mutual occultations
-        between the satellites.
+        primary and similarly for a total eclipse. The flags 'ecl_tot' and
+        'ecl_par' denote the total and partial eclipses with respect to the
+        primary body of the target body. The flags 'occ_umbra' and 'occ_sun'
+        denote times when the target body is occulted by the primary either
+        while eclipsed or in sunlight. For example, the flag 'occ_umbra' will
+        capture all times when the target body is either entering an occultation
+        while eclipsed or exiting an occultation into an eclipse. These flag
+        don't capture mutual occultations between the satellites.
     """
 
     start = times.isot[0]
@@ -177,17 +181,27 @@ def get_body_ephemeris(
             quantities="1,11,12,13,14,15,17, 19", extra_precision=True
         )
 
-        data["par_ecl"] = np.array(
-            np.interp(times.mjd, times_jpl.mjd, eph["sat_vis"] == "p"),
-            dtype=bool,
+        # Boolean flags for occultations/eclipses
+        occ_sunlight = eph["sat_vis"] == "O"
+        umbra = eph["sat_vis"] == "u"
+        occ_umbra = eph["sat_vis"] == "U"
+
+        partial = eph["sat_vis"] == "p"
+        occ_partial = eph["sat_vis"] == "P"
+
+        occulted = np.any([occ_umbra, occ_sunlight], axis=0)
+
+        data["ecl_par"] = np.array(
+            np.interp(times.mjd, times_jpl.mjd, partial), dtype=bool,
         )
-        data["tot_ecl"] = np.array(
-            np.interp(times.mjd, times_jpl.mjd, eph["sat_vis"] == "u"),
-            dtype=bool,
+        data["ecl_tot"] = np.array(
+            np.interp(times.mjd, times_jpl.mjd, umbra), dtype=bool,
         )
-        data["occ_primary"] = np.array(
-            np.interp(times.mjd, times_jpl.mjd, eph["sat_vis"] == "O"),
-            dtype=bool,
+        data["occ_umbra"] = np.array(
+            np.interp(times.mjd, times_jpl.mjd, occ_umbra), dtype=bool,
+        )
+        data["occ_sun"] = np.array(
+            np.interp(times.mjd, times_jpl.mjd, occ_sunlight), dtype=bool,
         )
 
         # Helper functions for dealing with angles and discontinuities
