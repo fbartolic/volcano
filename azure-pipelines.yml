@@ -23,7 +23,13 @@ jobs:
       pip install -U -r requirements.txt
       conda install -y -q -c conda-forge tectonic pybind11
       pip install git+https://github.com/rodluger/starry
+      python setup.py develop
     displayName: 'Install dependencies'
+  - script: |
+      . $CONDA/etc/profile.d/conda.sh
+      conda activate volcano
+      py.test -v -s volcano
+    displayName: 'Run tests'
   - script: |
       . $CONDA/etc/profile.d/conda.sh
       conda activate volcano
