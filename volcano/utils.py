@@ -263,3 +263,75 @@ def get_body_ephemeris(
         data["zs"] = np.interp(times.mjd, times_jpl.mjd, zs) * u.AU
 
     return data
+
+
+def get_body_vectors(times, body_id="501", step="1m", location="@sun"):
+    """
+    Returns the JPL Horizons position (and velocity) vector of a given Solar
+    System body for the requested times. 
+
+    Parameters
+    ----------
+    times: astropy.time
+        Observation times. 
+    body_id : str
+        NAIF code for the target body. By default '501' for Io.
+    step : str
+        Step size for querying JPL Horizons. Minimum is "1m". Make sure this
+        is sufficiently small for accurate ephemeris.
+    location : str 
+        The origin of the coordinate system. By default "@sun" for heliocentric
+        position vectors. Other options include "500" for center of earth and
+        "@ssb" for Solar System Barycenter.
+        
+    Returns
+    -------
+    astropy.timeseries.TimeSeries
+        An astropy.TimeSeries object specifying the (x, y, z) coordinates and
+        (vx, vy, vz) velocity components and distance r of the target body.
+    """
+
+    start = times.isot[0]
+
+    # because Horizons time range doesn't include the endpoint we need to add
+    # some extra time
+    if step[-1] == "m":
+        padding = 2 * float(step[:-1]) / (60 * 24)
+    elif step[-1] == "h":
+        padding = 2 * float(step[:-1]) / 24
+    elif step[-1] == "d":
+        padding = 2 * float(step[:-1])
+    else:
+        raise ValueError(
+            "Unrecognized JPL Horizons step size. Use '1m' or '1h' for example."
+        )
+
+    end = Time(times.mjd[-1] + padding, format="mjd").isot
+
+    # Query JPL Horizons
+    epochs = {"start": start, "stop": end, "step": step}
+    obj = Horizons(id=body_id, epochs=epochs, id_type="id", location=location)
+
+    vec = obj.vectors()
+    times_jpl = Time(vec["datetime_jd"], format="jd")
+
+    # Store all data in a TimeSeries object
+    data = TimeSeries(time=times)
+
+    data["x"] = np.interp(times.mjd, times_jpl.mjd, vec["x"]) * vec["x"].unit
+    data["y"] = np.interp(times.mjd, times_jpl.mjd, vec["y"]) * vec["y"].unit
+    data["z"] = np.interp(times.mjd, times_jpl.mjd, vec["z"]) * vec["z"].unit
+    data["vx"] = (
+        np.interp(times.mjd, times_jpl.mjd, vec["vx"]) * vec["vx"].unit
+    )
+    data["vy"] = (
+        np.interp(times.mjd, times_jpl.mjd, vec["vy"]) * vec["vy"].unit
+    )
+    data["vz"] = (
+        np.interp(times.mjd, times_jpl.mjd, vec["vz"]) * vec["vz"].unit
+    )
+    data["r"] = (
+        np.interp(times.mjd, times_jpl.mjd, vec["range"]) * vec["range"].unit
+    )
+
+    return data
