@@ -177,9 +177,7 @@ def get_body_ephemeris(
     )
 
     if return_orientation:
-        eph = obj.ephemerides(
-            quantities="1,11,12,13,14,15,17, 19", extra_precision=True
-        )
+        eph = obj.ephemerides(extra_precision=True)
 
         # Boolean flags for occultations/eclipses
         occ_sunlight = eph["sat_vis"] == "O"
