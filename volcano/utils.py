@@ -100,24 +100,20 @@ def get_body_ephemeris(
     "sub-observer" point (center of disk) at print time. Negative distance
     indicates N.P. on hidden hemisphere. Units: DEGREES and ARCSECONDS
        
-    Parameters
-    ----------
-    times: astropy.time
-        Observation times. 
-    body_id : str
-        NAIF code for the target body. By default '501' for Io.
-    step : str
-        Step size for querying JPL Horizons. Minimum is "1m". Make sure this
-        is sufficiently small for accurate ephemeris.
-    return_orientation : bool
-        If False, the function returns only the position and the angular
-        diameter of the target body, otherwise the function returns all
-        parameters needed to determine the location of a Starry map in
-        reflected light. By default True.
+    Args:
+    times (astropy.time): Observation times. 
+    body_id (str, optional): NAIF code for the target body. By default '501'
+        for Io. 
+    step (str, optional): Step size for querying JPL Horizons. Minimum is "1m".
+        Make sure this is sufficiently small for accurate ephemeris.
+    return_orientation (bool, optional): If False, the function returns only
+        the position and the angular diameter of the target body, otherwise the
+        function returns all parameters needed to determine the location of a
+        Starry map in reflected light. By default True.
         
-    Returns
-    -------
-    astropy.timeseries.TimeSeries
+    Returns:
+        astropy.timeseries.TimeSeries
+
         An astropy.TimeSeries object with entries relevant for defining the
         orientation of a Starry map at any given time. All quantities are
         interpolated from the JPL Horizons data to the requested times. The
@@ -270,23 +266,19 @@ def get_body_vectors(times, body_id="501", step="1m", location="@sun"):
     Returns the JPL Horizons position (and velocity) vector of a given Solar
     System body for the requested times. 
 
-    Parameters
-    ----------
-    times: astropy.time
-        Observation times. 
-    body_id : str
-        NAIF code for the target body. By default '501' for Io.
-    step : str
-        Step size for querying JPL Horizons. Minimum is "1m". Make sure this
-        is sufficiently small for accurate ephemeris.
-    location : str 
-        The origin of the coordinate system. By default "@sun" for heliocentric
-        position vectors. Other options include "500" for center of earth and
-        "@ssb" for Solar System Barycenter.
+    Args:
+        times (astropy.time): Observation times. 
+    body_id (str, optional): NAIF code for the target body. By default '501'
+        for Io.
+    step (str, optional): Step size for querying JPL Horizons. Minimum is "1m".
+        Make sure this is sufficiently small for accurate ephemeris.
+    location (str, optional): The origin of the coordinate system. By default
+        "@sun" for heliocentric position vectors. Other options include "500"
+        for center of earth and "@ssb" for Solar System Barycenter.
         
-    Returns
-    -------
-    astropy.timeseries.TimeSeries
+    Returns:
+        astropy.timeseries.TimeSeries
+
         An astropy.TimeSeries object specifying the (x, y, z) coordinates and
         (vx, vy, vz) velocity components and distance r of the target body.
     """
