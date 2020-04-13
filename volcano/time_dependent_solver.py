@@ -97,7 +97,7 @@ class TimeDependentMapSolver(object):
         Model for the flux.
         """
         # Unroll p into P
-        P = self.p.reshape(self.N, self.K)
+        P = self.p.reshape(self.N, self.K, order="F")
 
         # P' matrix
         Pp = self.get_Pp(P)
@@ -125,7 +125,7 @@ class TimeDependentMapSolver(object):
         Returns the Cholesky decomposition of the covariance of ``p``.
         """
         # Reshape q into Q
-        Q = self.q.reshape(self.K, self.L)
+        Q = self.q.reshape(self.K, self.L, order="F")
         Qp = self.get_Qp(Q)
 
         # Design matrix
@@ -133,7 +133,7 @@ class TimeDependentMapSolver(object):
 
         ATCInv = np.multiply(A.T, (self._F_CInv / T).reshape(-1))
         ATCInvA = ATCInv.dot(A)
-        ATCInvf = np.dot(ATCInv, (self.f).reshape(-1))  # - A0)
+        ATCInvf = np.dot(ATCInv, (self.f).reshape(-1))
 
         cinv = np.ones(len(self.p)) / self.p_sig ** 2
         mu = np.ones(len(self.p)) * self.p_mu
@@ -151,7 +151,7 @@ class TimeDependentMapSolver(object):
 
         """
         # Reshape p into P
-        P = self.p.reshape(self.N, self.K)
+        P = self.p.reshape(self.N, self.K, order="F")
 
         # P' matrix
         Pp = self.get_Pp(P)
@@ -167,10 +167,9 @@ class TimeDependentMapSolver(object):
         mu = np.ones(len(self.q)) * self.q_mu
         np.fill_diagonal(ATCInvA, ATCInvA.diagonal() + cinv)
         cho_C = cho_factor(ATCInvA)
+        self.q = cho_solve(cho_C, ATCInvf + cinv * mu)
 
-        cho_q = cho_solve(cho_C, ATCInvf + cinv * mu)
-
-        return cho_q
+        return cho_C
 
     def solve(
         self,
@@ -289,8 +288,8 @@ class TimeDependentMapSolver(object):
 
                 # Compute the model
                 A = tt.as_tensor_variable(self.A)
-                P = p.reshape((self.N, self.K))
-                Q = q.reshape((self.K, self.L))
+                P = p.reshape((self.N, self.K), order="F")
+                Q = q.reshape((self.K, self.L), order="F")
                 Y = tt.dot(P, Q)
                 f_pred = tt.dot(A, Y.T.flatten())
 
