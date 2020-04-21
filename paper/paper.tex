@@ -1,0 +1,94 @@
+% !TeX root = ./ms.tex
+\documentclass[modern]{aastex62}
+
+% Load the corTeX style definitions
+\input{cortex}
+
+% Bibliography stuff
+\bibliographystyle{aasjournal}
+
+% Begin!
+\begin{document}
+
+% Title
+\title{Inferring a time dependent map of Io's surface with occultation mapping.}
+
+% Author list
+\author{Fran Bartoli\'c}
+\email{fbartolic@flatironinstitute.org}
+\affil{Center~for~Computational~Astrophysics, Flatiron~Institute, New~York, NY}
+\affil{Centre for Exoplanet Science, SUPA, School of Physics and Astronomy, University of St. Andrews, St. Andrews, UK}
+\author{Rodrigo Luger}
+\author{Daniel Foreman-Mackey}
+\affil{Center~for~Computational~Astrophysics, Flatiron~Institute, New~York, NY}
+%
+
+\begin{abstract} 
+Jupiter's moon Io is the most volcanically active body in the Solar System with hundreds of active volcanos varying in intensity on different timescales. 
+Although the surface of Io has been resolved from both space and ground, to constrain the long term variability it is necessary to use ground based observations taken during occultations by Jupiter and other moons with a time baseline spanning decades.
+These infrared light curves encode information %on both the time variability and the two dimensional features on the surface of the moon.
+on the two dimensional time variable features on the surface of the moon.
+Whereas previous occultation studies focused mostly on studying the variability of individual volcanos, we build a single probabilistic model for a collection of light curves in order to infer a single time dependent map of Io.
+    It uses the code Starry \href{https://rodluger.github.io/starry/}{\color{linkcolor}\faGithub} which can model occultations in both emitted and reflected light and also enables efficient inference with Hamiltonian Monte Carlo.
+The output of the model is a time dependent map of Io's surface with realistic uncertainties.
+We use this map to study the time variability of prominent hotspots and the global heatflow over a timescale of decades. The methods we develop to map Io are directly applicable to the mapping of exoplanet surfaces. 
+We discuss this application towards the end of the paper.
+    \href{https://github.com/fbartolic/volcano}{\color{linkcolor}\faGithub}
+\end{abstract}
+
+%
+\section{Introduction}
+\section{The model}
+% Describe the model for inferring a time variable map.
+\section{The inverse problem}
+% Talk about analytic posteriors with bilinear solve in the simplest case and inference with PyMC3
+\subsection{Priors}
+\section{The information content of a light curve}
+\subsection{Size of the nullspace}
+% Plots of the fractional size of the nullspace as a function of map degree for static maps.
+\subsection{Recovering a static map}
+% Fit a simulated dataset and test predictions from the previous subsection
+\section{Fitting a simulated dataset}
+% Using ephemeris from real datasets we generate a simulated map consisting of multiple stochastically varying hot spots. Discuss inference with optimizers and sampling with HMC. 
+% What can we recover? What breaks the model?
+\section{Results from IRTF observations}
+\subsection{The dataset}
+% Describe the dataset
+\subsection{The global map}
+% Global properties of the inferred map.
+\subsection{Variability of known hotspots}
+% Plot inferred intensities of known hotspots as function of time, reference previous work.
+\section{Relevance to mapping surfaces of exoplanets}
+% I think this should be either a short section describing how all of the formalism developed 
+% previously can be easily applied to future exoplanet observations with JWST etc. or we can go
+% into more details and simulate a JWST observation of a warm jupiter (super earth?) with some 
+% time variable features on its surface.
+
+%Intro here \citep{Luger2019}.
+% Here's an equation with a proof:
+%
+%\begin{proof}{dummy}
+%    \label{eq:dummy}
+%    1 + 1 = 2.
+%\end{proof}
+%The proof is a Jupyter notebook with a formal derivation of the solution,
+%an informal justification, a numerical validation, or whatever you want it
+%to be.
+%%
+%And here's a figure with a link:
+%%
+%\begin{figure}[h!]
+%    \begin{centering}
+%    \includegraphics[width=0.5\linewidth]{figures/dummy.pdf}
+%    \oscaption{pretty_function}{%
+%        This is a plot of a pretty function. And at the end of this
+%        caption is a symbol with a link to the \emph{exact} script
+%        that generated it, hosted on \textsf{GitHub}.
+%        \label{fig:dummy}
+%    }
+%    \end{centering}
+%\end{figure}
+%
+ Bibliography
+\bibliography{bib}
+\end{document}
