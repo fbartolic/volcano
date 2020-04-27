@@ -8,6 +8,7 @@ import theano.tensor as tt
 import theano.sparse as ts
 from tqdm import tqdm
 from volcano.optimizers import Adam, NAdam
+from starry_process import SP
 
 __all__ = ["TimeDependentMapSolver"]
 
@@ -43,8 +44,26 @@ class TimeDependentMapSolver(object):
             is the number of light curves.
         Q_sig (ndarray, optional): Prior standard deviation for the GP on the
             coefficient matrix. This is needs to be an array of size K.
-        Q_rho (float, optional): Prior lenghtscale for the GP on the
+        Q_rho_gp (float, optional): Prior lenghtscale for the GP on the
             coefficient matrix. This is needs to be an array of size K. 
+        sp_alpha (ndarray, optional): Alpha parameter of the beta distribution
+            in cos(lat) for the Starry Process. Array of size K.
+        sp_beta (ndarray, optional): Beta parameter of the beta distribution
+            in cos(lat) for the Starry Process. Array of size K. 
+        sp_P0_sig (ndarray, optional): Standard deviation of the Y_00
+            coefficient for each of the K basis maps. This needs to be specified
+            separately because the Starry Process asigns a very small value for
+            these coefficients. 
+        sp_ln_size_mu (ndarray, optional): Log of the spot size distribution
+            mean. Array of size K.
+        sp_ln_size_sig (ndarray, optional): Log of the spot size distribution
+            standard deviation. Array of size K.
+        sp_ln_amp_mu (ndarray, optional): Log of the spot amplitude distribution
+            mean. Array of size K.
+        sp_ln_amp_sig (ndarray, optional): Log of the spot amplitude distribution
+            standard deviation. Array of size K.
+        sp_sign (ndarray, optional): Sign of the spot amplitude. Positive is a
+            dark spot. Array of size K.
     """
 
     def __init__(
@@ -52,13 +71,22 @@ class TimeDependentMapSolver(object):
         f_list,
         ferr_list,
         A_list,
-        K=3,
+        K=4,
         tgrid=None,
         P_mu=None,
         P_sig=None,
         Q_mu=None,
-        q_sig=None,
-        q_rho=None,
+        Q_sig=None,
+        Q_sig_gp=None,
+        Q_rho_gp=None,
+        sp_alpha=None,
+        sp_beta=None,
+        sp_P0_sig=None,
+        sp_ln_size_mu=None,
+        sp_ln_size_sig=None,
+        sp_ln_amp_mu=None,
+        sp_ln_amp_sig=None,
+        sp_sign=None,
     ):
 
         # Data
@@ -76,36 +104,56 @@ class TimeDependentMapSolver(object):
         self.K = K
 
         # Inference params
-        self._p_mu = P_mu.T.flatten()
-        self._p_sig = P_sig.T.flatten()
-        self._q_mu = Q_mu.T.flatten()
-        self._q_sig = q_sig
-        self._q_rho = q_rho
+        self.P_mu = P_mu
+        self.P_sig = P_sig
+        self.Q_mu = Q_mu
+        self.Q_sig = Q_sig
+        self.Q_sig_gp = Q_sig_gp
+        self.Q_rho_gp = Q_rho_gp
         self._q_CInv = None
+        self._p_CInv = None
+
+        # Starry Process parameters
+        self._sp_alpha = sp_alpha
+        self._sp_beta = sp_beta
+        self._sp_P0_sig = sp_P0_sig
+        self._sp_ln_size_mu = sp_ln_size_mu
+        self._sp_ln_size_sig = sp_ln_size_sig
+        self._sp_ln_amp_mu = sp_ln_amp_mu
+        self._sp_ln_amp_sig = sp_ln_amp_sig
+        self._sp_sign = sp_sign
 
         # Initialize
-        self._p = self._p_mu * np.ones(int(self.N * self.K))
-        self._q = self._q_mu * np.ones(int(self.K * self.L))
+        self._p = None
+        self._q = None
 
     @property
     def P_sig(self):
-        return self._p_sig.reshape(self.N, self.K, order="F")
+        return self._P_sig
 
     @P_sig.setter
     def P_sig(self, value):
-        if np.shape(value) != (self.N, self.K):
+        if (value is not None) and (np.shape(value) != (self.N, self.K)):
             raise ValueError("Input needs have shape (N, K).")
-        self._p_sig = value.T.flatten()
-        self._compute_gp()
+        self._P_sig = value
 
     @property
-    def q_rho(self):
-        return self._q_rho
+    def Q_sig(self):
+        return self._Q_sig
 
-    @q_rho.setter
-    def q_rho(self, value):
-        self._q_rho = value
-        self._compute_gp()
+    @Q_sig.setter
+    def Q_sig(self, value):
+        if (value is not None) and (np.shape(value) != (self.K, self.L)):
+            raise ValueError("Input needs have shape (K, L).")
+        self._Q_sig = value
+
+    @property
+    def Q_rho_gp(self):
+        return self._Q_rho_gp
+
+    @Q_rho_gp.setter
+    def Q_rho_gp(self, value):
+        self._Q_rho_gp = value
 
     @property
     def Q(self):
@@ -115,7 +163,7 @@ class TimeDependentMapSolver(object):
     def Q(self, value):
         if np.shape(value) != (self.K, self.L):
             raise ValueError("Input needs have shape (K, L).")
-        self._q = value.T.flatten()
+        self._q = value.T.reshape(-1)
 
     @property
     def P(self):
@@ -125,7 +173,11 @@ class TimeDependentMapSolver(object):
     def P(self, value):
         if np.shape(value) != (self.N, self.K):
             raise ValueError("Input needs have shape (N, K).")
-        self._p = value.T.flatten()
+        self._p = value.T.reshape(-1)
+
+    @property
+    def Y(self):
+        return np.dot(self.P, self.Q)
 
     def get_Qp(self, Q):
         """
@@ -144,30 +196,29 @@ class TimeDependentMapSolver(object):
 
         return np.kron(I, P)  # Repeat P on diagonal
 
-    def _compute_gp(self):
-        # Compute the GP prior on q
-        if self._q_rho is not None:
+    def _compute_cov(self):
+        # Compute the covariance matrix for vec(Q)
+        inv_covs = []
+        if self._Q_rho_gp is not None:
             # Each row of Q has a GP with different hyperparameters
-            covs = []
-            for i in range(self.K):
+            for k in range(self.K):
                 kernel = celerite.terms.Matern32Term(
-                    np.log(self._q_sig[i]), np.log(self._q_rho[i])
+                    np.log(self.Q_sig_gp[k]), np.log(self.Q_rho_gp[k])
                 )
                 gp = celerite.GP(kernel)
                 q_C = gp.get_matrix(self.t_grid)
 
                 q_cho_C = cho_factor(q_C)
                 q_CInv = cho_solve(q_cho_C, np.eye(int(self.L)))
-                covs.append(q_CInv)
+                inv_covs.append(q_CInv)
 
             # The complete cov matrix is block diagonal with K identical blocks
-            q_CInv = dense_block_diag(*(covs))
+            q_CInv = dense_block_diag(*(inv_covs))
 
         else:
-            covs = []
             for i in range(self.K):
-                covs.append(np.eye(self.L) / self._q_sig[i] ** 2)
-            q_CInv = dense_block_diag(*(covs))
+                inv_covs.append(np.diag(1.0 / self.Q_sig[i, :] ** 2))
+            q_CInv = dense_block_diag(*(inv_covs))
 
         # The above CINv was constructed for the Q matrix unrolled row wise,
         # to compute the covariance matrix for q=vec(Q), we need to permute
@@ -177,6 +228,44 @@ class TimeDependentMapSolver(object):
         )
         tmp = q_CInv[perm, :]
         self._q_CInv = tmp[:, perm]
+
+        # Compute the covariance matrix for vec(P)
+        if self._sp_alpha is not None:
+            means = []
+            inv_covs = []
+            for k in range(self.K):
+                sp = SP(
+                    ydeg=int(np.sqrt(self.N) - 1),
+                    alpha=self._sp_alpha[k],
+                    beta=self._sp_beta[k],
+                    ln_sig_mu=self._sp_ln_size_mu[k],
+                    ln_sig_sig=self._sp_ln_size_sig[k],
+                    ln_amp_mu=self._sp_ln_amp_mu[k],
+                    ln_amp_sig=self._sp_ln_amp_sig[k],
+                    sign=self._sp_sign[k],
+                )
+
+                # Get the mean and covariance of the starry process
+                mean = sp.mu_y
+                p_C = sp.cov_y
+                p_C[0, 0] = self._sp_P0_sig[k] ** 2
+
+                p_cho_C = cho_factor(p_C)
+                p_CInv = cho_solve(p_cho_C, np.eye(int(self.N)))
+
+                inv_covs.append(p_CInv)
+                means.append(sp.mu_y)
+
+            p_CInv = dense_block_diag(*(inv_covs))
+            self.P_mu = np.hstack(means).reshape(self.N, self.K, order="F")
+
+        else:
+            inv_covs = []
+            for k in range(self.K):
+                inv_covs.append(np.diag(1 / self.P_sig[:, k] ** 2))
+            p_CInv = dense_block_diag(*(inv_covs))
+
+        self._p_CInv = p_CInv
 
     def model(self):
         """
@@ -199,11 +288,20 @@ class TimeDependentMapSolver(object):
         lnlike = -0.5 * np.sum(
             (self.f - self.model()).reshape(-1) ** 2 * self._F_CInv.reshape(-1)
         )
-        lnprior = -0.5 * np.sum(
-            (self._p - self._p_mu) ** 2 / self._p_sig ** 2
-        ) - 0.5 * np.dot(
-            np.dot((self._q - self._q_mu).reshape(1, -1), self._q_CInv),
-            (self._q - self._q_mu).reshape(-1, 1),
+        lnprior = -0.5 * np.dot(
+            np.dot(
+                (self._p - self.P_mu.T.reshape(-1)).reshape(1, -1),
+                self._p_CInv,
+            ),
+            (self._p - self.P_mu.T.reshape(-1)).reshape(-1, 1),
+        )
+
+        -0.5 * np.dot(
+            np.dot(
+                (self._q - self.Q_mu.T.reshape(-1)).reshape(1, -1),
+                self._q_CInv,
+            ),
+            (self._q - self.Q_mu.T.reshape(-1)).reshape(-1, 1),
         )
 
         return -(lnlike + lnprior).item()
@@ -225,15 +323,15 @@ class TimeDependentMapSolver(object):
 
         ATCInv = np.multiply(A.T, (self._F_CInv / T).reshape(-1))
         ATCInvA = ATCInv.dot(A)
-        ATCInvf = np.dot(ATCInv, (self.f).reshape(-1))
+        ATCInvf = np.dot(ATCInv, (self.f).reshape(-1))[:, None]
 
-        cinv = np.ones(len(self._p)) / self._p_sig ** 2
-        mu = np.ones(len(self._p)) * self._p_mu
-        np.fill_diagonal(ATCInvA, ATCInvA.diagonal() + cinv)
-        cho_C = cho_factor(ATCInvA)
-        self._p = cho_solve(cho_C, ATCInvf + cinv * mu).reshape(-1)
+        CInv = self._p_CInv
+        p_mu = self.P_mu.T.reshape(-1, 1)
+        CInvmu = np.dot(CInv, p_mu)
+        cho_p = cho_factor(ATCInvA + CInv)
+        self._p = cho_solve(cho_p, (ATCInvf + CInvmu).reshape(-1)).reshape(-1)
 
-        return cho_C
+        return cho_p
 
     def _compute_q(self, T=1.0):
         """
@@ -256,10 +354,10 @@ class TimeDependentMapSolver(object):
         ATCInvf = np.dot(ATCInv, (self.f).reshape(-1))[:, None]
 
         CInv = self._q_CInv
-        q_mu = (np.ones(len(self._q)) * self._q_mu)[:, None]
+        q_mu = self.Q_mu.T.reshape(-1, 1)
         CInvmu = np.dot(CInv, q_mu)
         cho_q = cho_factor(ATCInvA + CInv)
-        self._q = cho_solve(cho_q, ATCInvf + CInvmu).reshape(-1)
+        self._q = cho_solve(cho_q, (ATCInvf + CInvmu).reshape(-1)).reshape(-1)
 
         return cho_q
 
@@ -295,7 +393,7 @@ class TimeDependentMapSolver(object):
             raise ValueError("Invalid optimizer.")
 
         # Compute GP
-        self._compute_gp()
+        self._compute_cov()
 
         # Figure out what to solve for
         known = []
@@ -389,14 +487,21 @@ class TimeDependentMapSolver(object):
                 cov = tt.reshape(self._F_CInv, (-1,))
                 lnlike = -0.5 * tt.sum(r ** 2 * cov)
                 lnprior = (
-                    -0.5 * tt.sum((p - self._p_mu) ** 2 / self._p_sig ** 2)
+                    -0.5
+                    * tt.dot(
+                        tt.dot(
+                            tt.reshape((p - self.P_mu.T.reshape(-1)), (1, -1)),
+                            self._p_CInv,
+                        ),
+                        tt.reshape((p - self.P_mu.T.reshape(-1)), (-1, 1)),
+                    )[0, 0]
                     - 0.5
                     * tt.dot(
                         tt.dot(
-                            tt.reshape((q - self._q_mu), (1, -1)),
+                            tt.reshape((q - self.Q_mu.T.reshape(-1)), (1, -1)),
                             self._q_CInv,
                         ),
-                        tt.reshape((q - self._q_mu), (-1, 1)),
+                        tt.reshape((q - self.Q_mu.T.reshape(-1)), (-1, 1)),
                     )[0, 0]
                 )
 
