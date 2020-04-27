@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.linalg import cho_factor, cho_solve
 from starry_process import SP
-from volcano.time_dependent_solver import TimeDependentMapSolver
+from volcano.time_variable_map import TimeDependentMapSolver
 
 np.random.seed(42)
 
