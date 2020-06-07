@@ -46,24 +46,6 @@ class TimeDependentMapSolver(object):
             coefficient matrix. This is needs to be an array of size K.
         Q_rho_gp (float, optional): Prior lenghtscale for the GP on the
             coefficient matrix. This is needs to be an array of size K. 
-        sp_alpha (ndarray, optional): Alpha parameter of the beta distribution
-            in cos(lat) for the Starry Process. Array of size K.
-        sp_beta (ndarray, optional): Beta parameter of the beta distribution
-            in cos(lat) for the Starry Process. Array of size K. 
-        sp_P0_sig (ndarray, optional): Standard deviation of the Y_00
-            coefficient for each of the K basis maps. This needs to be specified
-            separately because the Starry Process asigns a very small value for
-            these coefficients. 
-        sp_ln_size_mu (ndarray, optional): Log of the spot size distribution
-            mean. Array of size K.
-        sp_ln_size_sig (ndarray, optional): Log of the spot size distribution
-            standard deviation. Array of size K.
-        sp_ln_amp_mu (ndarray, optional): Log of the spot amplitude distribution
-            mean. Array of size K.
-        sp_ln_amp_sig (ndarray, optional): Log of the spot amplitude distribution
-            standard deviation. Array of size K.
-        sp_sign (ndarray, optional): Sign of the spot amplitude. Positive is a
-            dark spot. Array of size K.
     """
 
     def __init__(
@@ -79,14 +61,6 @@ class TimeDependentMapSolver(object):
         Q_sig=None,
         Q_sig_gp=None,
         Q_rho_gp=None,
-        sp_alpha=None,
-        sp_beta=None,
-        sp_P0_sig=None,
-        sp_ln_size_mu=None,
-        sp_ln_size_sig=None,
-        sp_ln_amp_mu=None,
-        sp_ln_amp_sig=None,
-        sp_sign=None,
     ):
 
         # Data
@@ -112,16 +86,6 @@ class TimeDependentMapSolver(object):
         self.Q_rho_gp = Q_rho_gp
         self._q_CInv = None
         self._p_CInv = None
-
-        # Starry Process parameters
-        self._sp_alpha = sp_alpha
-        self._sp_beta = sp_beta
-        self._sp_P0_sig = sp_P0_sig
-        self._sp_ln_size_mu = sp_ln_size_mu
-        self._sp_ln_size_sig = sp_ln_size_sig
-        self._sp_ln_amp_mu = sp_ln_amp_mu
-        self._sp_ln_amp_sig = sp_ln_amp_sig
-        self._sp_sign = sp_sign
 
         # Initialize
         self._p = None
@@ -230,40 +194,10 @@ class TimeDependentMapSolver(object):
         self._q_CInv = tmp[:, perm]
 
         # Compute the covariance matrix for vec(P)
-        if self._sp_alpha is not None:
-            means = []
-            inv_covs = []
-            for k in range(self.K):
-                sp = SP(
-                    ydeg=int(np.sqrt(self.N) - 1),
-                    alpha=self._sp_alpha[k],
-                    beta=self._sp_beta[k],
-                    ln_sig_mu=self._sp_ln_size_mu[k],
-                    ln_sig_sig=self._sp_ln_size_sig[k],
-                    ln_amp_mu=self._sp_ln_amp_mu[k],
-                    ln_amp_sig=self._sp_ln_amp_sig[k],
-                    sign=self._sp_sign[k],
-                )
-
-                # Get the mean and covariance of the starry process
-                mean = sp.mu_y
-                p_C = sp.cov_y
-                p_C[0, 0] = self._sp_P0_sig[k] ** 2
-
-                p_cho_C = cho_factor(p_C)
-                p_CInv = cho_solve(p_cho_C, np.eye(int(self.N)))
-
-                inv_covs.append(p_CInv)
-                means.append(sp.mu_y)
-
-            p_CInv = dense_block_diag(*(inv_covs))
-            self.P_mu = np.hstack(means).reshape(self.N, self.K, order="F")
-
-        else:
-            inv_covs = []
-            for k in range(self.K):
-                inv_covs.append(np.diag(1 / self.P_sig[:, k] ** 2))
-            p_CInv = dense_block_diag(*(inv_covs))
+        inv_covs = []
+        for k in range(self.K):
+            inv_covs.append(np.diag(1 / self.P_sig[:, k] ** 2))
+        p_CInv = dense_block_diag(*(inv_covs))
 
         self._p_CInv = p_CInv
 
@@ -312,11 +246,8 @@ class TimeDependentMapSolver(object):
 
         Returns the Cholesky decomposition of the covariance of ``p``.
         """
-        # Reshape q into Q
-        Q = self._q.reshape(self.K, self.L, order="F")
-
         # Q' matrix
-        Qp = self.get_Qp(Q)
+        Qp = self.get_Qp(self.Q)
 
         # Design matrix
         A = self.A.dot(Qp)
@@ -340,11 +271,8 @@ class TimeDependentMapSolver(object):
         Returns the Cholesky decomposition of the covariance of ``q``.
 
         """
-        # Reshape p into P
-        P = self._p.reshape(self.N, self.K, order="F")
-
         # P' matrix
-        Pp = self.get_Pp(P)
+        Pp = self.get_Pp(self.P)
 
         # Design matrix
         A = self.A.dot(Pp)
@@ -539,3 +467,97 @@ class TimeDependentMapSolver(object):
             self._q = q_curr
 
             return loss_val, cho_p, cho_q
+
+    def sample_with_gibbs(
+        self, P_guess=None, Q_guess=None, nsamples=1000, quiet=False,
+    ):
+        """
+        Sample the joint posterior p(P, Q) using Gibbs sampling.
+        """
+        # Store the samples
+        Q_samples = []
+        P_samples = []
+
+        # Initialize
+        self.P = P_guess
+        self.Q = Q_guess
+
+        # Compute GP
+        self._compute_cov()
+
+        # Sampling loop
+        for n in tqdm(range(nsamples), disable=quiet):
+            param_order = np.random.choice(np.arange(2), 2, replace=False)
+
+            # Randomly switch order between conditional samples
+            for k in param_order:
+                # Sample P|Q
+                if k == 0:
+                    Qp = self.get_Qp(self.Q)
+                    # Design matrix
+                    A = self.A.dot(Qp)
+
+                    ATCInv = np.multiply(A.T, (self._F_CInv).reshape(-1))
+                    ATCInvA = ATCInv.dot(A)
+                    ATCInvf = np.dot(ATCInv, (self.f).reshape(-1))[:, None]
+
+                    CInv = self._p_CInv
+                    p_mu = self.P_mu.T.reshape(-1, 1)
+                    CInvmu = np.dot(CInv, p_mu)
+                    cho_p = cho_factor(ATCInvA + CInv)
+                    Cp = cho_solve(cho_p, np.eye(int(self.N * self.K)))
+
+                    #                    cho_Cp, lower = cho_factor(Cp, lower=True)
+                    #
+                    #                    # Get the cholesky decomposition of the covariance matrix
+                    #                    L_p = np.tril(cho_Cp)
+                    #
+                    #                    # Sample X from standard normal
+                    #                    X = np.random.normal(size=(int(self.N * self.K), 1))
+                    #
+                    #                    # Apply the transformation to get sample from p
+                    #                    p_sample = L_p.dot(X).reshape(-1) + self.P_mu.T.reshape(-1)
+
+                    p_sample = np.random.multivariate_normal(
+                        self.P_mu.T.reshape(-1), Cp, size=1
+                    ).reshape(-1)
+                    self._p = p_sample
+
+                    P_samples.append(self.P)
+
+                # Sample Q|P
+                else:
+                    Pp = self.get_Pp(self.P)
+
+                    # Design matrix
+                    A = self.A.dot(Pp)
+
+                    ATCInv = np.multiply(A.T, (self._F_CInv).reshape(-1))
+                    ATCInvA = ATCInv.dot(A)
+                    ATCInvf = np.dot(ATCInv, (self.f).reshape(-1))[:, None]
+
+                    CInv = self._q_CInv
+                    q_mu = self.Q_mu.T.reshape(-1, 1)
+                    CInvmu = np.dot(CInv, q_mu)
+                    cho_q = cho_factor(ATCInvA + CInv)
+                    Cq = cho_solve(cho_q, np.eye(int(self.K * self.L)))
+                    #                    cho_Cq, lower = cho_factor(Cq, lower=True)
+                    #
+                    #                    # Get the cholesky decomposition of the covariance matrix
+                    #                    L_q = np.tril(cho_Cq)
+                    #
+                    #                    # Sample X from standard normal
+                    #                    X = np.random.normal(size=(int(self.K * self.L), 1))
+                    #
+                    #                    # Apply the transformation to get sample from q
+                    #                    q_sample = L_q.dot(X).reshape(-1) + self.Q_mu.T.reshape(-1)
+
+                    q_sample = np.random.multivariate_normal(
+                        self.Q_mu.T.reshape(-1), Cq, size=1
+                    ).reshape(-1)
+
+                    self.q = q_sample
+
+                    Q_samples.append(self.Q)
+
+        return P_samples, Q_samples

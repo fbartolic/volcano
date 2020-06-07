@@ -33,7 +33,7 @@ jobs:
   - script: |
       . $CONDA/etc/profile.d/conda.sh
       conda activate volcano
-      cd $(Build.SourcesDirectory)/tex
+      cd $(Build.SourcesDirectory)/paper
       make
     displayName: 'Build the paper'
   - script: |
