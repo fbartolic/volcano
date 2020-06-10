@@ -1,6 +1,5 @@
 import numpy as np
 from scipy.linalg import cho_factor, cho_solve
-from starry_process import SP
 from volcano.time_variable_map import TimeDependentMapSolver
 
 np.random.seed(42)
@@ -30,15 +29,6 @@ Q_mu = np.zeros((K, L))
 Q_sig = 2 * np.ones((K, L))
 Q_sig_gp = 2 * np.ones(K)
 Q_rho_gp = 25.0 * np.ones(K)
-
-sp_alpha = 2.0 * np.ones(K)
-sp_beta = 0.5 * np.ones(K)
-sp_P0_sig = P0_sig
-sp_ln_size_mu = -3.0 * np.ones(K)
-sp_ln_size_sig = 0.0 * np.ones(K)
-sp_ln_amp_mu = -2.3 * np.ones(K)
-sp_ln_amp_sig = 0.0 * np.ones(K)
-sp_sign = -1.0 * np.ones(K)
 
 
 def test_bilinear_form():
@@ -104,48 +94,3 @@ def test_loss():
     print("loss2:", solver.loss())
 
     assert np.allclose(loss, solver.loss())
-
-
-def test_compute_cov():
-    solver = TimeDependentMapSolver(
-        f_list,
-        ferr_list,
-        A_list,
-        K=K,
-        tgrid=tgrid,
-        sp_P0_sig=P0_sig,
-        Q_sig_gp=Q_sig_gp,
-        Q_rho_gp=Q_rho_gp,
-        sp_alpha=sp_alpha,
-        sp_beta=sp_beta,
-        sp_ln_size_mu=sp_ln_size_mu,
-        sp_ln_size_sig=sp_ln_size_sig,
-        sp_ln_amp_mu=sp_ln_amp_mu,
-        sp_ln_amp_sig=sp_ln_amp_sig,
-        sp_sign=sp_sign,
-    )
-
-    solver.P = np.random.rand(solver.N, solver.K)
-    solver.Q = np.random.rand(solver.K, solver.L)
-    solver._compute_cov()
-
-    sp = SP(
-        ydeg=int(np.sqrt(N) - 1),
-        alpha=sp_alpha[0],
-        beta=sp_beta[0],
-        ln_sig_mu=sp_ln_size_mu[0],
-        ln_sig_sig=sp_ln_size_sig[0],
-        ln_amp_mu=sp_ln_amp_mu[0],
-        ln_amp_sig=sp_ln_amp_sig[0],
-        sign=sp_sign[0],
-    )
-
-    mean = sp.mu_y
-    p_C = sp.cov_y
-    p_C[0, 0] = P0_sig[0] ** 2
-
-    p_cho_C = cho_factor(p_C)
-    p_CInv = cho_solve(p_cho_C, np.eye(N))
-
-    assert np.allclose(p_CInv, solver._p_CInv[:N, :N])
-    assert np.allclose(mean, solver.P_mu[:, 0])
