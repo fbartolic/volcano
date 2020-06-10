@@ -9,22 +9,22 @@ def get_body_ephemeris(
     times, body_id="501", step="1m", return_orientation=True
 ):
     """
-    Given a NAIF code of a Solar System body, this function computes the 
+    Given a NAIF code of a Solar System body, this function computes the
     position and orientation of the body in equatorial coordinates at requested
     times using ephemeris from JPL Horizons. The relevant JPL Horizons data is
     the following:
-    
+
     'RA', 'DEC'
     ###########
     Position on the plane of the sky.
-    
+
     'ang_width'
     ###########
     The angle subtended by the disk of the target seen by the observer, if
     it was fully illuminated. The target diameter is taken to be the IAU2009
     equatorial diameter. Oblateness aspect is not currently included.
     Units: ARCSECONDS
-    
+
     'sat_vis'
     #########
     The angle between the center of a non-lunar target body and the center
@@ -55,7 +55,7 @@ def get_body_ephemeris(
     relative motion. A positive "rdot" means the target is moving away from
     the Sun. A negative "rdot" means the target is moving toward the Sun.
     Units: AU or KM, KM/S
-    
+
     'PDObsLong', 'PDObsLat'
     #######################
     Apparent planetodetic ("geodetic") longitude and latitude (IAU2009
@@ -73,7 +73,7 @@ def get_body_ephemeris(
     the body dynamical equator.  Note there can be an offset between the
     dynamical pole and the magnetic pole. Positive longitude is to the WEST.
     Units: DEGREES
-    
+
     'PDSunLong', 'PDSunLat'
     #######################
     Solar sub-long & sub-lat
@@ -99,18 +99,18 @@ def get_body_ephemeris(
     true-of-date Celestial North Pole) and angular distance from the
     "sub-observer" point (center of disk) at print time. Negative distance
     indicates N.P. on hidden hemisphere. Units: DEGREES and ARCSECONDS
-       
+
     Args:
-    times (astropy.time): Observation times. 
+    times (astropy.time): Observation times.
     body_id (str, optional): NAIF code for the target body. By default '501'
-        for Io. 
+        for Io.
     step (str, optional): Step size for querying JPL Horizons. Minimum is "1m".
         Make sure this is sufficiently small for accurate ephemeris.
     return_orientation (bool, optional): If False, the function returns only
         the position and the angular diameter of the target body, otherwise the
         function returns all parameters needed to determine the location of a
         Starry map in reflected light. By default True.
-        
+
     Returns:
         astropy.timeseries.TimeSeries
 
@@ -122,7 +122,7 @@ def get_body_ephemeris(
         tot_ecl[bool], occ_primary[bool] where the (xs, ys, zs) are the
         Cartesian coordinates
         of the Sun w.r. to target body as seen from Earth. Boolean flag
-        'par_ecl' is True 
+        'par_ecl' is True
         whenever the target body is in a partial eclipse with respect to its
         primary and similarly for a total eclipse. The flags 'ecl_tot' and
         'ecl_par' denote the total and partial eclipses with respect to the
@@ -205,7 +205,7 @@ def get_body_ephemeris(
 
         def interpolate_angle(x, xp, yp):
             """
-            Interpolate an angular quantity on domain [-pi, pi) and avoid 
+            Interpolate an angular quantity on domain [-pi, pi) and avoid
             discountinuities.
             """
             cosy = np.interp(x, xp, np.cos(yp))
@@ -264,10 +264,10 @@ def get_body_ephemeris(
 def get_body_vectors(times, body_id="501", step="1m", location="@sun"):
     """
     Returns the JPL Horizons position (and velocity) vector of a given Solar
-    System body for the requested times. 
+    System body for the requested times.
 
     Args:
-        times (astropy.time): Observation times. 
+        times (astropy.time): Observation times.
     body_id (str, optional): NAIF code for the target body. By default '501'
         for Io.
     step (str, optional): Step size for querying JPL Horizons. Minimum is "1m".
@@ -275,7 +275,7 @@ def get_body_vectors(times, body_id="501", step="1m", location="@sun"):
     location (str, optional): The origin of the coordinate system. By default
         "@sun" for heliocentric position vectors. Other options include "500"
         for center of earth and "@ssb" for Solar System Barycenter.
-        
+
     Returns:
         astropy.timeseries.TimeSeries
 
@@ -327,3 +327,57 @@ def get_body_vectors(times, body_id="501", step="1m", location="@sun"):
     )
 
     return data
+
+
+def get_occultor_position_and_radius(eph_occulted, eph_occultor):
+    """
+    Given the ephemeris of an occulted object and an occultor, the function
+    returns the relative position of the occultor in Starry format.
+
+    Args:
+        eph_occulted (astropy.timeseries.TimeSeries): ephemeris of the occulted
+            body.
+        eph_occultor (astropy.timeseries.TimeSeries): ephemeris of the occultor.
+
+    Returns:
+        list: (xo, yo, zo, ro)
+    """
+    # Convert everything to units where the radius of Io = 1
+    rad_occ = eph_occultor["ang_width"] / eph_occulted["ang_width"]
+    delta_ra = (eph_occultor["RA"] - eph_occulted["RA"]).to(u.arcsec)
+    delta_dec = (eph_occultor["DEC"] - eph_occulted["DEC"]).to(u.arcsec)
+
+    xo_ = (
+        -delta_ra
+        * np.cos(eph_occultor["DEC"])
+        / (0.5 * eph_occulted["ang_width"].to(u.arcsec))
+    )
+    yo = delta_dec / (0.5 * eph_occulted["ang_width"].to(u.arcsec))
+    zo = np.ones(len(yo))
+    ro = np.mean(rad_occ)
+
+    return xo_.value, yo.value, zo, ro.value
+
+
+def rotate_vectors(x, y, theta_rot):
+    """
+    Given a pair of vectors (x, y) representing coordinates on a 2D plane,
+    the function returns a pair of vectors of the same length, but rotated by
+    an angle `theta_rot` in the counterclockwise direction.
+
+    Args:
+        x (numpy.ndarray): x-coordinates of the points.
+        y (numpy.ndarray): y-coordinates of the points.
+        theta_rot (float): angle in radians.
+
+    Returns:
+        list: (x_rot, y_rot)
+    """
+    c, s = np.cos(theta_rot), np.sin(theta_rot)
+    R = np.array(([c, -s], [s, c]))
+    r_stacked = np.stack([x, y])
+
+    # Matrix vector multiplication repetead along an axis
+    res = np.einsum("ijk,jk->ki", R, r_stacked)
+
+    return res[:, 0], res[:, 1]
