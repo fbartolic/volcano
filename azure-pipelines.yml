@@ -29,7 +29,7 @@ jobs:
   - script: |
       . $CONDA/etc/profile.d/conda.sh
       conda activate volcano
-      py.test -v -s volcano
+      pytest -v -s volcano
     displayName: 'Run tests'
   - script: |
       . $CONDA/etc/profile.d/conda.sh
@@ -41,8 +41,8 @@ jobs:
       cd $(Build.SourcesDirectory)
       git checkout --orphan $(Build.SourceBranchName)-pdf
       git rm -rf --cached .
-      git add -f tex/ms.pdf
-      git add -f tex/figures/*.pdf
+      git add -f paper/paper.pdf
+      git add -f paper/figures/*.pdf
       git -c user.name='azure' -c user.email='azure' commit -m "building the paper"
       git push -q -f https://$GITHUB_USER:$GITHUB_API_KEY@github.com/fbartolic/volcano $(Build.SourceBranchName)-pdf
     displayName: 'Upload the paper'
