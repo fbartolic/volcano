@@ -8,7 +8,6 @@ import theano.tensor as tt
 import theano.sparse as ts
 from tqdm import tqdm
 from volcano.optimizers import Adam, NAdam
-from starry_process import SP
 
 __all__ = ["TimeDependentMapSolver"]
 
@@ -23,7 +22,7 @@ class TimeDependentMapSolver(object):
     curves. The columns of P are the SH coefficients of the K basis maps and
     the columns of Q specify the linear combination of these basis maps which
     best models each light curve.
-    
+
     Args:
         f_list (ndarray): List of observed light curves.
         ferr_list (ndarray): Corresponding uncertainties for each light curve.
@@ -38,14 +37,14 @@ class TimeDependentMapSolver(object):
             harmonic coefficients of the basis maps of shape (N, K)  where N
             is the nr. of coefficients and K is the number of basis maps.
         P_sig (float or ndarray, optional): Prior standard deviation on
-            P. 
+            P.
         Q_mu (float or ndarray, optional): Prior mean on the coefficient
             matrix of shape (K, L) where K is the number of basis maps and L
             is the number of light curves.
         Q_sig (ndarray, optional): Prior standard deviation for the GP on the
             coefficient matrix. This is needs to be an array of size K.
         Q_rho_gp (float, optional): Prior lenghtscale for the GP on the
-            coefficient matrix. This is needs to be an array of size K. 
+            coefficient matrix. This is needs to be an array of size K.
     """
 
     def __init__(
@@ -266,7 +265,7 @@ class TimeDependentMapSolver(object):
 
     def _compute_q(self, T=1.0):
         """
-        Linear solve for ``q`` given ``P'`` given an optional temperature. 
+        Linear solve for ``q`` given ``P'`` given an optional temperature.
 
         Returns the Cholesky decomposition of the covariance of ``q``.
 
@@ -305,11 +304,11 @@ class TimeDependentMapSolver(object):
     ):
         """
         Solve the bilinear problem.
-        
+
         Returns:
             ``(loss, cho_p, cho_q)``, a tuple containing the array of
             loss values during the optimization and the Cholesky factorization
-            of the covariance matrices of ``p`` and ``q``, if available 
+            of the covariance matrices of ``p`` and ``q``, if available
             (otherwise the latter two are set to ``None``.)
         """
         # Check the optimizer is valid
