@@ -21,6 +21,7 @@ jobs:
       pip install -U pip
       pip install -U setuptools
       pip install -U -r requirements.txt
+      pip install https://github.com/astropy/astroquery/archive/master.zip
       conda install -y -q -c conda-forge tectonic pybind11
       pip install git+https://github.com/rodluger/starry
       python setup.py develop
@@ -43,8 +44,7 @@ jobs:
       git add -f tex/ms.pdf
       git add -f tex/figures/*.pdf
       git -c user.name='azure' -c user.email='azure' commit -m "building the paper"
-      git push -q -f https://$GITHUB_USER:$GITHUB_API_KEY@github.com/fbartolic/volcano $(Build.SourceBranchName)-pdf 
+      git push -q -f https://$GITHUB_USER:$GITHUB_API_KEY@github.com/fbartolic/volcano $(Build.SourceBranchName)-pdf
     displayName: 'Upload the paper'
     env:
       GITHUB_API_KEY: $(GITHUB_API_KEY)
-    
