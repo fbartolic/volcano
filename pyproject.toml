@@ -21,4 +21,4 @@ multi_line_output = 3
 include_trailing_comma = true
 force_grid_wrap = 0
 use_parentheses = true
-known_third_party = ["astropy", "matplotlib", "numpy", "pymc3", "pytest", "scipy", "setuptools", "theano", "starry", "exoplanet"] 
+known_third_party = ["astropy", "astroquery", "celerite", "matplotlib", "numpy", "scipy", "setuptools", "starry_process", "theano", "tqdm", "volcano"]
