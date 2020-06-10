@@ -1,0 +1,29 @@
+repos:
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v3.1.0
+  hooks:
+  - id: trailing-whitespace
+    exclude: notebooks
+  - id: end-of-file-fixer
+    exclude_types: [json]
+    exclude: notebooks
+
+#- repo: https://github.com/asottile/seed-isort-config
+#  rev: v2.2.0
+#  hooks:
+#  - id: seed-isort-config
+#    args: [--application-directories=volcano]
+#    exclude: notebooks
+#
+#- repo: https://github.com/pre-commit/mirrors-isort
+#  rev: v4.3.21
+#  hooks:
+#  - id: isort
+#    args: []
+#    additional_dependencies: [toml]
+#    exclude: notebooks
+
+- repo: https://github.com/dfm/black_nbconvert
+  rev: stable
+  hooks:
+  - id: black_nbconvert
