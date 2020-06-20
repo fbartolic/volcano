@@ -29,7 +29,7 @@ Jupiter's moon Io is the most volcanically active body in the Solar System with 
 Existing photometric observations in the near infrared taken during occultations by Jupiter and Galilean moons encode a wealth of information about its surface.
 As such, Io is an ideal testbed for models of time-variable exoplanet surfaces.
 We build a single probabilistic model of Io's surface using Nonnegative Matrix Factorization to infer one map per light curve.
-The model is built on top of the code Starry \href{https://rodluger.github.io/starry/}{\color{linkcolor}\faGithub} which can compute occultation light curves and phase curves in both emitted and reflected light. It also enables efficient inference with gradient based samplers.
+The model is built on top of the code starry \href{https://rodluger.github.io/starry/}{\color{linkcolor}\faGithub} which can compute occultation light curves and phase curves in both emitted and reflected light. It also enables efficient inference with gradient based samplers.
 We use the inferred map to study the time variability of prominent volcanoes over a timescale of decades.
 While we mostly focus on Io, the lessons we learn are directly applicable to mapping exoplanets.
 We discuss this application towards the end of the paper.\href{https://github.com/fbartolic/volcano}{\color{linkcolor}\faGithub}
@@ -68,9 +68,9 @@ None of the studies of occultations in the infrared attempted to infer a two-dim
 The light curves are usually fit independently with the goal of inferring one-dimensional longitudinal variations in brightness on its surface.
 Strong priors on the locations of individual volcanoes are assumed based on maps from space mission observations.
 In this work, we build a fully probabilistic model in order to infer a time-dependent two-dimensional \emph{map} of Io's volcanic surface from archival IRTF observations in the near infra red.
-The model is built on top of the recently developed code Starry \citep[][Luger et al. 2020 in prep]{luger_starry_2019} which
+The model is built on top of the recently developed code starry \citep[][Luger et al. 2020 in prep]{luger_starry_2019} which
 enables fast analytic computation of occultation light curves and phase curves for objects whose surface features are represented in terms of spherical harmonics.
-Starry can compute phase curves and occultations in both emitted light (for modeling the isotropic volcanic emission from Io's surface) and reflected light (for mapping albedo variations).
+starry can compute phase curves and occultations in both emitted light (for modeling the isotropic volcanic emission from Io's surface) and reflected light (for mapping albedo variations).
 Instead of fitting one map per occultation light curve, we reduce the dimensionality of the problem using matrix factorization, assuming a fixed map for a given light curve which is a linear combination of $K$ basis maps.
 We use priors on the map features which ensure the maps are physical and prevent overfitting of the data.
 The model is interpretable, each of the basis maps roughly corresponds to a single spot on the surface, and the coefficients multiplying the basis maps encode information on the time variability.
@@ -142,15 +142,157 @@ All of these issues need to be accounted for in the final model.
 % Discuss starry, pixels vs. schmixels vs. harmonics, forward model for static map, NMF model for dynamic map
 \subsection{Orbital parameters}
 \label{ssec:orbital_parameters}
-To model the occultations, first we need to know the trajectory of Jupiter relative to Io for any given time.
-To compute the trajectory we use  \href{https://ssd.jpl.nasa.gov/horizons.cgi}{JPL Horizons database} and the latest planetary ephemeris DE430 \citep{folkner_planetary_2014}.
-The quantities given by the Horizons database needed to uniquely define the relative trajectory
-of Jupiter and the orientation of Io with respect to the observer on Earth are given in Table~\ref{tab:horizons}.
-JPL Horizons interface provides $(\alpha,\delta)$ coordinates of both objects and the
-central longitude and latitude
+To model the occultations we need to know the projected separation between Jupiter and Io and the orientation of Io at any given time.
+We use the \href{https://ssd.jpl.nasa.gov/horizons.cgi}{JPL Horizons database} and the latest planetary ephemeris DE430 \citep{folkner_planetary_2014} for this purpose.
+Specifically, we use the Right Ascension and Declination, the angular (equatorial) diameter (\textsf{Ang-diam}), the visibility flag indicating whether Io is occulted or not and whether it is in partial or total eclipse (\textsf{Ang-sep/v}), the longitude and latitude at the center of Io's disc as seen from Earth (\textsf{Ob-lon}, \textsf{Ob-lat}), the sub-solar point longitude and latitude which specify the direction pointing towards the Sun on Io's surface (\textsf{Sl-lon}, \textsf{Sl-lat}), the distance from Io to the Sun (\textsf{r}) and
+the counterclockwise angle between the Celestial North Pole unit vector projected onto the plane of the sky and the Io's north pole (\textsf{NP.ang}).
+All longitudes are positive to the west.
+\textsf{HORIZONS} provides all ephemeris with a minimum cadence of 1 second so we interpolate all values such that we can evaluate them for arbitrary times.
+
+The coordinate system in \textsf{starry} is defined to be right handed such that the $\hat{z}$
+axis points towards the observer and the $\hat{x}$ axis points to the right on the plane of the sky.
+The radius of the occulted sphere is fixed to 1 and the orientation is specified by three angles,
+the counterclockwise obliquity angle \textsf{obl} between the $\hat{y}$ axis and the North Pole of the sphere, the inclination angle \textsf{inc} which is set to $90^\circ$ if the North Pole is aligned with the $\hat{y}$ axis and the phase angle \textsf{theta} rotates the sphere around the $\hat{y}$ axis in the eastward direction.
+We have $\mathrm{obl}=\textsf{NP.ang}$, $\mathrm{inc}=90^\circ-\textsf{Ob-lat}$ and
+$\mathrm{theta}=\textsf{Ob-lon}$.
+The occultor position relative to the occulted object is given by
+\begin{align}
+    \mathrm{xo}/\gamma&=-\Delta\alpha\,\cos\delta\\
+    \mathrm{yo}/\gamma&=\Delta\delta\\
+    \mathrm{zo}/\gamma&=1
+\end{align}
+where $\Delta\alpha$ are the $\Delta\delta$ differences in Right Ascension and Declination respectively relative to the occulted object and $\gamma$ is the angular radius of the occulted sphere.
+If the occulted object is illuminated by the Sun then we also need to specify the coordinates of the light source which are given by
+\begin{align}
+    \mathrm{xs}&=r\cos\theta\sin\phi\\
+    \mathrm{ys}&=r\sin\theta\\
+    \mathrm{zs}&=r\cos\theta\cos\phi
+\end{align}
+where $\theta$ is obtained by subtracting \textsf{Ob-lat} from \textsf{Sl-lat} and similarly $\phi$ is obtained by subtracting \textsf{Ob-lon} from \textsf{Sl-lon}.
+$r$ is equal to the heliocentric distance of the occulted object \textsf{r}.
+
+\subsection{Static map model}
+\label{ssec:static}
+Given the geometry of on occultation event at an arbitrary time, computing the predicted flux with \textsf{starry} is straightforward.
+\textsf{starry} computes the integrated flux of an unocculted or an occulted sphere analytically assuming that the surface map can be expanded in terms of spherical harmonics $Y_{lm}(\theta,\phi)$ up to a certain \emph{degree} $l$.
+The map is thus defined by a vector of spherical harmonic coefficients $\mathbf{y}$ multiplying the spherical harmonic basis $\tilde{\mathbf{y}}(x, y)=\left(Y_{0,0} Y_{1,-1} Y_{1,0} Y_{1,1} Y_{2,-2} Y_{2,-1} Y_{2,0} Y_{2,1} Y_{2,2} \cdots\right)^{\top}$ and the total number of coefficients is $(l+1)^2$.
+In addition to computing \emph{thermal} phase curves and occultation light curves, \textsf{starry} also solves the considerably more complex problem of computing reflected light phase curves and occultations when the sphere is illuminated by a distant light source \citep[Luger et al. 2020 in prep][]{} which is complicated by the presence of the terminator line.
+In the case of a reflected light map, the coefficient vector $\mathbf{y}$ represents spherical albedo in a given wavelength range.
+Most importantly, conditional on the parameters specifying the geometry of the occultations being fixed, the \textsf{starry} model is \emph{linear} for both emitted and reflected light maps.
+This is achieved by representing all rotations, changes of basis and integrals with complicated boundaries needed to compute the flux as linear transformations.
+Since a sequence of linear mappings is also linear, the predicted flux can be written as
+\begin{equation}
+    \mathbf{f}=\mathbf{A}\,\mathbf{y}
+\end{equation}
+where the column vector $\mathbf{f}$ of shape $(T, 1)$ is the predicted flux for different values of the occultor position and optionally the direction of the illumination source and $\mathbf{A}$ is the design
+matrix of shape $(T, N)$ (with $N=(l+1)^2$) which encodes information all operations needed to compute the integrated flux.
+If the geometry isn't known precisely then the matrix $\mathbf{A}$ is not fixed and the model is no longer linear.
+
+The characteristic angular scale of features that can be represented with a given map is set by the degree of the map and it is approximately equal to $\frac{180^\circ}{l}$.
+State of the art inferences involving phase curves and secondary eclipses of exoplanets are able to constrain features of order $l=1$ (inferring a bright spot on single hemisphere) but for Io we need to fit much higher order maps because the typical scale of volcanic spots is on the order of tens of kilometers (a few degrees).
+\textsf{starry} can handle computations with maps up to $l\approx 20$ before numerical instabilities kick in (TODO: make this statement more precise).
+
+Although \textsf{starry} is built around the idea of expending surface features in a spherical harmonic basis, this is not the ideal basis for doing inference because it makes it difficult to ensure positivity of the maps.
+Ideally we would like to fit all models in the \emph{pixel basis} where ensuring positivity is trivial but still do all computations in the $Y_{lm}$ basis where everything is analytic and fast.
+We obtain the pixels by constructing a discrete grid on the surface of the sphere using an equal area Molleweide projection.
+To ensure that the intensity is positive everywhere on the surface we also need to have more pixels than spherical harmonics (by a factor of a few).
+The mapping $\mathbf{P}$ from the spherical harmonic basis to the pixel basis is linear operator and it is straightforward to compute.
+Unfortunately, because the number of pixels is greater than the number of $Y_{lm}$ coefficients, the matrix $\mathbf{P}$ is not square and is therefore not invertible.
+We can still compute Moore-Penrose pseudoinverse $\mathbf{P}^\dagger$ which is obtained by solving the linear system $\mathbf{P}\,\mathbf{y}=\mathbf{p}$ where $\mathbf{p}$ is the vector of all pixels comprising a map.
+The model is also linear in the pixels:
+\begin{equation}
+    \mathbf{f}=\mathbf{A}\,\mathbf{P}^\dagger\,\mathbf{p}
+    \label{eq:linear_model_pix}
+\end{equation}
+In what follows, we will assume that we work in the pixel basis and compute all fluxes in the $Y_{lm}$ basis where the model is exact.
+We will discuss the validity of this approach in detail in Section~\ref{sec:inverse_problem}.
+
+\subsection{Nonnegative Matrix Factorization}
+\label{ssec:nmf}
+In the case when we cannot assume a static map, the situation is considerably more complicated.
+In principle, the surface map is different for each \emph{data point}.
+Of course, fitting one map per data point is intractable so we might instead fit a single map per light curve, generated by Eq.~\ref{eq:linear_model_pix}.
+Even then, we would need to fit on the order of 1k parameters!
+This is both becuse the number of spherical coefficients scales as $(l+1)^2$ and because when fitting in pixel space we need many more pixels than spherical harmonics to ensure positivity.
+Although fitting a model of such high dimensionality for a single IRTF light curve of high signal to noise ratio is tractable thanks to exact gradients provided by autodifferentiation in \textsf{starry}, we don't want to do that for a hundred or so separate light curves.
+Such a model would be very difficult to fit and it would require strong regularization between successive maps in time.
+It also wouldn't directly provide much physical insight into the volcanic activity, we would have to conduct a separate analysis on the inferred maps to constrain the time variability of the volcanoes.
+Instead, we need an approach which reduces the dimensionality of the problem.
+One way of accomplishing that is to expand the spherical harmonic coefficients (or pixels) in a Taylor series in time about a certain point.
+This is the approach \cite{luger_tess_2019} took to model a map of Earth's albedo in reflected light from stray Earthshine in the aperture of the TESS space telescope.
+This issue with this approach and similar series expansions such as the Fourier series is that with the very long baseline of IRTF data and the observations being scattered throughout the years sporadically, it is unclear which point should be the origin of the expansion.
+More importantly, there likely doesn't exist a well defined global time-averaged map of Io so requiring too much smoothness between successive maps wouldn't work.
+Another way of reducing the dimensionality of the problem would be a parametric approach where where we place a few spots on the sphere and then fit only for the locations and intensities of each spot.
+This is assuming that we know a priori that the surface features are spot like and roughly how many we should expect.
+While such a strong assumption might work for studying individual spots in the context of Io, it certainly isn't justified for exoplanets.
+In Section~\ref{sec:inverse_problem} we do assume stronger priors on the locations of and shapes of surface features to better constrain the variability of individual volcanoes, but we still fit for pixels, at least in principle allowing the data to override our assumptions.
+
+The approach approach opted for is to treat the problem of inferring a single map per light curve as a probabilistic matrix factorization problem.
+The idea is to assume that a map for any given light curve can be expressed as a linear combination of $K$ "basis maps".
+Consider $L$ lightcurves, the model for the $l$-th light curve is
+\begin{equation}
+    \mathbf{f}_l=\mathbf{A}_l\,\mathbf{P}^\dagger\,\mathbf{p}_l
+\end{equation}
+We can stack the column vectors $\mathbf{p}_l$ into a matrix $\mathbf{Y}$ of shape $(N_p, L)$ where $N_p$ is the number of pixels for each light curve.
+We then assume that the $\mathbf{Y}$ can be decomposed into a product of two matrices $\mathbf{B}$ and $\mathbf{Q}$ as
+\begin{equation}
+    \mathbb{Y}=\mathbf{B}\,\mathbf{Q}
+    \label{eq:nmf}
+\end{equation}
+where $\mathbf{B}$ has shape $(N_p, K)$ and $\mathbf{Q}$ has shape $(K, L)$.
+The model for all light curves can be written as
+\begin{equation}
+    \mathbb{f}=\mathbb{A}\,\mathrm{vec}(\mathbf{\mathbb{Y}})
+    \label{eq:model_all_lcs}
+\end{equation}
+Where $\mathbf{f}$ is a tall column vector consisting of predictions for all light curves stacked together, $\mathbb{A}$ is a block diagonal matrix with matrices $\mathbf{A}_l\,\mathbf{P}^\dagger$ on the diagonal for $l=1\dots, L$ and the $\mathrm{vec}$ operator stacks the columns of $\mathbb{Y}$ into a tall vector.
+The model is \emph{bilinear} which means that is linear in the matrices $\mathbb{B}$ and $\mathbf{Q}$ separately.
+The interpretation of Equation~\ref{eq:nmf} is simple, each of the $K$ columns of $\mathbf{B}$ represents pixels of a basis map and the columns of $\mathbf{Q}$ determine how those maps add together to produce a final map for the $l$-th light curve.
+Ideally, we want the basis maps to be physically meaningful and the coefficients encode the time variability.
+A nice feature of this model is that there is no requirement that successive maps are smoothly varying between different light curves.
+
+The matrix factorization problem as written in Equation~\ref{eq:nmf} is highly degenerate and practically intractable a probabilistic framework with a small dataset.
+Since each of the columns of $\mathbf{B}$ are pixels representing emitted light or albedo, we can substantially reduce the ambiguity in the decomposition by requiring that both matrices are strictly positive.
+This matrix factorization problem is known as \emph{Nonnegative Matrix Factorization} (NMF) \citep{paatero_positive_1994,lee_algorithms_2001} and it has a rich history across many different fields.
+It is commonly used for decomposing physical signals in the spectral or the time domain.
+Even though NMF is more tractable than unconstrained matrix factorization, it is still an NP hard problem \citep{vavasis_complexity_2009} and it requires additional constraints or priors to be tractable.
+Simultaneously transforming $\mathbf{B}\leftarrow \mathbf{B}\,\mathbf{S}^{-1}$ and
+$\mathbf{Q}\leftarrow \,\mathbf{S}\mathbf{Q}$ with a nonsingular matrix $\mathbf{S}$ doesn't change the value of the objective function.
+The objective function is also invariant to a simultaneous permutation of the columns of $\mathbf{B}$ and rows of $\mathbf{Q}$ and rescaling either of the two matrices by a scalar.
+Nevertheless, getting around these degeneracies in practice is possible, especially when we have a lot of prior knowledge on the problem.
+For a recent review article with a detalied analysis of these degeneracies and common algorithms, see \cite{fu_nonnegative_2019}.
 
 
-% Talk about JPL horizons, uncertainties on parameters, geometry of occultations etc.
+Broadly speaking, there are two approaches to fitting NMF models, the constrained optimization approach and the probabilistic approach.
+In the optimization approach we optimize $\mathbb{Y}$ in a least-squares sense under a set of constraints on either one or both of the matrices \citep[see][for recent examples from the astronomical literature]{acosta-pulido_new_2017, melchior_scarlet_2018,ren_non-negative_2018,ren_using_2020}.
+The probabilistic approach introduces priors and the inference is usually done with variational inference.
+In this work we opt for the probabilistic approach because we care about the uncertanties on the map features a lot.
+
+One difference between most applications of NMF in the literature and NMF within the context of infering surface maps from 1D light curves is that
+in the majority of the work in the literature \citep[except][]{kawahara_global_2020} the matrix $\mathbb{Y}$ is assumed to be directly observed  up to a simple noise term.
+In our case the problem is considerably more challenging because we observe the light curves
+$\mathbb{A}\,\mathrm{vec}(\mathbf{\mathbb{Y}})$ instead of $\mathbb{Y}$ directly, a process in which some information is lost because, depending on the geometry of the occultations, certain combinations of spherical harmonic coefficients will be in the nullspace.
+\cite{kawahara_global_2020} are using NMF to model phase variations in directly imaged exoplanets with the goal of simultaneously inferring a surface map and a spectral decomposition of the map into several components, a case in which the
+matrix which is to be decomposed is also unobserved.
+Although we don't attempt to solve the problem of spectrally decomposing the maps, our approach is directly applicable to that problem as well. (TODO: should I add more details here?)
+One could also imagine inferring a multi spectral component and time dependent map by solving two NMF problems simultaneously.
+We leave this application for future work.
+
+
+\subsection{The likelihood}
+\label{ssec:likelihood}
+Given Eq.~\ref{eq:nmf} we can write down the likelihood for our data and in Section~\ref{sec:inverse_problem} we dicuss in detail the priors which make the problems of inferring static and dynamic maps tractable.
+Assuming a Gaussian noise process for the data with a dense covariance matrix, the (log) likelihood is
+\begin{equation}
+    \ln\mathcal{L}=-\frac{1}{2}\left[\mathbb{f}_\mathrm{obs}-(\mathbb{f} + \mathbb{b})\right]^{\top} \boldsymbol{\Sigma}^{-1}\left[\mathbb{f}_\mathrm{obs}-(\mathbb{f} + \mathbb{b})\right]
+\end{equation}
+where $\mathbb{f}_\mathrm{obs}$ is the vector of stacked observed light curves, $\boldsymbol{\Sigma}$ is the data covariance matrix and $\mathbb{b}$ is a fixed flux offset per light curve accounting for stray flux not attributed to Io (mostly due to Jupiter).
+We model the data covariance with a Gaussian Process using the fast Celerite method\citep{foreman-mackey_fast_2017} as implemented in the \textsf{exoplanet} package (TODO: cite) to capute correlations imposed by the seeing plus an additional white noise term which is different for each light curve.
+The IRTF data isn't provided with any uncertainties so we estimate the uncertainties by filtering the data with the Savitzky Golay filter as implemented in \textsf{SciPy} (TODO: CITE) and estimating the variance of the residuals.
+We assume identical errors for all data points in a given light curve but allow for a rescaling factor when fitting the model.
+In the next section, we add priors to this likelihood and fit the model on simulated data using optimization and Variational Inference (VI).
+
+%TODO: mention that A depends on the geometry and that we fit for some of those parameters.
 
 \section{The inverse problem}
 \label{sec:inverse_problem}
@@ -209,6 +351,9 @@ central longitude and latitude
 \section{Mapping volcanic exoplanets}
 \label{sec:exoplanets}
 % Application to exoplanets. Fitting mock JWST observations.
+
+\section{Conclusions}
+\label{sec:conclusions}
 
 % Bibliography
 \bibliography{bib}
