@@ -155,7 +155,7 @@ def get_body_ephemeris(
     epochs = {"start": start, "stop": end, "step": step}
     obj = Horizons(id=body_id, epochs=epochs, id_type="id")
 
-    eph = obj.ephemerides(quantities="1,13", extra_precision=True)
+    eph = obj.ephemerides(quantities="1,13, 20", extra_precision=True)
     times_jpl = Time(eph["datetime_jd"], format="jd")
 
     # Store all data in a TimeSeries object
@@ -171,6 +171,15 @@ def get_body_ephemeris(
         np.interp(times.mjd, times_jpl.mjd, eph["ang_width"])
         * eph["ang_width"].unit
     )
+
+    # If the target body is Jupiter, compute the equatorial angular diameter
+    if body_id is "599":
+        dist = eph["delta"].to(u.km)
+        jup_eq_rad = 71492 * u.km
+        ang_width = 2 * jup_eq_rad / dist
+        data["ang_width"] = (
+            np.interp(times.mjd, times_jpl.mjd, np.array(ang_width)) * u.rad
+        ).to(u.arcsec)
 
     if return_orientation:
         eph = obj.ephemerides(extra_precision=True)
@@ -329,10 +338,77 @@ def get_body_vectors(times, body_id="501", step="1m", location="@sun"):
     return data
 
 
-def get_occultor_position_and_radius(eph_occulted, eph_occultor):
+def get_effective_jupiter_radius(latitude, scheme="howell"):
+    """
+    Return radius of jupiter (in km) at the 2.2 mbar level,
+    given the Jupiter planetocentric latitude in degrees.
+    """
+
+    # Conversion factors
+    dpr = 360.0 / (2.0 * np.pi)
+    # Compute powers of sin(lat)
+    u0 = 1.0
+    u1 = np.sin(latitude / dpr)
+    u2 = u1 * u1
+    u3 = u1 * u2
+    u4 = u1 * u3
+    u5 = u1 * u4
+    u6 = u1 * u5
+
+    # Legendre polynomials
+    p0 = 1
+    p1 = u1
+    p2 = (-1.0 + 3.0 * u2) / 2.0
+    p3 = (-3.0 * u1 + 5.0 * u3) / 2.0
+    p4 = (3.0 - 30.0 * u2 + 35.0 * u4) / 8.0
+    p5 = (15.0 * u1 - 70.0 * u3 + 63.0 * u5) / 8.0
+    p6 = (-5.0 + 105.0 * u2 - 315.0 * u4 + 231.0 * u6) / 16.0
+
+    # Find the radius at 100 mbar
+    jr = (
+        71541.0
+        - 1631.3 * p0
+        + 16.8 * p1
+        - 3136.2 * p2
+        - 6.9 * p3
+        + 133.0 * p4
+        - 18.9 * p5
+        - 8.5 * p6
+    )
+
+    jr += 85.0  #  Find the radius at 2.2 mbar
+    #  According to J. Spencer, this is the
+    #  half light point for occultations.
+
+    jr += -27  # subtract one scale height due to bending of light
+    return jr
+
+
+def get_occultation_latitude(x_io, y_io, re):
+    """
+    Compute the approximate latitude of Jupiter at which an occultation occurs.
+    In this case we assume that the Jupiter is a sphere with the radius equal
+    to the equatorial radius. This assumption is good enough for computing
+    the latitude because occultations occur at around +-20 or so degrees N.
+    """
+    y = x_io
+    z = y_io
+    x = np.sqrt(re ** 2 - z ** 2 - y ** 2)
+    ang = np.sqrt(x ** 2 + y ** 2) / z
+    theta = np.arctan2(np.sqrt(x ** 2 + y ** 2), z)
+    return 90 - theta * 180 / np.pi
+
+
+def get_occultor_position_and_radius(
+    eph_occulted, eph_occultor, occultor_is_jupiter=False, **kwargs
+):
     """
     Given the ephemeris of an occulted object and an occultor, the function
-    returns the relative position of the occultor in Starry format.
+    returns the relative position of the occultor in Starry format. If the
+    occultor is Jupiter the radius isn't trivial to compute because Jupiter is
+    an oblate spheroid. In that case we instead compute the effective radius at
+    a given planetocentric latitude at which the occultation is happening.
+    This is implemented in :func:`get_jupiter_effective_radius`.
 
     Args:
         eph_occulted (astropy.timeseries.TimeSeries): ephemeris of the occulted
@@ -342,8 +418,6 @@ def get_occultor_position_and_radius(eph_occulted, eph_occultor):
     Returns:
         list: (xo, yo, zo, ro)
     """
-    # Convert everything to units where the radius of Io = 1
-    rad_occ = eph_occultor["ang_width"] / eph_occulted["ang_width"]
     delta_ra = (eph_occultor["RA"] - eph_occulted["RA"]).to(u.arcsec)
     delta_dec = (eph_occultor["DEC"] - eph_occulted["DEC"]).to(u.arcsec)
 
@@ -354,9 +428,41 @@ def get_occultor_position_and_radius(eph_occulted, eph_occultor):
     )
     yo = delta_dec / (0.5 * eph_occulted["ang_width"].to(u.arcsec))
     zo = np.ones(len(yo))
-    ro = np.mean(rad_occ)
 
-    return xo_.value, yo.value, zo, ro.value
+    if occultor_is_jupiter is False:
+        # Convert everything to units where the radius of Io = 1
+        rad_occ = eph_occultor["ang_width"].to(u.arcsec) / eph_occulted[
+            "ang_width"
+        ].to(u.arcsec)
+        ro = np.mean(rad_occ).value
+
+    # Jupiter is non-spherical so we need to compute an effective radius
+    else:
+        re = 71541 + 59  # equatorial radius of Jupiter (approx) [km]
+        r_io = 1821.3  # radius of Io
+
+        obl = eph_occulted["obl"]
+        inc = np.mean(eph_occultor["inc"])
+
+        xo_unrot = xo_.value
+        yo_unrot = yo.value
+
+        # Rotate to coordinate system where the obliquity of Io is 0
+        theta_rot = -obl.to(u.rad)
+        xo_rot, yo_rot = rotate_vectors(xo_unrot, yo_unrot, theta_rot)
+
+        # Choose point inside Jupiter
+        idx = np.argmin(np.abs(xo_rot))
+
+        # Position of Io relative to Jupiter in km
+        x_io = -xo_rot[idx] * r_io
+        y_io = -yo_rot[idx] * r_io
+
+        lat = get_occultation_latitude(x_io, y_io, re)
+        reff = get_effective_jupiter_radius(lat)
+        ro = reff / r_io
+
+    return xo_.value, yo.value, zo, ro
 
 
 def rotate_vectors(x, y, theta_rot):
