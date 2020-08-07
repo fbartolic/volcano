@@ -27,3 +27,10 @@ repos:
   rev: stable
   hooks:
   - id: black_nbconvert
+
+    #- id: nbstripout
+    #  name: nbstripout
+    #  description: 'nbstripout: strip output from Jupyter and IPython notebooks'
+    #  entry: nbstripout
+    #  language: python
+    #  types: [jupyter]
