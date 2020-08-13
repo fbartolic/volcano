@@ -172,6 +172,10 @@ def get_body_ephemeris(
         * eph["ang_width"].unit
     )
 
+    data["dist"] = (
+        np.interp(times.mjd, times_jpl.mjd, eph["delta"]) * eph["delta"].unit
+    )
+
     # If the target body is Jupiter, compute the equatorial angular diameter
     if body_id is "599":
         dist = eph["delta"].to(u.km)
@@ -423,7 +427,7 @@ def get_occultor_position_and_radius(
 
     xo_ = (
         -delta_ra
-        * np.cos(eph_occultor["DEC"])
+        * np.cos(eph_occultor["DEC"].to(u.rad))
         / (0.5 * eph_occulted["ang_width"].to(u.arcsec))
     )
     yo = delta_dec / (0.5 * eph_occulted["ang_width"].to(u.arcsec))
@@ -439,7 +443,16 @@ def get_occultor_position_and_radius(
     # Jupiter is non-spherical so we need to compute an effective radius
     else:
         re = 71541 + 59  # equatorial radius of Jupiter (approx) [km]
-        r_io = 1821.3  # radius of Io
+        r_io = 1821.3 * u.km  # radius of Io (km)
+        jup_dist = eph_occultor["dist"].to(u.km)
+
+        xo_ = (
+            ((-delta_ra * np.cos(eph_occultor["DEC"].to(u.rad)))).to(u.rad)
+            * jup_dist
+            / r_io
+        )
+        yo = delta_dec.to(u.rad) * jup_dist / r_io
+        zo = np.ones(len(yo))
 
         obl = eph_occulted["obl"]
         inc = np.mean(eph_occultor["inc"])
@@ -455,12 +468,12 @@ def get_occultor_position_and_radius(
         idx = np.argmin(np.abs(xo_rot))
 
         # Position of Io relative to Jupiter in km
-        x_io = -xo_rot[idx] * r_io
-        y_io = -yo_rot[idx] * r_io
+        x_io = -xo_rot[idx] * r_io.value
+        y_io = -yo_rot[idx] * r_io.value
 
         lat = get_occultation_latitude(x_io, y_io, re)
         reff = get_effective_jupiter_radius(lat)
-        ro = reff / r_io
+        ro = reff / r_io.value
 
     return xo_.value, yo.value, zo, ro
 
