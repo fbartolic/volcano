@@ -26,8 +26,8 @@ jobs:
       pip install https://github.com/astropy/astroquery/archive/master.zip
       conda install -y -q -c conda-forge tectonic pybind11
       git clone https://github.com/rodluger/starry
-      cd starry
-      STARRY_KL_NUMERICAL=1 python setup.py develop
+      cd starry && STARRY_KL_NUMERICAL=1 python setup.py develop
+      cd .. && python setup.py develop
     displayName: 'Install dependencies'
   - script: |
       . $CONDA/etc/profile.d/conda.sh
