@@ -139,7 +139,6 @@ All of these issues need to be accounted for in the final model.
 
 \section{Model}
 \label{sec:model}
-% Discuss starry, pixels vs. schmixels vs. harmonics, forward model for static map, NMF model for dynamic map
 \subsection{Orbital parameters}
 \label{ssec:orbital_parameters}
 To model the occultations we need to know the projected separation between Jupiter and Io and the orientation of Io at any given time.
@@ -171,6 +170,9 @@ If the occulted object is illuminated by the Sun then we also need to specify th
 where $\theta$ is obtained by subtracting \textsf{Ob-lat} from \textsf{Sl-lat} and similarly $\phi$ is obtained by subtracting \textsf{Ob-lon} from \textsf{Sl-lon}.
 $r$ is equal to the heliocentric distance of the occulted object \textsf{r}.
 
+\subsection{Effective radius of Jupiter}
+
+
 \subsection{Static map model}
 \label{ssec:static}
 Given the geometry of on occultation event at an arbitrary time, computing the predicted flux with \textsf{starry} is straightforward.
@@ -183,6 +185,7 @@ This is achieved by representing all rotations, changes of basis and integrals w
 Since a sequence of linear mappings is also linear, the predicted flux can be written as
 \begin{equation}
     \mathbf{f}=\mathbf{A}\,\mathbf{y}
+    \label{eq:linear_model}
 \end{equation}
 where the column vector $\mathbf{f}$ of shape $(T, 1)$ is the predicted flux for different values of the occultor position and optionally the direction of the illumination source and $\mathbf{A}$ is the design
 matrix of shape $(T, N)$ (with $N=(l+1)^2$) which encodes information all operations needed to compute the integrated flux.
@@ -192,18 +195,19 @@ The characteristic angular scale of features that can be represented with a give
 State of the art inferences involving phase curves and secondary eclipses of exoplanets are able to constrain features of order $l=1$ (inferring a bright spot on single hemisphere) but for Io we need to fit much higher order maps because the typical scale of volcanic spots is on the order of tens of kilometers (a few degrees).
 \textsf{starry} can handle computations with maps up to $l\approx 20$ before numerical instabilities kick in (TODO: make this statement more precise).
 
-Although \textsf{starry} is built around the idea of expending surface features in a spherical harmonic basis, this is not the ideal basis for doing inference because it makes it difficult to ensure positivity of the maps.
-Ideally we would like to fit all models in the \emph{pixel basis} where ensuring positivity is trivial but still do all computations in the $Y_{lm}$ basis where everything is analytic and fast.
-We obtain the pixels by constructing a discrete grid on the surface of the sphere using an equal area Molleweide projection.
-To ensure that the intensity is positive everywhere on the surface we also need to have more pixels than spherical harmonics (by a factor of a few).
-The mapping $\mathbf{P}$ from the spherical harmonic basis to the pixel basis is linear operator and it is straightforward to compute.
-Unfortunately, because the number of pixels is greater than the number of $Y_{lm}$ coefficients, the matrix $\mathbf{P}$ is not square and is therefore not invertible.
-We can still compute Moore-Penrose pseudoinverse $\mathbf{P}^\dagger$ which is obtained by solving the linear system $\mathbf{P}\,\mathbf{y}=\mathbf{p}$ where $\mathbf{p}$ is the vector of all pixels comprising a map.
-The model is also linear in the pixels:
+Although \textsf{starry} is built around the idea of expanding surface features in a spherical harmonic basis, this is not the ideal basis for doing inference because it makes it difficult to ensure that the intensity is positive everywhere on the map.
+In order to circumvent this limitation of the spherical harmonic basis, we fit all models in a \emph{pixel basis} instead where ensuring positivity amounts to putting a positive prior on the pixels but still do all computations in the $Y_{lm}$ basis where all integrals are analytic and can be computed efficiently.
+We obtain the pixels by constructing a discrete grid on the surface of the sphere using an equal area Molleweide projection
+and to ensure that the intensity is positive everywhere on the surface we need to have more pixels than spherical harmonics (by a factor of a few).
+Given a vector of spherical harmonic coefficients we can switch to the pixel basis with a linear operator $\mathbf{P}$ which is straightforward to compute.
+The inverse transform is less straightforward because the number of pixels is greater than the number of $Y_{lm}$ coefficients so the matrix $\mathbf{P}$ is not square and is therefore not invertible.
+Although we can't invert this matrix we can still compute the Moore-Penrose pseudoinverse $\mathbf{P}^\dagger$ which is obtained by solving the linear system $\mathbf{P}\,\mathbf{y}=\mathbf{p}$ where $\mathbf{p}$ is the vector of all pixels comprising a map. 
+The flux can then be computed as a linear operation on the pixels: 
 \begin{equation}
-    \mathbf{f}=\mathbf{A}\,\mathbf{P}^\dagger\,\mathbf{p}
+    \mathbf{f}=\mathbf{A}\,\mathbf{P}^\dagger\,\mathbf{p}'
     \label{eq:linear_model_pix}
 \end{equation}
+where the pixels $\mathbf{p}'$ are close to $\mathbf{p}$ in a least-squares sense.
 In what follows, we will assume that we work in the pixel basis and compute all fluxes in the $Y_{lm}$ basis where the model is exact.
 We will discuss the validity of this approach in detail in Section~\ref{sec:inverse_problem}.
 
@@ -231,7 +235,7 @@ The approach approach opted for is to treat the problem of inferring a single ma
 The idea is to assume that a map for any given light curve can be expressed as a linear combination of $K$ "basis maps".
 Consider $L$ lightcurves, the model for the $l$-th light curve is
 \begin{equation}
-    \mathbf{f}_l=\mathbf{A}_l\,\mathbf{P}^\dagger\,\mathbf{p}_l
+    \mathbf{f}_l=\mathbf{A}_l\,\mathbf{P}^\dagger\,\mathbf{p}_l'
 \end{equation}
 We can stack the column vectors $\mathbf{p}_l$ into a matrix $\mathbf{Y}$ of shape $(N_p, L)$ where $N_p$ is the number of pixels for each light curve.
 We then assume that the $\mathbf{Y}$ can be decomposed into a product of two matrices $\mathbf{B}$ and $\mathbf{Q}$ as
@@ -246,8 +250,9 @@ The model for all light curves can be written as
     \label{eq:model_all_lcs}
 \end{equation}
 Where $\mathbf{f}$ is a tall column vector consisting of predictions for all light curves stacked together, $\mathbb{A}$ is a block diagonal matrix with matrices $\mathbf{A}_l\,\mathbf{P}^\dagger$ on the diagonal for $l=1\dots, L$ and the $\mathrm{vec}$ operator stacks the columns of $\mathbb{Y}$ into a tall vector.
-The model is \emph{bilinear} which means that is linear in the matrices $\mathbb{B}$ and $\mathbf{Q}$ separately.
+The model is \emph{bilinear} which means that is linear in the matrices $\mathbf{B}$ and $\mathbf{Q}$ separately.
 The interpretation of Equation~\ref{eq:nmf} is simple, each of the $K$ columns of $\mathbf{B}$ represents pixels of a basis map and the columns of $\mathbf{Q}$ determine how those maps add together to produce a final map for the $l$-th light curve.
+For this reason we call $\mathbf{B}$ the \emph{basis matrix} and the matrix $\mathbf{Q}$ the \emph{encoding matrix}.
 Ideally, we want the basis maps to be physically meaningful and the coefficients encode the time variability.
 A nice feature of this model is that there is no requirement that successive maps are smoothly varying between different light curves.
 
@@ -263,12 +268,12 @@ Nevertheless, getting around these degeneracies in practice is possible, especia
 For a recent review article with a detalied analysis of these degeneracies and common algorithms, see \cite{fu_nonnegative_2019}.
 
 
-Broadly speaking, there are two approaches to fitting NMF models, the constrained optimization approach and the probabilistic approach.
-In the optimization approach we optimize $\mathbb{Y}$ in a least-squares sense under a set of constraints on either one or both of the matrices \citep[see][for recent examples from the astronomical literature]{acosta-pulido_new_2017, melchior_scarlet_2018,ren_non-negative_2018,ren_using_2020}.
-The probabilistic approach introduces priors and the inference is usually done with variational inference.
-In this work we opt for the probabilistic approach because we care about the uncertanties on the map features a lot.
+Broadly, there are two approaches to fitting NMF models, the constrained optimization approach and the probabilistic approach.
+In the optimization approach we optimize $\mathbb{Y}$ in a least-squares sense under a set of constraints on either one or both of the matrices \citep[see][for recent examples from the astronomical literature]{acosta-pulido_new_2017, melchior_scarlet_2018,ren_non-negative_2018,ren_using_2020} with the goal of obtaining a point estimate for the two matrices.
+The probabilistic approach introduces priors and the inference is usually done with variational inference in order to obtain an approximate posterior distribution over the matrices.
+In this work we opt for the probabilistic approach because we care about the uncertainties on the map features a lot.
 
-One difference between most applications of NMF in the literature and NMF within the context of infering surface maps from 1D light curves is that
+One difference between most applications of NMF in the literature and NMF within the context of inferring surface maps from 1D light curves is that
 in the majority of the work in the literature \citep[except][]{kawahara_global_2020} the matrix $\mathbb{Y}$ is assumed to be directly observed  up to a simple noise term.
 In our case the problem is considerably more challenging because we observe the light curves
 $\mathbb{A}\,\mathrm{vec}(\mathbf{\mathbb{Y}})$ instead of $\mathbb{Y}$ directly, a process in which some information is lost because, depending on the geometry of the occultations, certain combinations of spherical harmonic coefficients will be in the nullspace.
@@ -296,26 +301,181 @@ In the next section, we add priors to this likelihood and fit the model on simul
 
 \section{The inverse problem}
 \label{sec:inverse_problem}
+Having defined the forward models in the previous section, in this section we focus on choosing priors, doing inference and testing the models on simulated data.
+We compute the information content of different kinds of occultation and phase light curves and , we test the differences between fitting in the $Y_{lm}$ basis vs. fitting in the pixel basis, prior choices for pixel maps and priors for NMF. 
+To fit the models, we use  variational inference and Hamiltonian Monte Carlo.
+
 % bulk of the results in the paper
 \subsection{The information content of a light curve}
 \label{ssec:information_content}
-% information in different kinds of occultations/phase curves, reflected light vs. emitted light, posterior shrinkage etc.
+The mapping problem is famously ill posed.
+In other words, certain linear combinations of spherical harmonic coefficients will be in the nullspace of the linear mapping  $\mathbf{A}$ in Eq.~\ref{eq:linear_model}.
+This means that even if we had noiseless observations, certain features would still be impossible to recover.
+To recover surface features from observed flux integrated over the disc of the object we need
+to have some mechanism which breaks the various degeneracies.
+For phase curves in emitted light, we can only recover longitudinal variations in intensity.
+Occultations are a lot better thanks to the limb of the occultor sweeping across the surface of the occulted sphere.
+Even better are grazing occultations with an occultor of a small diameter sweeping across the disc at different latitudes and therefore breaking the latitudinal degeneracies. 
+Observing phase curves and occultations in reflected light improves the model even more because of the nonuniform illumination profile of the incident radiation and the presence of a day/night terminator line \citep[][Luger et al. 2020 in prep]{luger_starry_2019}.
+In some cases for reflected light observations (phase curves of an inclined planet for example) there is no nullspace at all at low degrees of the map.
 
+To compute how much information can in principle be obtained by observing occultations of Io by Jupiter and other moons or phase curves we need to compute some measure of how much does observing Io at certain times reduce our prior uncertainty on the map features.
+Given that the model for a static map (Eq.~\ref{eq:linear_model}) is linear, under Gaussian priors with covariance $\boldsymbol{\Lambda}$ on the spherical harmonic coefficients and a Gaussian likelihood, the posterior is analytic and the mean is given by
+\begin{equation}
+    \widehat{\mathbf{y}}=\boldsymbol{\Sigma}_{\hat{\mathbf{y}}}\left(\mathbf{A}^{\top} \boldsymbol{\Sigma}_{\mathbf{f}}^{-1} \mathbf{f}+\boldsymbol{\Lambda}_{\mathbf{y}}^{-1} \boldsymbol{\mu}_{\mathbf{y}}\right)
+\end{equation}
+where the posterior covariance matrix $\boldsymbol{\Sigma}_{\hat{\mathbf{y}}}$ is 
+\begin{equation}
+\boldsymbol{\Sigma}_{\hat{\mathbf{y}}}=\left( \mathbf{A}^{\top} \boldsymbol{\Sigma}_{\mathbf{f}}^{-1} \mathbf{A} +\boldsymbol{\Lambda}_{\mathbf{y}}^{-1}\right)^{-1}
+\end{equation}
+The posterior covariance matrix depends on the design matrix $\mathbf{A}$, the prior covariance  $\boldsymbol{\Lambda}$ and the data covariance $\boldsymbol{\Sigma}_{\mathbf{f}}$.
+We first compute the design matrices using \textsf{starry} for different kinds of events a over the course of a single year: occultations by Jupiter, occultations by Europa, Ganymede and Callisto and phase curves.
+
+We take the ephemeris data  from \textsf{JPL HORIZONS} and assume that it is known exactly, we also assume all observations are of the emitted light component independent of whether Io is in sunlight or in eclipse.
+This is because we are interested in constraining the volcanic emission rather than the albedo.
+Given the fixed design matrices, we can compute the variance reduction of the posterior relative to the prior known as \emph{posterior shrinkage}, defined as
+\begin{equation}
+    1-\frac{\sigma^2_\mathrm{post}}{\sigma^2_\mathrm{prior}}
+\end{equation}
+where $\sigma^2_\mathrm{prior}$ is the prior and $\sigma^2_\mathrm{post}$ is the posterior variance for a given parameter.
+To compute this quantity for each spherical harmonic coefficient in $\mathbf{y}$ we divide the diagonal elements of matrices $\boldsymbol{\Sigma}_{\hat{\mathbf{y}}}$ and $\boldsymbol{\Lambda}$, divide them, and average over all $m$-modes. 
+We need to assume some variance for the Gaussian prior on the $Y_{l,m}$ coefficients so we choose a broad prior $\boldsymbol{\Lambda}=\mathrm{diag}(1^2,0.1^2,\dots,0.1^2)$.
+Although the posterior shrinkage depends on this prior the main results do not change for a different choice of the prior.
+The result is plotted in Fig.~\ref{fig:information_content}.
 \begin{figure}[h!]
     \begin{centering}
     \includegraphics[width=0.5\linewidth]{figures/information_content.pdf}
-    \oscaption{InformationContent}{%
-        This is a plot of a pretty function. And at the end of this
-        caption is a symbol with a link to the \emph{exact} script
-        that generated it, hosted on \textsf{GitHub}.
+    \oscaption{InformationContent}{
+        The plot shows the information content of different kinds of observations of Io as a function of spherical harmonic degree (angular scale of surface features).
+        On the y axis is posterior shrinkage (the variance ratio between the prior and the posterior distribution) for each spherical harmonic coefficient at a given degree $l$ on the x axis, averaged across all $m$ modes.
+        Posterior shrinkage of 1 represent maximum information gain in updating from the prior to the posterior while a shrinkage of 0 represents no information gain. 
+        We compute the posterior variance for different kinds of mock observations of Io over
+        the course of a single year: phase curves (blue), occultations by Jupiter (orange), combined phase curves and occultations by Jupiter (green) and occulltations of Io by other Galilean moons (red lines). 
+        Solid lines represent observations at SNR=100 while dashed lines represent observations at SNR=10.
         \label{fig:information_content}
     }
     \end{centering}
 \end{figure}
+The plot shows posterior shrinkage for phase curve observations (blue lines), occultations by Jupiter (orange), the previous two combined (green) and mutual occultations by other Galilean moons (red). 
+Solid lines correspond to SNR=100 while dashed lines correspond to SNR=10 where the signal is defined as the min-max difference of the predicted flux.
+
+        It is clear that observations of mutual occultations of Io (red lines) are by far the most informative and most useful for constraining surface features. The posterior shrinkage is near unity at all angular scales $l$ up to $l=18$ owing to degeneracy breaking features of these occcultations. 
+        Occultations by Jupiter (orange lines) are far less informative because we only see one side of Io during an occultation (hence the kink in the curve at $l=1$) and the position of Jupiter's limb on the surface of Io does not vary significantly so latitudinal features are only weakly constrained.
+        The posterior shrinkage is exactly zero for phase curves at all odd degrees above $l=2$ because phase curves for objects rotating about an axis perpendicular to the line of sight encode zero information on these coefficients because they are in the nullspace.
+Although observations of mutual occultations most easily break the degeneracies, they only occur every 6 years and more importantly they almost never occur while Io is in eclipse.
+This means that only the brightest volcanoes will be visible above the reflected light background emission due to the Sun.
+Figure~\ref{fig:information_content} does not reflect this fact.
+When modeling the observations taken while Io is in sunlight, we have to take into account the reflected light component.
+Although \textsf{starry} supports computing occultations and phase curves in reflected light, we only fit in eclipse observations in this work.
 
 \subsection{Fitting a static map}
 \label{ssec:static_map}
-% Priors for static maps, sparsity, positivity, plot of map inference with simulated data and different kinds of priors. Inference with MAP, VI, HMC.
+In this section we test inference with the static map model defined in Section~\ref{ssec:static} on both simulated and real data.
+First we use \textsf{starry} to generate one simulated light curve of an occultation of Io by Jupiter with an $l=30$ map containing a single bright hot spot.
+We take ephemeris parameters (assumed to be fixed) from a real occultation and assume an observational cadence and noise similar to IRTF light curves.
+We use this dataset to test the difference between fitting a map in the spherical harmonic basis (Eq.~\ref{eq:linear_model}) and in the pixel basis (Eq.~\ref{eq:linear_model_pix}).
+We fit two models for the Maximum A Posteriori (MAP) estimate of the parameters using the
+\textsf{BFGS} algorithm as implemented in \textsf{scipy.optimize.minimize} in the \textsf{scipy} package (CITE) and the exact gradients of the model with respect to all parameters provided by \textsf{Theano}.
+
+In the first model we place a Gaussian prior on $Y_{lm}$ coefficients with covariance $\boldsymbol{\Lambda}=\mathrm{diag}(1^2,0.1^2,\dots,0.1^2)$ and optimize for the values of the coefficients. 
+In the second model we fit for pixels $\mathbf{p}'$ with a positive prior  in order to ensure (approximate) positivity of the inferred maps.
+To evaluate the flux (Eq.~\ref{eq:linear_model_pix}) we map the pixels to a spherical harmonic coefficient vector $\mathbf{y}$ using the matrix $\mathbf{P}^\dagger$ at each step in the inference algorithm.
+As the end product of the inference we do not store the interim pixels $\mathbf{p}'$ but rather the spherical harmonic coefficients. 
+To distinguish between the pixels $\mathbf{p}'$ which are defined on a fixed grid in (latitude,longitude) and the pixels $\mathbf{p}=\mathbf{P}\,\mathbf{y}$ which can be computed on an arbitrary grid conditional on knowing $\mathbf{y}$, we call the former \emph{schmixels}.
+Although the priors on schmixels $\mathbf{p}'$ are strictly positive, because of the approximate mapping to spherical harmonics the pixels $\mathbf{p}$ won't completely respect the prior and there will be still be some regions of the map with negative intensity.
+
+The justification for this somewhat convoluted procedure is shown in Fig.~\ref{fig:pixels_vs_harmonics}.
+
+\begin{figure}[h!]
+    \begin{centering}
+    \includegraphics[width=1.\linewidth]{figures/pixels_vs_harmonics.pdf}
+    \oscaption{pixels_vs_harmonics}{%
+        Inferred Maximum A Posteriori (MAP) estimates of $l=20$ maps (second panel from the top) produced by fitting a mock light curve (third panel) which was generated from a simulated $l=30$ map consisting of a single bright spot (top panel). 
+        The left portion of the figure shows a map inferred using a model in which we directly fit for spherical harmonic coefficients with a Gaussian prior on the coefficients.
+        The right portion shows a map inferred from a model in which an Exponential prior is placed on the pixels defined on a fixed latitude-longitude grid which are converted to spherical harmonic coefficients at every step of the inference process.
+        The pixels are only used as a tool to impose positivity and sparsity (via the Exponential prior) on the map intensity but the final inferred map (second panel on the right) and the predicted flux (orange lines) are generated from a map defined by a set of spherical harmonic coefficients. 
+Both models fit the data reasonably well but the inferred maps are widely different. 
+As a result of the sparse prior, the model whose prior is specified in pixel space results in a considerably simpler map with a single bright features where all the other regions of the map are pushed towards zero intensity.
+Both maps show significant ringing effects due to the finite order of the spherical harmonic expansion. 
+        The precise location of the true spot is not recovered for either of the two models
+        which is not surprising because a single light curve is not sufficient to break the degeneracies.
+        \label{fig:pixels_vs_harmonics}
+    }
+    \end{centering}
+\end{figure}
+
+
+\begin{figure}[h!]
+    \begin{centering}
+    \includegraphics[width=0.5\linewidth]{figures/pixels_hist.pdf}
+    \oscaption{pixels_hist}{%
+        Cumulative distribution of pixels in the true map and the inferred maps shown in Fig.~\ref{fig:pixels_vs_harmonics}.
+        The pixels were obtained by dotting a pixel transform matrix $\mathbf{P}$ into the spherical coefficient vector $\mathbf{y}$ of each map.
+        The top panel shows the distribution of pixels for the model in which we fit for the spherical harmonic coefficients with a Gaussian prior (orange). 
+        The distribution of pixels in the true map is shown in blue.
+        The bottom panel shows the pixels for a second model (right panel of Fig.~\ref{fig:pixels_vs_harmonics}) in which we fit for interim pixels which we call schmixels (green) instead of the spherical harmonic coefficients although the coefficients are still used to compute the flux and to compute the final pixel distribution (orange).
+        The true map pixels are almost all positive (as they should be) except for a small tail due to truncation of the spherical harmonic expansion.
+        The distribution of inferred pixels in the spherical harmonic model looks nothing like the truth and there is a significant left tail corresponding to negative values of map intensity which is due to the ringing artefacts which aren't sufficiently suppressed by the Gaussian prior.
+        The distribution of schmixels (interim pixels used to enforce positivity of the map)       follows the exponential prior and is strictly positive by definition. 
+        The distribution of corresponding pixels is not identical to that of schmixels because the mapping $\mathbf{P}$ from spherical harmonics to pixels is not invertible.
+        However, the resulting distribution is closer the truth with a smaller left tail.
+        \label{fig:pixels_hist}
+    }
+    \end{centering}
+\end{figure}
+
+
+\begin{figure}[h!]
+    \begin{centering}
+    \includegraphics[width=1.\linewidth]{figures/smoothing_kernel.pdf}
+    \oscaption{smoothing_kernel}{%
+        This is a plot of a pretty function. And at the end of this
+        caption is a symbol with a link to the \emph{exact} script
+        that generated it, hosted on \textsf{GitHub}.
+        \label{fig:smoothing_kernel}
+    }
+    \end{centering}
+\end{figure}
+
+
+\begin{figure}[h!]
+    \begin{centering}
+    \includegraphics[width=1.\linewidth]{figures/ingress_egress_simulated.pdf}
+    \oscaption{ingress_egress_simulated}{%
+        This is a plot of a pretty function. And at the end of this
+        caption is a symbol with a link to the \emph{exact} script
+        that generated it, hosted on \textsf{GitHub}.
+        \label{fig:ingress_egress_simulated}
+    }
+    \end{centering}
+\end{figure}
+
+
+\begin{figure}[h!]
+    \begin{centering}
+    \includegraphics[width=1.\linewidth]{figures/irtf_ingress_egress.pdf}
+    \oscaption{irtf_ingress_egress}{%
+        This is a plot of a pretty function. And at the end of this
+        caption is a symbol with a link to the \emph{exact} script
+        that generated it, hosted on \textsf{GitHub}.
+        \label{fig:irtf_ingress_egress}
+    }
+    \end{centering}
+\end{figure}
+
+
+\begin{figure}[h!]
+    \begin{centering}
+    \includegraphics[width=.5\linewidth]{figures/irtf_ingress_egress_loki.pdf}
+    \oscaption{irtf_ingress_egress_loki}{%
+        This is a plot of a pretty function. And at the end of this
+        caption is a symbol with a link to the \emph{exact} script
+        that generated it, hosted on \textsf{GitHub}.
+        \label{fig:irtf_ingress_egress_loki}
+    }
+    \end{centering}
+\end{figure}
+
 
 \subsection{Fitting a dynamic map}
 \label{ssec:dynamic_map}
@@ -327,18 +487,6 @@ In the next section, we add priors to this likelihood and fit the model on simul
 \subsection{Individual events}
 \label{ssec:individual}
 % Fits of individual events. In particular, those light curves that were analyzed in previous papers.
-
-\begin{figure}[h!]
-    \begin{centering}
-    \includegraphics[width=1.\linewidth]{figures/single_event_fit.pdf}
-    \oscaption{single_event_fit}{%
-        This is a plot of a pretty function. And at the end of this
-        caption is a symbol with a link to the \emph{exact} script
-        that generated it, hosted on \textsf{GitHub}.
-        \label{fig:single_event_fit}
-    }
-    \end{centering}
-\end{figure}
 
 \subsection{The time-variable map}
 \label{ssec:time_variable_map}
