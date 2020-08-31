@@ -1,135 +1,67 @@
-#!/usr/bin/env python
-import os
-import pickle as pkl
-import sys
-
-import matplotlib.gridspec as gridspec
 import numpy as np
-import pymc3 as pm
-import starry
+from matplotlib import pyplot as plt
+
 import theano
 import theano.tensor as tt
-from matplotlib import colors
-from matplotlib import pyplot as plt
-from matplotlib.ticker import FormatStrFormatter
-from volcano.utils import *
-
+import pymc3 as pm
+import starry
 import exoplanet as xo
+
+from matplotlib import colors
+import matplotlib.gridspec as gridspec
+from matplotlib.ticker import FormatStrFormatter, AutoMinorLocator
+
+from volcano.utils import *
 
 np.random.seed(42)
 starry.config.lazy = True
 
-# Load data
-directory = "../../data/irtf_processed/"
-lcs = []
-
-for file in os.listdir(directory):
-    with open(os.path.join(directory, file), "rb") as handle:
-        lcs.append(pkl.load(handle))
-
-# Select a single light curve
-idx = 29
-lc = lcs[idx]
-
-f_obs = lc["flux"].value
-f_err = lc["flux_err"].value
+# Set up mock map
+def get_S(ydeg, sigma=0.1):
+    l = np.concatenate([np.repeat(l, 2 * l + 1) for l in range(ydeg + 1)])
+    s = np.exp(-0.5 * l * (l + 1) * sigma ** 2)
+    S = np.diag(s)
+    return S
 
 
-# Get ephemeris
-eph_io = get_body_ephemeris(
-    lc.time, body_id="501", step="1m", return_orientation=True
+xo_sim = np.linspace(37.15, 39.43, 120)
+yo_sim = np.linspace(-8.284, -8.27, 120)
+ro = 39.1
+
+ydeg_true = 30
+map_true = starry.Map(ydeg_true)
+map_true.add_spot(
+    amp=2.0, sigma=1e-03, lat=13.0, lon=360 - 308.8, relative=False
 )
-eph_jup = get_body_ephemeris(
-    lc.time, body_id="599", step="1m", return_orientation=True
-)
+map_true.amp = 20
 
+# Smooth the true map
+S_true = get_S(ydeg_true, 0.07)
+x = (map_true.amp * map_true.y).eval()
+x_smooth = (S_true @ x[:, None]).reshape(-1)
+map_true[:, :] = x_smooth / x_smooth[0]
+map_true.amp = x_smooth[0]
 
-# Get occultor position
-obl = eph_io["obl"]
-inc = np.mean(eph_jup["inc"])
-theta = np.array(eph_io["theta"])
+# Generate mock light curve
+f_true = map_true.flux(ro=ro, xo=xo_sim, yo=yo_sim).eval()
+f_err = 0.5
+f_obs = f_true + np.random.normal(0, f_err, len(f_true))
 
-xo_unrot, yo_unrot, zo, ro = get_occultor_position_and_radius(eph_io, eph_jup)
-
-# Rotate to coordinate system where the obliquity of Io is 0
-theta_rot = -obl.to(u.rad)
-xo_rot, yo_rot = rotate_vectors(xo_unrot, yo_unrot, theta_rot)
-
-
-# Pixel sampling model
-ydeg_inf = 16
+# Ylm model
+ydeg_inf = 20
 map = starry.Map(ydeg_inf)
 lat, lon, Y2P, P2Y, Dx, Dy = map.get_pixel_transforms(oversample=4)
 npix = Y2P.shape[0]
 
-with pm.Model() as model:
-    map = starry.Map(ydeg_inf)
-    map.inc = inc.value
-
-    # Uniform prior on the *pixels*
-    p = pm.Dirichlet(
-        "p",
-        a=0.5 * np.ones(npix),
-        shape=(npix,),
-        testval=1e-05 * np.random.rand(npix),
-    )
-
-    ln_norm = pm.Normal("ln_norm", 2, 8, testval=np.log(100.0))
-    x = tt.exp(ln_norm) * tt.dot(P2Y, p)
-
-    map.amp = x[0]
-    map[1:, :] = x[1:] / map.amp
-
-    pm.Deterministic("amp", map.amp)
-    pm.Deterministic("y1", map[1:, :])
-
-    xo_offset = pm.Normal("xo_offset", 1.0, 0.1, testval=1.0)
-    yo_offset = pm.Normal("yo_offset", 0.0, 0.01, testval=0.0)
-
-    # Flux offset
-    ln_flux_offset = pm.Normal("ln_flux_offset", 0.0, 4, testval=-2.0)
-
-    # Compute flux
-    _xo = theano.shared(xo_rot) + xo_offset
-    _yo = theano.shared(yo_rot) + yo_offset
-
-    flux = map.flux(xo=_xo, yo=_yo, ro=ro, theta=theta) + tt.exp(
-        ln_flux_offset
-    )
-    pm.Deterministic("flux_pred", flux)
-
-    sig = pm.Normal("sig", f_err[0], 0.1 * f_err[0], testval=f_err[0])
-    pm.Normal("obs", mu=flux, sd=sig * tt.ones(len(f_obs)), observed=f_obs)
-
-
-with model:
-    start = xo.optimize(vars=model.vars[1:], options=dict(maxiter=9999))
-    soln = xo.optimize(start=start, options=dict(maxiter=9999))
-
-print(model.ndim)
-
-
 # Evalute MAP model on denser grid
-occ_phase_dense = np.linspace(lc["phase"][0], lc["phase"][-1], 200)
-xo_dense = np.linspace(xo_rot[0], xo_rot[-1], 200)
-yo_dense = np.linspace(yo_rot[0], yo_rot[-1], 200)
-theta_dense = np.linspace(theta[0], theta[-1], 200)
+xo_dense = np.linspace(xo_sim[0], xo_sim[-1], 200)
+yo_dense = np.linspace(yo_sim[0], yo_sim[-1], 200)
 
-with model:
-    # Compute flux
-    _xo = theano.shared(xo_dense) + xo_offset
-    _yo = theano.shared(yo_dense) + yo_offset
-    flux = map.flux(xo=_xo, yo=_yo, ro=ro, theta=theta_dense)
-    map_flux_dense = xo.eval_in_model(flux, soln)
-
-
-# SH model
 PositiveNormal = pm.Bound(pm.Normal, lower=0.0)
 ncoeff = (ydeg_inf + 1) ** 2
 
 with pm.Model() as model_ylm:
     map = starry.Map(ydeg_inf)
-    map.inc = inc.value
 
     cov = (3e-02) ** 2 * np.eye(ncoeff - 1)
     y1 = pm.MvNormal(
@@ -139,57 +71,155 @@ with pm.Model() as model_ylm:
         shape=(ncoeff - 1,),
         testval=1e-03 * np.random.rand(ncoeff - 1),
     )  # testval=['y1'])
-    ln_amp = pm.Normal("ln_amp", 0.0, 5.0, testval=np.log(soln["amp"]))
+    ln_amp = pm.Normal("ln_amp", 0.0, 5.0, testval=np.log(20.0))
     pm.Deterministic("amp", tt.exp(ln_amp))
 
     map.amp = tt.exp(ln_amp)
     map[1:, :] = y1
 
-    xo_offset = pm.Normal(
-        "xo_offset", soln["xo_offset"], 1e-05, testval=soln["xo_offset"]
-    )
-    yo_offset = pm.Normal("yo_offset", soln["yo_offset"], 1e-05, testval=0.0)
-
-    # Flux offset
-    ln_flux_offset = pm.Normal("ln_flux_offset", 0.0, 4, testval=-2.0)
-
-    # Compute flux
-    _xo = theano.shared(xo_rot) + xo_offset
-    _yo = theano.shared(yo_rot) + yo_offset
-
-    flux = map.flux(xo=_xo, yo=_yo, ro=ro, theta=theta) + tt.exp(
-        ln_flux_offset
-    )
+    flux = map.flux(xo=theano.shared(xo_sim), yo=theano.shared(yo_sim), ro=ro)
     pm.Deterministic("flux_pred", flux)
-    sig = pm.Normal("sig", f_err[0], 0.1 * f_err[0], testval=f_err[0])
-    pm.Normal("obs", mu=flux, sd=sig * tt.ones(len(f_obs)), observed=f_obs)
+
+    # Dense grid
+    MAP_flux_ylm = map.flux(
+        xo=theano.shared(xo_dense), yo=theano.shared(yo_dense), ro=ro
+    )
+    pm.Deterministic("flux_dense", flux)
+
+    pm.Normal("obs", mu=flux, sd=f_err * tt.ones(len(f_obs)), observed=f_obs)
 
 with model_ylm:
-    start = xo.optimize(vars=model_ylm.vars[1:], options=dict(maxiter=9999))
-    soln_ylm = xo.optimize(start=start, options=dict(maxiter=9999))
+    soln_ylm = xo.optimize(options=dict(maxiter=99999))
 
+# Pixel model
+with pm.Model() as model_pix:
+    map = starry.Map(ydeg_inf)
 
-# Evaluate on dense grid
-with model_ylm:
+    p = pm.Exponential("p", 1 / 10.0, shape=(npix,))
+    x = tt.dot(P2Y, p)
+
+    map.amp = x[0]
+    map[1:, :] = x[1:] / map.amp
+
+    pm.Deterministic("amp", map.amp)
+    pm.Deterministic("y1", map[1:, :])
+
     # Compute flux
-    _xo = theano.shared(xo_dense) + xo_offset
-    _yo = theano.shared(yo_dense) + yo_offset
-    flux = map.flux(xo=_xo, yo=_yo, ro=ro, theta=theta_dense)
-    map_flux_dense_ylm = xo.eval_in_model(flux, soln_ylm)
+    flux = map.flux(xo=theano.shared(xo_sim), yo=theano.shared(yo_sim), ro=ro)
+    pm.Deterministic("flux_pred", flux)
+
+    # Dense grid
+    MAP_flux_pix = map.flux(
+        xo=theano.shared(xo_dense), yo=theano.shared(yo_dense), ro=ro
+    )
+    pm.Deterministic("flux_dense", flux)
+
+    pm.Normal("obs", mu=flux, sd=f_err * np.ones_like(f_obs), observed=f_obs)
+
+with model_pix:
+    soln_pix = xo.optimize(options=dict(maxiter=99999))
+
+# Compute value of pixels at MAP estimate
+lat_true, lon_true, Y2P_true, P2Y_true, _, _ = map_true.get_pixel_transforms(
+    oversample=4
+)
+
+p_true = np.dot(
+    Y2P_true, (map_true.amp.eval() * map_true.y.eval())[:, None]
+).reshape(-1)
+x_inf_ylm = soln_ylm["amp"] * soln_ylm["y1"]
+x_inf_ylm = np.insert(x_inf_ylm, 0, soln_ylm["amp"], axis=0)
+p_inf_ylm = np.dot(Y2P, x_inf_ylm[:, None]).reshape(-1)
+
+x_inf = soln_pix["amp"] * soln_pix["y1"]
+x_inf = np.insert(x_inf, 0, soln_pix["amp"], axis=0)
+p_inf = np.dot(Y2P, x_inf[:, None]).reshape(-1)
+
+fig, ax = plt.subplots(2, 1, figsize=(5, 6), sharex=True)
+fig.subplots_adjust(wspace=0.15)
+
+bins = "fd"
+# Ylm model
+ax[0].hist(
+    p_true,
+    density=True,
+    cumulative=True,
+    bins=bins,
+    histtype="step",
+    color="C0",
+    lw=2.0,
+    label="True",
+    alpha=0.9,
+)
+ax[0].hist(
+    p_inf_ylm,
+    density=True,
+    cumulative=True,
+    bins=bins,
+    histtype="step",
+    color="C1",
+    lw=2.0,
+    label="Inferred",
+    alpha=0.9,
+)
+
+# Pixel model
+ax[1].hist(
+    p_true,
+    density=True,
+    cumulative=True,
+    bins=bins,
+    alpha=0.9,
+    histtype="step",
+    color="C0",
+    lw=2.0,
+    label="True",
+)
+ax[1].hist(
+    soln_pix["p"],
+    density=True,
+    cumulative=True,
+    bins=bins,
+    alpha=0.9,
+    histtype="step",
+    color="C2",
+    lw=2.0,
+    label="Schmixels",
+)
+ax[1].hist(
+    p_inf,
+    density=True,
+    cumulative=True,
+    bins=bins,
+    alpha=0.9,
+    histtype="step",
+    color="C1",
+    lw=2.0,
+    label="Inferred",
+)
+
+for a in ax.flatten():
+    a.set_xlim(-50, 125)
+    a.axvline(0.0, color="black", linestyle="--", alpha=0.5)
+    a.set_xticks(np.arange(-50, 150, 25))
 
 
-def make_plot(
-    map,
-    ax_map,
-    ax_im,
-    ax_lc,
-    ax_res,
-    lc,
-    soln,
-    t_dense,
-    map_flux_dense,
-    residuals,
+fig.text(-0.07, 0.5, "Cummulative density", va="center", rotation="vertical")
+
+ax[0].set_title("$Y_{lm}$ model")
+ax[1].set_title("Pixel model")
+ax[1].set_xlabel("Pixel value")
+
+ax[0].legend(loc=4, prop={"size": 12})
+ax[1].legend(loc=4, prop={"size": 12})
+
+# Save
+fig.savefig("pixels_hist.pdf", bbox_inches="tight", dpi=500)
+
+def plot_everything(
+    map, ax_map, ax_im, ax_lc, ax_res, soln, flux_dense, residuals
 ):
+    t_dense = np.linspace(xo_im[0], xo_im[-1], len(soln["flux_dense"]))
     nim = len(ax_im)
     resol = 300
 
@@ -206,7 +236,7 @@ def make_plot(
     for n in range(nim):
         # Show the image
         map.show(
-            ax=ax_im[n], theta=theta_im[n], res=resol, grid=False,
+            ax=ax_im[n], res=resol, grid=False,
         )
 
         # Outline
@@ -230,125 +260,160 @@ def make_plot(
             lw=0.5,
         )
         ax_im[n].axis("off")
-        ax_im[n].set(xlim=(-1.2, 1.2), ylim=(-1.2, 1.2))
+        ax_im[n].set(xlim=(-1.1, 1.1), ylim=(-1.1, 1.1))
         ax_im[n].set_rasterization_zorder(0)
 
     # Plot light curve and fit
     ax_lc.errorbar(
-        lc["phase"],
-        lc["flux"].value,
-        soln["sig"] * np.ones(len(lc["flux"])),
+        xo_sim,
+        f_obs,
+        f_err,
         color="black",
         fmt=".",
         ecolor="black",
         alpha=0.4,
     )
-    ax_lc.plot(t_dense, map_flux_dense, "C1-")
+    ax_lc.plot(t_dense, flux_dense, "C1-")
     ax_lc.set_ylim(bottom=0.0)
-    ax_lc.grid()
-    ax_lc.set_ylabel("Flux [GW/um/sr]")
+    ax_lc.set_ylabel("Flux")
     ax_lc.set_xticklabels([])
 
     # Residuals
     ax_res.errorbar(
-        lc["phase"],
+        xo_sim,
         residuals,
-        soln["sig"] * np.ones(len(lc["flux"])),
+        f_err,
         color="black",
         fmt=".",
         ecolor="black",
         alpha=0.4,
     )
-    ax_res.grid()
-    ax_res.set(xlabel="Occultation phase", ylabel="Residuals")
-    ax_res.xaxis.set_major_formatter(plt.FormatStrFormatter("%0.2f"))
+    ax_res.set(ylabel="Residuals\n (norm.)")
+    ax_res.xaxis.set_major_formatter(plt.FormatStrFormatter("%0.1f"))
 
     # Appearance
-    for a in (ax_lc, ax_res):
-        a.set_xticks(np.linspace(lc["phase"][0], lc["phase"][-1], nim))
     ax_im[-1].set_zorder(-100)
 
 
+# Normalize flux
+norm = np.max(soln_ylm["flux_dense"])
+f_obs /= norm
+f_err /= norm
+MAP_flux_ylm /= norm
+MAP_flux_pix /= norm
+
+MAP_obs_ylm = soln_ylm["flux_pred"] / norm
+MAP_obs_pix = soln_pix["flux_pred"] / norm
+
+flux_dense_ylm = soln_ylm["flux_dense"] / norm
+flux_dense_pix = soln_pix["flux_dense"] / norm
+
 # Compute residuals
-res = lc["flux"].value - soln["flux_pred"]
-res_ylm = lc["flux"].value - soln_ylm["flux_pred"]
+res_ylm = f_obs - MAP_obs_ylm
+res_ylm = res_ylm / np.std(res_ylm)
+
+res_pix = f_obs - MAP_obs_pix
+res_pix = res_pix / np.std(res_pix)
+
 
 # Set up the plot
 nim = 8
 
 # Occultation params for mini subplots
-xo_im = np.linspace(xo_rot[0], xo_rot[-1], nim) + soln["xo_offset"]
-yo_im = np.linspace(yo_rot[0], yo_rot[-1], nim) + soln["yo_offset"]
-theta_im = np.linspace(theta[0], theta[-1], nim)
+xo_im = np.linspace(xo_sim[0], xo_sim[-1], nim)
+yo_im = np.linspace(yo_sim[0], yo_sim[-1], nim)
 
 # Initialize maps
-map = starry.Map(ydeg_inf)
-map.inc = inc.value
-map.amp = soln["amp"]
-map[1:, :] = soln["y1"]
-
 map_ylm = starry.Map(ydeg_inf)
-map_ylm.inc = inc.value
 map_ylm.amp = soln_ylm["amp"]
 map_ylm[1:, :] = soln_ylm["y1"]
 
-# Initialize grid
-fig = plt.figure(figsize=(14, 10))
-heights = [3, 1, 3, 1]
+map_pix = starry.Map(ydeg_inf)
+map_pix.amp = soln_pix["amp"]
+map_pix[1:, :] = soln_pix["y1"]
+
+fig = plt.figure(figsize=(8, 10))
+fig.subplots_adjust(wspace=0.0)
+
+heights = [3, 2, 3, 1]
+gs0 = fig.add_gridspec(
+    nrows=1, ncols=2 * nim, bottom=0.735, left=0.05, right=0.98,
+)
 gs1 = fig.add_gridspec(
-    nrows=4, ncols=nim, left=0.05, right=0.48, height_ratios=heights
+    nrows=4, ncols=nim, height_ratios=heights, top=0.6, left=0.05, right=0.48
 )
 gs2 = fig.add_gridspec(
-    nrows=4, ncols=nim, left=0.51, right=0.98, height_ratios=heights
+    nrows=4, ncols=nim, height_ratios=heights, top=0.6, left=0.55, right=0.98
 )
 
-# Add subplots
-ax_map = []
-ax_im = []
-ax_lc = []
-ax_res = []
+# True map subplot
+ax_true_map = fig.add_subplot(gs0[0, :])
+map_true.show(ax=ax_true_map, projection="molleweide", colorbar=True)
+ax_true_map.axis("off")
+ax_true_map.set_title("True map")
 
-for gs in (gs1, gs2):
-    ax_map.append(fig.add_subplot(gs[0, :]))
-    ax_im.append([fig.add_subplot(gs[1, i]) for i in range(nim)])
-    ax_lc.append(fig.add_subplot(gs[2, :]))
-    ax_res.append(fig.add_subplot(gs[3, :]))
+# Inferred maps
+ax_map = [fig.add_subplot(gs1[0, :]), fig.add_subplot(gs2[0, :])]
 
-make_plot(
+# Minimaps
+ax_im = [
+    [fig.add_subplot(gs1[1, i]) for i in range(nim)],
+    [fig.add_subplot(gs2[1, i]) for i in range(nim)],
+]
+
+# Light curves
+ax_lc = [fig.add_subplot(gs1[2, :]), fig.add_subplot(gs2[2, :])]
+
+# Residuals
+ax_res = [fig.add_subplot(gs1[3, :]), fig.add_subplot(gs2[3, :])]
+
+plot_everything(
     map_ylm,
     ax_map[0],
     ax_im[0],
     ax_lc[0],
     ax_res[0],
-    lc,
     soln_ylm,
-    occ_phase_dense,
-    map_flux_dense_ylm,
+    flux_dense_ylm,
     res_ylm,
 )
-make_plot(
-    map,
+plot_everything(
+    map_pix,
     ax_map[1],
     ax_im[1],
     ax_lc[1],
     ax_res[1],
-    lc,
-    soln,
-    occ_phase_dense,
-    map_flux_dense,
-    res,
+    soln_pix,
+    flux_dense_pix,
+    res_pix,
 )
 
 ax_lc[1].set_ylabel("")
 ax_res[1].set_ylabel("")
+ax_lc[1].yaxis.set_ticklabels([])
+ax_res[1].yaxis.set_ticklabels([])
 
-ax_map[0].set_title("Sparse prior on pixels", pad=20)
-ax_map[1].set_title(
-    r"Gaussian prior on $\mathrm{Y}_{lm}$ coefficients", pad=20
+fig.text(0.5, 0.05, "Occultor x-position [Io radii]", ha="center")
+
+ax_map[1].set_title("Exponential prior on\n pixels", pad=20)
+ax_map[0].set_title(
+    "Gaussian prior on $\mathrm{Y}_{lm}$\n coefficients", pad=20
 )
 
+# Ticks
+for a in ax_lc:
+    a.set_ylim(-0.05, 1.05)
+    a.set_xticklabels([])
+    a.set_yticks(np.arange(0, 1.2, 0.2))
+
+for a in (ax_lc + ax_res):
+    a.xaxis.set_minor_locator(AutoMinorLocator())
+    a.yaxis.set_minor_locator(AutoMinorLocator())
+    a.set_xticks(np.arange(37., 40., 0.5))
+    a.grid()
+
 for a in ax_res:
-    a.set_ylim(-5.4, 5.4)
+    a.set_ylim(-5., 5.)
 
 # Save
 fig.savefig("pixels_vs_harmonics.pdf", bbox_inches="tight", dpi=500)
