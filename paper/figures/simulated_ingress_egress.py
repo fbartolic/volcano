@@ -277,10 +277,10 @@ for ax in (ax_lc, ax_res):
     ax[1].plot((-d, +d), (-d, +d), **kwargs)
 
 # Ticks
-ax_lc[0].set_yticks(np.arange(0, 1.2, 0.2))
 for a in ax_lc:
     a.set_ylim(bottom=-0.05)
     a.set_xticklabels([])
+    a.set_yticks(np.arange(0, 1.2, 0.2))
     a.grid()
 
 for a in (ax_lc[0], ax_res[0]):
