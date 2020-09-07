@@ -48,7 +48,7 @@ f_err = 0.5
 f_obs = f_true + np.random.normal(0, f_err, len(f_true))
 
 # Ylm model
-ydeg_inf = 20
+ydeg_inf = 12
 map = starry.Map(ydeg_inf)
 lat, lon, Y2P, P2Y, Dx, Dy = map.get_pixel_transforms(oversample=4)
 npix = Y2P.shape[0]
