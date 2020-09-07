@@ -57,6 +57,8 @@ npix = Y2P.shape[0]
 xo_dense = np.linspace(xo_sim[0], xo_sim[-1], 200)
 yo_dense = np.linspace(yo_sim[0], yo_sim[-1], 200)
 
+print("1")
+
 PositiveNormal = pm.Bound(pm.Normal, lower=0.0)
 ncoeff = (ydeg_inf + 1) ** 2
 
@@ -90,6 +92,8 @@ with pm.Model() as model_ylm:
 
 with model_ylm:
     soln_ylm = xo.optimize(options=dict(maxiter=99999))
+    
+print("2")
 
 # Pixel model
 with pm.Model() as model_pix:
@@ -118,6 +122,8 @@ with pm.Model() as model_pix:
 
 with model_pix:
     soln_pix = xo.optimize(options=dict(maxiter=99999))
+
+print("3")
 
 # Compute value of pixels at MAP estimate
 lat_true, lon_true, Y2P_true, P2Y_true, _, _ = map_true.get_pixel_transforms(
@@ -215,6 +221,8 @@ ax[1].legend(loc=4, prop={"size": 12})
 
 # Save
 fig.savefig("pixels_hist.pdf", bbox_inches="tight", dpi=500)
+
+print("4")
 
 def plot_everything(
     map, ax_map, ax_im, ax_lc, ax_res, soln, flux_dense, residuals
@@ -414,6 +422,8 @@ for a in (ax_lc + ax_res):
 
 for a in ax_res:
     a.set_ylim(-5., 5.)
+
+print("5")
 
 # Save
 fig.savefig("pixels_vs_harmonics.pdf", bbox_inches="tight", dpi=500)
