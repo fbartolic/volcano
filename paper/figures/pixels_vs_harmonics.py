@@ -35,6 +35,8 @@ map_true.add_spot(
 )
 map_true.amp = 20
 
+print("TEST")
+
 # Smooth the true map
 S_true = get_S(ydeg_true, 0.07)
 x = (map_true.amp * map_true.y).eval()
