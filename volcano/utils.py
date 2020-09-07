@@ -3,6 +3,7 @@ from astropy import units as u
 from astropy.time import Time
 from astropy.timeseries import TimeSeries
 from astroquery.jplhorizons import Horizons
+from scipy.interpolate import interp1d
 
 
 def get_body_ephemeris(
@@ -342,50 +343,66 @@ def get_body_vectors(times, body_id="501", step="1m", location="@sun"):
     return data
 
 
-def get_effective_jupiter_radius(latitude, scheme="howell"):
+def get_effective_jupiter_radius(latitude, method="howell"):
     """
     Return radius of jupiter (in km) at the 2.2 mbar level,
     given the Jupiter planetocentric latitude in degrees.
     """
 
-    # Conversion factors
-    dpr = 360.0 / (2.0 * np.pi)
-    # Compute powers of sin(lat)
-    u0 = 1.0
-    u1 = np.sin(latitude / dpr)
-    u2 = u1 * u1
-    u3 = u1 * u2
-    u4 = u1 * u3
-    u5 = u1 * u4
-    u6 = u1 * u5
+    if method == "howell":
+        # Conversion factors
+        dpr = 360.0 / (2.0 * np.pi)
+        # Compute powers of sin(lat)
+        u0 = 1.0
+        u1 = np.sin(latitude / dpr)
+        u2 = u1 * u1
+        u3 = u1 * u2
+        u4 = u1 * u3
+        u5 = u1 * u4
+        u6 = u1 * u5
 
-    # Legendre polynomials
-    p0 = 1
-    p1 = u1
-    p2 = (-1.0 + 3.0 * u2) / 2.0
-    p3 = (-3.0 * u1 + 5.0 * u3) / 2.0
-    p4 = (3.0 - 30.0 * u2 + 35.0 * u4) / 8.0
-    p5 = (15.0 * u1 - 70.0 * u3 + 63.0 * u5) / 8.0
-    p6 = (-5.0 + 105.0 * u2 - 315.0 * u4 + 231.0 * u6) / 16.0
+        # Legendre polynomials
+        p0 = 1
+        p1 = u1
+        p2 = (-1.0 + 3.0 * u2) / 2.0
+        p3 = (-3.0 * u1 + 5.0 * u3) / 2.0
+        p4 = (3.0 - 30.0 * u2 + 35.0 * u4) / 8.0
+        p5 = (15.0 * u1 - 70.0 * u3 + 63.0 * u5) / 8.0
+        p6 = (-5.0 + 105.0 * u2 - 315.0 * u4 + 231.0 * u6) / 16.0
 
-    # Find the radius at 100 mbar
-    jr = (
-        71541.0
-        - 1631.3 * p0
-        + 16.8 * p1
-        - 3136.2 * p2
-        - 6.9 * p3
-        + 133.0 * p4
-        - 18.9 * p5
-        - 8.5 * p6
-    )
+        # Find the radius at 100 mbar
+        jr = (
+            71541.0
+            - 1631.3 * p0
+            + 16.8 * p1
+            - 3136.2 * p2
+            - 6.9 * p3
+            + 133.0 * p4
+            - 18.9 * p5
+            - 8.5 * p6
+        )
 
-    jr += 85.0  #  Find the radius at 2.2 mbar
-    #  According to J. Spencer, this is the
-    #  half light point for occultations.
+        jr += 85.0  #  Find the radius at 2.2 mbar
+        #  According to J. Spencer, this is the
+        #  half light point for occultations.
 
-    jr += -27  # subtract one scale height due to bending of light
-    return jr
+        jr += -27  # subtract one scale height due to bending of light
+        return jr
+
+    else:
+        # Radius in km, by eye estimate
+        reff_100 = np.array(
+            [66896, 67350, 71400, 71541, 70950, 70400, 67950, 66896]
+        )
+        lat_100 = np.array([-90, -70.0, -10.0, 0.0, 20.0, 27.0, 60.0, 90])
+
+        # Cubic interpolate
+        f = interp1d(lat_100, reff_100, kind="cubic", fill_value="extrapolate")
+        jr = float(f(latitude))
+
+        # Correction factor for going from 100->2.2mbar
+        jr += -np.log(2.2 / 100) * 27 - 27  # scale height 27km
+        return jr
 
 
 def get_occultation_latitude(x_io, y_io, re):
@@ -472,7 +489,7 @@ def get_occultor_position_and_radius(
         y_io = -yo_rot[idx] * r_io.value
 
         lat = get_occultation_latitude(x_io, y_io, re)
-        reff = get_effective_jupiter_radius(lat)
+        reff = get_effective_jupiter_radius(lat, **kwargs)
         ro = reff / r_io.value
 
     return xo_.value, yo.value, zo, ro
