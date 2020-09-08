@@ -34,9 +34,6 @@ degs = [10, 15, 20]
 Is = np.zeros((3, len(degs), 300))
 smoothing_sigmas = np.array([0.0, 0.1, 0.2])
 
-print("1")
-
-
 def get_map(deg, sig_smooth, sig_size):
     if sig_smooth == 0:
         map = starry.Map(deg)
@@ -64,8 +61,6 @@ for j in range(len(smoothing_sigmas)):
         Is[j, l] = I
 
 
-print("2")
-
 fig, ax = plt.subplots(1, 3, figsize=(10, 3), sharey=True)
 fig.subplots_adjust(wspace=0.15, hspace=0.1)
 
@@ -81,8 +76,6 @@ for a in ax.flatten():
     a.set_xticks(np.arange(-60, 90, 30))
     a.set_xlim(-60, 60)
 #     a.grid()
-
-print("3")
 
 ax[-1].legend(loc=4, prop={"size": 12})
 fig.text(0.5, -0.08, "Longitude [deg]", ha="center")
