@@ -154,7 +154,7 @@ def lon_lat_to_mollweide(lon, lat):
 
 
 # Set up the plot
-resol = 300
+resol = 150
 nim = 8
 cmap_norm = colors.Normalize(vmin=-0.5, vmax=700)
 

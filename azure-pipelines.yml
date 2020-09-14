@@ -38,7 +38,7 @@ jobs:
       . $CONDA/etc/profile.d/conda.sh
       conda activate volcano
       cd $(Build.SourcesDirectory)/paper
-      make -i
+      make 
     displayName: 'Build the paper'
   - script: |
       cd $(Build.SourcesDirectory)

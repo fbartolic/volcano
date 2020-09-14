@@ -224,7 +224,7 @@ map_eg.amp = soln["map_eg_amp"]
 map_eg[1:, :] = soln["map_eg_y1"]
 
 # Set up the plot
-resol = 300
+resol = 150
 nim = 8
 cmap_norm = colors.Normalize(vmin=-0.5, vmax=900)
 
