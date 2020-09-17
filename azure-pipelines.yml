@@ -1,6 +1,6 @@
 jobs:
 - job: Default
-  timeoutInMinutes: 120
+  timeoutInMinutes: 60
   pool:
     vmImage: Ubuntu-16.04
   steps:
@@ -16,8 +16,9 @@ jobs:
   - script: |
       . $CONDA/etc/profile.d/conda.sh
       conda activate volcano
-      conda install -y -q numpy scipy mkl openblas-devel=0.3.6 theano
+      conda install -y -q numpy scipy mkl openblas=0.3.6 theano
       theano-cache purge
+      export THEANO_FLAGS=blas.ldflags="-L/usr/lib/ -lblas"
       pip install -U pip
       pip install -U setuptools
       pip install -U pytest
