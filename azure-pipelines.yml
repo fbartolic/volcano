@@ -1,6 +1,6 @@
 jobs:
 - job: Default
-  timeoutInMinutes: 250
+  timeoutInMinutes: 120
   pool:
     vmImage: Ubuntu-16.04
   steps:
@@ -11,7 +11,7 @@ jobs:
   - script: |
       sudo chown -R $USER $CONDA
       . $CONDA/etc/profile.d/conda.sh
-      conda create --yes --quiet --name volcano python=3.8.2 pip
+      conda create --yes --quiet --name volcano python=3.7.3 pip
     displayName: 'Setup conda'
   - script: |
       . $CONDA/etc/profile.d/conda.sh
