@@ -7,4 +7,4 @@
   </a>
 </p>
 
-Time depdentent maps of Io and exoplanets with Starry.
+Time dependent maps of Io and exoplanets with Starry.
