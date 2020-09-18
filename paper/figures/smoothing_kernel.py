@@ -34,6 +34,7 @@ degs = [10, 15, 20]
 Is = np.zeros((3, len(degs), 300))
 smoothing_sigmas = np.array([0.0, 0.1, 0.2])
 
+
 def get_map(deg, sig_smooth, sig_size):
     if sig_smooth == 0:
         map = starry.Map(deg)
@@ -70,7 +71,7 @@ for i in range(len(smoothing_sigmas)):
             lon, Is[i, l], alpha=0.8, color=f"C{l}", label=f"$l = {degs[l]}$"
         )
     ax[i].plot(lon, I_gaussian, "k-", alpha=0.8, label="exact")
-    ax[i].set_title(r"$\tau={}$".format(smoothing_sigmas[i]))
+    ax[i].set_title(r"$\sigma_s={}$".format(smoothing_sigmas[i]))
 
 for a in ax.flatten():
     a.set_xticks(np.arange(-60, 90, 30))

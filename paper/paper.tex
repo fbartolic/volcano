@@ -142,7 +142,7 @@ All of these issues need to be accounted for in the final model.
 \subsection{Orbital parameters}
 \label{ssec:orbital_parameters}
 To model the occultations we need to know the projected separation between Jupiter and Io and the orientation of Io at any given time.
-We use the \href{https://ssd.jpl.nasa.gov/horizons.cgi}{JPL Horizons database} and the latest planetary ephemeris DE430 \citep{folkner_planetary_2014} for this purpose.
+We use the \href{https://ssd.jpl.nasa.gov/horizons.cgi}{JPL Horizons database} and the latest planetary ephemeris DE430 \citep{folkner_planetary_2014} which are accurate to a few kilometers on Io's surface.
 Specifically, we use the Right Ascension and Declination, the angular (equatorial) diameter (\textsf{Ang-diam}), the visibility flag indicating whether Io is occulted or not and whether it is in partial or total eclipse (\textsf{Ang-sep/v}), the longitude and latitude at the center of Io's disc as seen from Earth (\textsf{Ob-lon}, \textsf{Ob-lat}), the sub-solar point longitude and latitude which specify the direction pointing towards the Sun on Io's surface (\textsf{Sl-lon}, \textsf{Sl-lat}), the distance from Io to the Sun (\textsf{r}) and
 the counterclockwise angle between the Celestial North Pole unit vector projected onto the plane of the sky and the Io's north pole (\textsf{NP.ang}).
 All longitudes are positive to the west.
@@ -171,7 +171,40 @@ where $\theta$ is obtained by subtracting \textsf{Ob-lat} from \textsf{Sl-lat} a
 $r$ is equal to the heliocentric distance of the occulted object \textsf{r}.
 
 \subsection{Effective radius of Jupiter}
+Although the sky position of Jupiter relative to Io is known to a precision of a few kilometers, several complications arise when attempting to compute Jupiter's radius.
+First, Jupiter is not spherical and its equatorial radius is larger than the polar radius by thousands of kilometers. 
+Because \textsf{starry} does not support occultations by non-spherical occultors we 
+assume that Jupiter is locally spherical at the point of an occultation and estimate an effective radius from measurements of Jupiter's shape which are based on Voyager radio occultation measurements \citep{lindal1981}.
+These data come in the form of a plot of effective radius  as a function of planetocentric latitude at a fixed pressure of 100 mbar \citep[Fig.~7 in ][]{lindal1981}.
+When computing the occultation latitude we ignore the variation in effective radius along Jupiter's limb projected on Io's surface and instead fix Jupiter's latitude to the value corresponding to the center of Io's disc.
 
+The second complication is that Jupiter is gaseous which means that it does not have a well defined boundary.
+In principle, we should compute an effective radius of Jupiter at different locations (pressure) in the atmosphere and model an occultation of Io by a fuzzy occultor.
+Although this can be done with Starry, it is not necessary because the characteristic scale height of Jupiter is around 27 km (CITE) which is below the uncertainty of our inferred maps.
+Instead, we follow \cite{spencer1990} and compute the effective radius of Jupiter at about 2.2 mbar, this is the pressure (and the associated effective radius) at which during an occultation a bright source on the surface of Io fades by 50\% due to differential refraction.
+
+Since the effective radius information is provided only at a fixed pressure of 100 mbar, 
+to adjust those values for a lower pressure of 2.2 mbar, we assume an exponential pressure profile $P=P_0\, e^{-\Delta r/H}$ where $H$ is the scale height and $\Delta r$ is the height difference between the two pressure levels.
+It follows that to convert the shape profile at 100 mbar to 2.2 mbar we need to add the factor
+$-H\ln(2.2/100)$ which is assumed to be constant in the $\pm 21$ deg latitude range in which the occultations occur.
+Besides refractive absorption there is a also a slight additional methane molecular absorption which \cite{spencer1990} estimate to be equal to around 12\% in their filter, 
+we choose to ignore this because it is far below the resolution of our maps.
+
+Finally, we have to account for the fact that the light from Io is getting significantly bent at the point of half reflective intensity in Jupiter's atmosphere 
+which results in a smaller shadow of Jupiter on the surface of Io then would be the case if the light didn't get bent.
+It is zero at the beginning of the disappearance of a hot spot when there is no refraction, increasing to one scale height $H$ at the half intensity point and then increasing further to a large value when Io disappears behind Jupiter's limb.
+We ignore the variation in the bending and adopt a fixed value of one scale height for this effect which we subtract from the value of the effective radius.
+
+In summary, to compute an effective radius of Jupiter for a given occultation of Io we first have to compute the latitude at which the occultation is occurring, use a modified shape profile from \cite{lindal1981} to get an effective radius and finally subtract one scale height due to light bending.
+There are substantial uncertainties in each of these steps, most notably the shape profile data are quite old and it is not clear that the structure of Jupiter's atmosphere stayed the same since 1980s. 
+The shape profile also depends on the wind velocity structure and temperature which we ignore.
+In addition to uncertainties about the atmospheric structure, there are uncertainties associated with digitizing the data shown in Fig.~7 in \cite{lindal1981} because it is not available in table form.
+We digitizing this figure by reading off the data points "by eye" and then interpolating them using cubic spline interpolation.
+Finally we add the pressure conversion factor and subtract one scale height due to light bending.
+
+Throughout this paper the highest resolution maps we fit to the data are of order $l=25$ which corresponds to a characteristic length scale of around 230 km on the surface of Io.
+Quantifying the uncertainty in each of these steps is beyond the scope of this paper but we are confident that the errors in the radius estimate are below the typical resolution of our inferred maps. 
+We provide justification for this assumption in section~\ref{ssec:static_map} where we infer the location of Loki and it ends up matching well with the high resolution geological map of Io.
 
 \subsection{Static map model}
 \label{ssec:static}
@@ -349,7 +382,7 @@ The result is plotted in Fig.~\ref{fig:information_content}.
         The plot shows the information content of different kinds of observations of Io as a function of spherical harmonic degree (angular scale of surface features).
         On the y axis is posterior shrinkage (the variance ratio between the prior and the posterior distribution) for each spherical harmonic coefficient at a given degree $l$ on the x axis, averaged across all $m$ modes.
         Posterior shrinkage of 1 represent maximum information gain in updating from the prior to the posterior while a shrinkage of 0 represents no information gain. 
-        We compute the posterior variance for different kinds of mock observations of Io over
+        We compute the posterior variance for different kinds of simulated observations of Io over
         the course of a single year: phase curves (blue), occultations by Jupiter (orange), combined phase curves and occultations by Jupiter (green) and occulltations of Io by other Galilean moons (red lines). 
         Solid lines represent observations at SNR=100 while dashed lines represent observations at SNR=10.
         \label{fig:information_content}
@@ -390,7 +423,7 @@ The justification for this somewhat convoluted procedure is shown in Fig.~\ref{f
     \begin{centering}
     \includegraphics[width=1.\linewidth]{figures/pixels_vs_harmonics.pdf}
     \oscaption{pixels_vs_harmonics}{%
-        Inferred Maximum A Posteriori (MAP) estimates of $l=20$ maps (second panel from the top) produced by fitting a mock light curve (third panel) which was generated from a simulated $l=30$ map consisting of a single bright spot (top panel). 
+        Maximum A Posteriori (MAP) estimates of $l=20$ maps (second panel from the top) produced by fitting a simulated light curve (third panel) which generated from an $l=30$ map consisting of a single bright spot (top panel). 
         The left portion of the figure shows a map inferred using a model in which we directly fit for spherical harmonic coefficients with a Gaussian prior on the coefficients.
         The right portion shows a map inferred from a model in which an Exponential prior is placed on the pixels defined on a fixed latitude-longitude grid which are converted to spherical harmonic coefficients at every step of the inference process.
         The pixels are only used as a tool to impose positivity and sparsity (via the Exponential prior) on the map intensity but the final inferred map (second panel on the right) and the predicted flux (orange lines) are generated from a map defined by a set of spherical harmonic coefficients. 
@@ -424,27 +457,54 @@ Both maps show significant ringing effects due to the finite order of the spheri
     \end{centering}
 \end{figure}
 
+To suppress ringing which results in regions of negative intensity surrounding a spot like feature as in Figure~\ref{fig:pixels_vs_harmonics} we choose to apply a spatial smoothing filter to the spherical harmonics.
+Mathematically, the filtering operation is a convolution between the map and some kernel function $B(\theta,\phi)$.
+The simplest choice for the kernel function is a Gaussian distribution given by
+\begin{equation}
+    B(\theta)=\frac{1}{\sqrt{2 \pi \sigma_s^{2}}}\exp \left(-\theta^{2} / 2 \sigma_s^{2}\right)
+\end{equation}
+where $\sigma_s$ sets the characteristic scale of the smoothing.
+This function can be expended in terms of spherical harmonics as
+\begin{equation}
+B(\theta)=\sum_{l=0}^{\infty}\left(\frac{2 l+1}{4 \pi}\right) B_{l} P_{l}(\cos \theta)
+\end{equation}
+where $B_l$ are the spherical harmonic coefficients and $P_l$ are the associated Legendre polynomials.
+They depend only on $l$ because the kernel function is azimuthally symmetric so all nonzero $m$ modes vanish.
+For $\sigma_s\ll 1$ $B_l$ can be approximated as \citep{seon2007}
+\begin{equation}
+    B_l\approx \exp\left[-\frac{1}{2}l(l+1)\sigma_s^2\right]
+\end{equation}
+The Gaussian filter results in an exponential cutoff for scales smaller than $l\sim \sigma_s^{-1}$.
 
-%\begin{figure}[h!]
-%    \begin{centering}
-%    \includegraphics[width=1.\linewidth]{figures/smoothing_kernel.pdf}
-%    \oscaption{smoothing_kernel}{%
-%        This is a plot of a pretty function. And at the end of this
-%        caption is a symbol with a link to the \emph{exact} script
-%        that generated it, hosted on \textsf{GitHub}.
-%        \label{fig:smoothing_kernel}
-%    }
-%    \end{centering}
-%\end{figure}
+
+\begin{figure}[h!]
+    \begin{centering}
+    \includegraphics[width=1.\linewidth]{figures/smoothing_kernel.pdf}
+    \oscaption{smoothing_kernel}{%
+       Normalized intensity of a spherical harmonic expansion of 
+        a Gaussian spot placed at zero degrees latitude and longitude.
+        The expansion is in the quantity $\cos\Delta\theta$ where $\Delta\theta$ is the angular separation between the center of the spot and another point on the surface of the sphere, it is set to 5 degrees.
+        The three insets show the spot profile at different strengths of the smoothing kernel
+        where the leftmost spot has no smoothing ($\sigma_s=0$) and the rightmost spot is strongly smoothed. 
+        The lines of different colors correspond to spot expansions up to certain order and the black line is the expansion at infinite order.
+        The purpose of smoothing is to taper the higher order spherical harmonic coefficients.
+        No smoothing results in significant "rings" where the intensity goes negative, even at high order.
+        High levels of smoothing reduce the ringing but increase the spot size and eliminate differences between expansions above a certain order.
+                \label{fig:smoothing_kernel}
+    }
+    \end{centering}
+\end{figure}
 
 
 \begin{figure}[h!]
     \begin{centering}
     \includegraphics[width=1.\linewidth]{figures/ingress_egress_simulated.pdf}
     \oscaption{ingress_egress_simulated}{%
-        This is a plot of a pretty function. And at the end of this
-        caption is a symbol with a link to the \emph{exact} script
-        that generated it, hosted on \textsf{GitHub}.
+        Maximum A Posteriori (MAP) estimate of an $l=25$ map (right panel from the top) produced by fitting a pair of light curves simulated from the true map which is shown on the left.
+        The simulated light curves are shown in the third panel from the top, an ingress light curve on the left and an egress light curve on the right.
+        The small circles above each of the light curves show the progression of the occultation over the inferred map.
+        The precise location of the true spot is not recovered for either of the two models
+        which is not surprising because a single light curve is not sufficient to break the degeneracies.
         \label{fig:ingress_egress_simulated}
     }
     \end{centering}
