@@ -1,6 +1,7 @@
 import numpy as np
 import starry
 from matplotlib import pyplot as plt
+from matplotlib.ticker import AutoMinorLocator
 
 np.random.seed(42)
 starry.config.lazy = False
@@ -76,6 +77,8 @@ for i in range(len(smoothing_sigmas)):
 for a in ax.flatten():
     a.set_xticks(np.arange(-60, 90, 30))
     a.set_xlim(-60, 60)
+    a.xaxis.set_minor_locator(AutoMinorLocator())
+    a.yaxis.set_minor_locator(AutoMinorLocator())
 #     a.grid()
 
 ax[-1].legend(loc=4, prop={"size": 12})
