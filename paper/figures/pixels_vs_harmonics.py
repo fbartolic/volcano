@@ -30,13 +30,15 @@ ro = 39.1
 
 ydeg_true = 30
 map_true = starry.Map(ydeg_true)
+spot_ang_dim = 5 * np.pi / 180
+spot_sigma = 1 - np.cos(spot_ang_dim / 2)
 map_true.add_spot(
-    amp=2.0, sigma=1e-03, lat=13.0, lon=360 - 308.8, relative=False
+    amp=1.0, sigma=spot_sigma, lat=13.0, lon=360 - 309, relative=False
 )
-map_true.amp = 20
 
 # Smooth the true map
-S_true = get_S(ydeg_true, 0.07)
+sigma_s = 2 / ydeg_true
+S_true = get_S(ydeg_true, sigma_s)
 x = (map_true.amp * map_true.y).eval()
 x_smooth = (S_true @ x[:, None]).reshape(-1)
 map_true[:, :] = x_smooth / x_smooth[0]
@@ -44,7 +46,7 @@ map_true.amp = x_smooth[0]
 
 # Generate mock light curve
 f_true = map_true.flux(ro=ro, xo=xo_sim, yo=yo_sim).eval()
-f_err = 0.5
+f_err = 0.02 * np.max(f_true)
 f_obs = f_true + np.random.normal(0, f_err, len(f_true))
 
 # Ylm model
@@ -63,7 +65,7 @@ ncoeff = (ydeg_inf + 1) ** 2
 with pm.Model() as model_ylm:
     map = starry.Map(ydeg_inf)
 
-    cov = (3e-02) ** 2 * np.eye(ncoeff - 1)
+    cov = (1e-01) ** 2 * np.eye(ncoeff - 1)
     y1 = pm.MvNormal(
         "y1",
         np.zeros(ncoeff - 1),
@@ -91,11 +93,37 @@ with pm.Model() as model_ylm:
 with model_ylm:
     soln_ylm = xo.optimize(options=dict(maxiter=99999))
 
-# Pixel model
-with pm.Model() as model_pix:
+
+# Compute the standard deviation of pixels in the Ylm model
+with pm.Model() as model_prior:
+    map = starry.Map(ydeg_inf)
+    cov = (1e-01) ** 2 * np.eye(ncoeff - 1)
+    y1 = pm.MvNormal(
+        "y1",
+        np.zeros(ncoeff - 1),
+        cov,
+        shape=(ncoeff - 1,),
+        testval=1e-03 * np.random.rand(ncoeff - 1),
+    )
+    ln_amp = pm.Normal("ln_amp", 0.0, 1.0, testval=np.log(4.0))
+    pm.Deterministic("amp", tt.exp(ln_amp))
+    trace_pp = pm.sample_prior_predictive(10000)
+
+pix_samples = []
+for amp, y1 in zip(trace_pp["amp"], trace_pp["y1"]):
+    x = amp * y1
+    x = np.insert(x, 0, amp, axis=0)
+    s = np.dot(Y2P, x[:, None]).reshape(-1)
+    pix_samples.append(s)
+
+pix_samples = np.concatenate(pix_samples)
+std_p = np.std(pix_samples)
+
+# Pixel model gaussian prior
+with pm.Model() as model_pix_gauss:
     map = starry.Map(ydeg_inf)
 
-    p = pm.Exponential("p", 1 / 10.0, shape=(npix,))
+    p = PositiveNormal("p", 0.0, std_p, shape=(npix,))
     x = tt.dot(P2Y, p)
 
     map.amp = x[0]
@@ -109,116 +137,53 @@ with pm.Model() as model_pix:
     pm.Deterministic("flux_pred", flux)
 
     # Dense grid
-    MAP_flux_pix = map.flux(
+    MAP_flux_pix_gauss = map.flux(
         xo=theano.shared(xo_dense), yo=theano.shared(yo_dense), ro=ro
     )
     pm.Deterministic("flux_dense", flux)
 
     pm.Normal("obs", mu=flux, sd=f_err * np.ones_like(f_obs), observed=f_obs)
 
-with model_pix:
-    soln_pix = xo.optimize(options=dict(maxiter=99999))
+    soln_pix_gauss = xo.optimize(options=dict(maxiter=99999))
 
-# Compute value of pixels at MAP estimate
-lat_true, lon_true, Y2P_true, P2Y_true, _, _ = map_true.get_pixel_transforms(
-    oversample=4
-)
+# Pixel model exponential prior
+with pm.Model() as model_pix_exp:
+    map = starry.Map(ydeg_inf)
 
-p_true = np.dot(
-    Y2P_true, (map_true.amp.eval() * map_true.y.eval())[:, None]
-).reshape(-1)
-x_inf_ylm = soln_ylm["amp"] * soln_ylm["y1"]
-x_inf_ylm = np.insert(x_inf_ylm, 0, soln_ylm["amp"], axis=0)
-p_inf_ylm = np.dot(Y2P, x_inf_ylm[:, None]).reshape(-1)
+    p = pm.Exponential("p", 1 / std_p, shape=(npix,))
+    x = tt.dot(P2Y, p)
 
-x_inf = soln_pix["amp"] * soln_pix["y1"]
-x_inf = np.insert(x_inf, 0, soln_pix["amp"], axis=0)
-p_inf = np.dot(Y2P, x_inf[:, None]).reshape(-1)
+    map.amp = x[0]
+    map[1:, :] = x[1:] / map.amp
 
-fig, ax = plt.subplots(2, 1, figsize=(5, 6), sharex=True)
-fig.subplots_adjust(wspace=0.15)
+    pm.Deterministic("amp", map.amp)
+    pm.Deterministic("y1", map[1:, :])
 
-bins = "fd"
-# Ylm model
-ax[0].hist(
-    p_true,
-    density=True,
-    cumulative=True,
-    bins=bins,
-    histtype="step",
-    color="C0",
-    lw=2.0,
-    label="True",
-    alpha=0.9,
-)
-ax[0].hist(
-    p_inf_ylm,
-    density=True,
-    cumulative=True,
-    bins=bins,
-    histtype="step",
-    color="C1",
-    lw=2.0,
-    label="Inferred",
-    alpha=0.9,
-)
+    # Compute flux
+    flux = map.flux(xo=theano.shared(xo_sim), yo=theano.shared(yo_sim), ro=ro)
+    pm.Deterministic("flux_pred", flux)
 
-# Pixel model
-ax[1].hist(
-    p_true,
-    density=True,
-    cumulative=True,
-    bins=bins,
-    alpha=0.9,
-    histtype="step",
-    color="C0",
-    lw=2.0,
-    label="True",
-)
-ax[1].hist(
-    soln_pix["p"],
-    density=True,
-    cumulative=True,
-    bins=bins,
-    alpha=0.9,
-    histtype="step",
-    color="C2",
-    lw=2.0,
-    label="Schmixels",
-)
-ax[1].hist(
-    p_inf,
-    density=True,
-    cumulative=True,
-    bins=bins,
-    alpha=0.9,
-    histtype="step",
-    color="C1",
-    lw=2.0,
-    label="Inferred",
-)
+    # Dense grid
+    MAP_flux_pix_exp = map.flux(
+        xo=theano.shared(xo_dense), yo=theano.shared(yo_dense), ro=ro
+    )
+    pm.Deterministic("flux_dense", flux)
 
-for a in ax.flatten():
-    a.set_xlim(-50, 125)
-    a.axvline(0.0, color="black", linestyle="--", alpha=0.5)
-    a.set_xticks(np.arange(-50, 150, 25))
+    pm.Normal("obs", mu=flux, sd=f_err * np.ones_like(f_obs), observed=f_obs)
 
-
-fig.text(-0.07, 0.5, "Cummulative density", va="center", rotation="vertical")
-
-ax[0].set_title("$Y_{lm}$ model")
-ax[1].set_title("Pixel model")
-ax[1].set_xlabel("Pixel value")
-
-ax[0].legend(loc=4, prop={"size": 12})
-ax[1].legend(loc=4, prop={"size": 12})
-
-# Save
-fig.savefig("pixels_hist.pdf", bbox_inches="tight", dpi=500)
+    soln_pix_exp = xo.optimize(options=dict(maxiter=99999))
 
 
 def plot_everything(
-    map, ax_map, ax_im, ax_lc, ax_res, soln, flux_dense, residuals
+    map,
+    ax_map,
+    ax_im,
+    ax_lc,
+    ax_res,
+    soln,
+    flux_dense,
+    residuals,
+    show_cbar=True,
 ):
     t_dense = np.linspace(xo_im[0], xo_im[-1], len(soln["flux_dense"]))
     nim = len(ax_im)
@@ -228,8 +193,8 @@ def plot_everything(
     map.show(
         projection="molleweide",
         ax=ax_map,
-        colorbar=True,
-        norm=colors.Normalize(vmin=-0.5),
+        colorbar=show_cbar,
+        norm=colors.Normalize(vmin=-0.5, vmax=20),
     )
     ax_map.axis("off")
 
@@ -237,7 +202,10 @@ def plot_everything(
     for n in range(nim):
         # Show the image
         map.show(
-            ax=ax_im[n], res=resol, grid=False,
+            ax=ax_im[n],
+            res=resol,
+            grid=False,
+            norm=colors.Normalize(vmin=-0.5, vmax=20),
         )
 
         # Outline
@@ -301,20 +269,26 @@ norm = np.max(soln_ylm["flux_dense"])
 f_obs /= norm
 f_err /= norm
 MAP_flux_ylm /= norm
-MAP_flux_pix /= norm
+MAP_flux_pix_gauss /= norm
+MAP_flux_pix_exp /= norm
 
 MAP_obs_ylm = soln_ylm["flux_pred"] / norm
-MAP_obs_pix = soln_pix["flux_pred"] / norm
+MAP_obs_pix_gauss = soln_pix_gauss["flux_pred"] / norm
+MAP_obs_pix_exp = soln_pix_exp["flux_pred"] / norm
 
 flux_dense_ylm = soln_ylm["flux_dense"] / norm
-flux_dense_pix = soln_pix["flux_dense"] / norm
+flux_dense_pix_gauss = soln_pix_gauss["flux_dense"] / norm
+flux_dense_pix_exp = soln_pix_exp["flux_dense"] / norm
 
 # Compute residuals
 res_ylm = f_obs - MAP_obs_ylm
 res_ylm = res_ylm / np.std(res_ylm)
 
-res_pix = f_obs - MAP_obs_pix
-res_pix = res_pix / np.std(res_pix)
+res_pix_gauss = f_obs - MAP_obs_pix_gauss
+res_pix_gauss = res_pix_gauss / np.std(res_pix_gauss)
+
+res_pix_exp = f_obs - MAP_obs_pix_exp
+res_pix_exp = res_pix_exp / np.std(res_pix_exp)
 
 
 # Set up the plot
@@ -329,44 +303,70 @@ map_ylm = starry.Map(ydeg_inf)
 map_ylm.amp = soln_ylm["amp"]
 map_ylm[1:, :] = soln_ylm["y1"]
 
-map_pix = starry.Map(ydeg_inf)
-map_pix.amp = soln_pix["amp"]
-map_pix[1:, :] = soln_pix["y1"]
+map_pix_gauss = starry.Map(ydeg_inf)
+map_pix_gauss.amp = soln_pix_gauss["amp"]
+map_pix_gauss[1:, :] = soln_pix_gauss["y1"]
 
-fig = plt.figure(figsize=(8, 10))
+map_pix_exp = starry.Map(ydeg_inf)
+map_pix_exp.amp = soln_pix_exp["amp"]
+map_pix_exp[1:, :] = soln_pix_exp["y1"]
+
+
+fig = plt.figure(figsize=(12, 10))
 fig.subplots_adjust(wspace=0.0)
 
 heights = [3, 2, 3, 1]
 gs0 = fig.add_gridspec(
-    nrows=1, ncols=2 * nim, bottom=0.735, left=0.05, right=0.98,
+    nrows=1, ncols=3 * nim, bottom=0.735, left=0.05, right=0.98,
 )
 gs1 = fig.add_gridspec(
-    nrows=4, ncols=nim, height_ratios=heights, top=0.6, left=0.05, right=0.48
+    nrows=4, ncols=nim, height_ratios=heights, top=0.6, left=0.03, right=0.32
 )
 gs2 = fig.add_gridspec(
-    nrows=4, ncols=nim, height_ratios=heights, top=0.6, left=0.55, right=0.98
+    nrows=4, ncols=nim, height_ratios=heights, top=0.6, left=0.36, right=0.65
+)
+gs3 = fig.add_gridspec(
+    nrows=4, ncols=nim, height_ratios=heights, top=0.6, left=0.69, right=0.98
 )
 
 # True map subplot
 ax_true_map = fig.add_subplot(gs0[0, :])
-map_true.show(ax=ax_true_map, projection="molleweide", colorbar=True)
+map_true.show(
+    ax=ax_true_map,
+    projection="molleweide",
+    colorbar=True,
+    #    norm=colors.Normalize(vmin=-0.5),
+)
 ax_true_map.axis("off")
 ax_true_map.set_title("True map")
 
 # Inferred maps
-ax_map = [fig.add_subplot(gs1[0, :]), fig.add_subplot(gs2[0, :])]
+ax_map = [
+    fig.add_subplot(gs1[0, :]),
+    fig.add_subplot(gs2[0, :]),
+    fig.add_subplot(gs3[0, :]),
+]
 
 # Minimaps
 ax_im = [
     [fig.add_subplot(gs1[1, i]) for i in range(nim)],
     [fig.add_subplot(gs2[1, i]) for i in range(nim)],
+    [fig.add_subplot(gs3[1, i]) for i in range(nim)],
 ]
 
 # Light curves
-ax_lc = [fig.add_subplot(gs1[2, :]), fig.add_subplot(gs2[2, :])]
+ax_lc = [
+    fig.add_subplot(gs1[2, :]),
+    fig.add_subplot(gs2[2, :]),
+    fig.add_subplot(gs3[2, :]),
+]
 
 # Residuals
-ax_res = [fig.add_subplot(gs1[3, :]), fig.add_subplot(gs2[3, :])]
+ax_res = [
+    fig.add_subplot(gs1[3, :]),
+    fig.add_subplot(gs2[3, :]),
+    fig.add_subplot(gs3[3, :]),
+]
 
 plot_everything(
     map_ylm,
@@ -377,29 +377,45 @@ plot_everything(
     soln_ylm,
     flux_dense_ylm,
     res_ylm,
+    show_cbar=False,
 )
 plot_everything(
-    map_pix,
+    map_pix_gauss,
     ax_map[1],
     ax_im[1],
     ax_lc[1],
     ax_res[1],
-    soln_pix,
-    flux_dense_pix,
-    res_pix,
+    soln_pix_gauss,
+    flux_dense_pix_gauss,
+    res_pix_gauss,
+    show_cbar=False,
+)
+plot_everything(
+    map_pix_exp,
+    ax_map[2],
+    ax_im[2],
+    ax_lc[2],
+    ax_res[2],
+    soln_pix_exp,
+    flux_dense_pix_exp,
+    res_pix_exp,
+    show_cbar=True,
 )
 
-ax_lc[1].set_ylabel("")
-ax_res[1].set_ylabel("")
-ax_lc[1].yaxis.set_ticklabels([])
-ax_res[1].yaxis.set_ticklabels([])
+
+for a in ax_lc[1:] + ax_res[1:]:
+    a.yaxis.set_ticklabels([])
+    a.yaxis.set_ticklabels([])
+    a.set_ylabel("")
+    a.set_ylabel("")
 
 fig.text(0.5, 0.05, "Occultor x-position [Io radii]", ha="center")
 
-ax_map[1].set_title("Exponential prior on\n pixels", pad=20)
 ax_map[0].set_title(
     "Gaussian prior on $\mathrm{Y}_{lm}$\n coefficients", pad=20
 )
+ax_map[1].set_title("Positive Gaussian\n prior on schmixels", pad=20)
+ax_map[2].set_title("Exponential\n prior on schmixels", pad=20)
 
 #  Ticks
 for a in ax_lc:
