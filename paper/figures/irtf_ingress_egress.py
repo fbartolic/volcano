@@ -38,7 +38,6 @@ lc_eg = TimeSeries(
     ),
 )
 
-
 # Compute ephemeris
 eph_list_io = []
 eph_list_jup = []
@@ -101,7 +100,6 @@ xo_eg, yo_eg, ro_eg = get_pos_rot(eph_io_eg, eph_jup_eg)
 theta_in = eph_io_in["theta"].value
 theta_eg = eph_io_eg["theta"].value
 
-
 # Fit single map model with different map amplitudes for ingress and egress
 ydeg_inf = 25
 map = starry.Map(ydeg_inf)
@@ -132,12 +130,12 @@ with pm.Model() as model:
     map = starry.Map(ydeg_inf)
 
     p = pm.Exponential(
-        "p", 1 / 20.0, shape=(npix,), testval=0.1 * np.random.rand(npix)
+        "p", 1 / 10.0, shape=(npix,), testval=0.1 * np.random.rand(npix)
     )
     x = tt.dot(P2Y, p)
 
     # Run the smoothing filter
-    S = get_S(ydeg_inf, 0.07)
+    S = get_S(ydeg_inf, 2 / ydeg_inf)
     x_s = tt.dot(S, x[:, None]).flatten()
 
     map.amp = x_s[0]
@@ -354,32 +352,35 @@ for ax in (ax_lc, ax_res):
     ax[1].plot((-d, +d), (-d, +d), **kwargs)
 
 #  Ticks
-for a in ax_lc:
-    a.set_xticklabels([])
-    a.grid()
-    a.set_yticks(np.arange(0, 60, 10))
-    a.set_ylim(-2, 52)
-
 for a in (ax_lc[0], ax_res[0]):
     a.set_xticks(np.arange(0, 4.5, 0.5))
-    a.set_xlim(left=-0.2)
     a.xaxis.set_minor_locator(AutoMinorLocator())
     a.yaxis.set_minor_locator(AutoMinorLocator())
 
 for a in (ax_lc[1], ax_res[1]):
     a.set_xticks(np.arange(0, 6.0, 0.5))
-    a.set_xlim(left=-0.2)
     a.xaxis.set_minor_locator(AutoMinorLocator())
+    a.yaxis.set_ticklabels([])
+    a.yaxis.set_ticklabels([])
+    a.set_ylabel("")
+    a.set_ylabel("")
+
+for a in ax_lc:
+    a.set_ylim(-2, 52)
+    a.set_xticklabels([])
+    a.set_yticks(np.arange(0, 60, 10))
+
+for a in ax_lc + ax_res:
+    a.grid()
 
 for a in ax_res:
-    a.grid()
     a.set_yticks([-3.5, 0.0, 3.5])
 
-for j in range(2):
-    ax_im[j][-1].set_zorder(-100)
+ax_res[0].set_xlabel(f"Minutes from {lc_in.time[0].iso[:-4]}")
+ax_res[1].set_xlabel(f"Minutes from {lc_eg.time[0].iso[:-4]}")
 
 # Set common labels
-fig.text(0.5, 0.04, "Duration [minutes]", ha="center", va="center")
+# fig.text(0.5, 0.04, "Duration [minutes]", ha="center", va="center")
 ax_lc[0].set_ylabel("Flux [GW/sr/um]")
 ax_res[0].set_ylabel("Residuals\n (norm.)")
 
@@ -387,9 +388,7 @@ ax_res[0].set_ylabel("Residuals\n (norm.)")
 fig.savefig("irtf_ingress_egress.pdf", bbox_inches="tight", dpi=500)
 
 # Plot inferred map over geological map of Io
-combined_mosaic = tifffile.imread(
-    "../../data/Io_SIM3168_Database.nosync/raster_baseMaps/SimpleCylindrical/Io_SSI_VGR_bw_Equi_Clon180_8bit.tif"
-)
+combined_mosaic = tifffile.imread("Io_SSI_VGR_bw_Equi_Clon180_8bit.tif")
 
 # The loaded map is [0,360] while Starry expects [-180, 180]
 shifted_map = np.roll(combined_mosaic, int(11445 / 2), axis=1)
