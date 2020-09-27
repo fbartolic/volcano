@@ -195,6 +195,7 @@ def plot_everything(
         ax=ax_map,
         colorbar=show_cbar,
         norm=colors.Normalize(vmin=-0.5, vmax=20),
+        res=resol,
     )
     ax_map.axis("off")
 
@@ -335,6 +336,7 @@ map_true.show(
     ax=ax_true_map,
     projection="molleweide",
     colorbar=True,
+    res=resol
     #    norm=colors.Normalize(vmin=-0.5),
 )
 ax_true_map.axis("off")
@@ -401,7 +403,6 @@ plot_everything(
     res_pix_exp,
     show_cbar=True,
 )
-
 
 for a in ax_lc[1:] + ax_res[1:]:
     a.yaxis.set_ticklabels([])

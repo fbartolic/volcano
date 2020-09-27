@@ -38,29 +38,32 @@ ro = 39.1
 
 ydeg_true = 25
 map_true = starry.Map(ydeg_true)
-spot_lon = 360 - 308.8
+spot_lon = 360 - 309
 spot_lat = 13.0
+spot_ang_dim = 5 * np.pi / 180
+spot_sigma = 1 - np.cos(spot_ang_dim / 2)
 map_true.add_spot(
-    amp=2.0, sigma=1e-03, lat=spot_lat, lon=spot_lon, relative=False
+    amp=1.0, sigma=spot_sigma, lat=spot_lat, lon=spot_lon, relative=False
 )
 map_true.amp = 20
 
 # Smooth the true map
-S_true = get_S(ydeg_true, 0.1)
+sigma_s = 2 / ydeg_true
+S_true = get_S(ydeg_true, sigma_s)
 x = (map_true.amp * map_true.y).eval()
 x_smooth = (S_true @ x[:, None]).reshape(-1)
 map_true[:, :] = x_smooth / x_smooth[0]
 map_true.amp = x_smooth[0]
 
-
 # Generate mock ingress and egress light curves
 f_true_in = map_true.flux(ro=ro, xo=xo_in, yo=yo_in).eval()
 f_true_eg = map_true.flux(ro=ro, xo=xo_eg, yo=yo_eg).eval()
 
-f_err = 0.46
+f_err_in = 0.02 * np.max(f_true_in)
+f_err_eg = 0.02 * np.max(f_true_eg)
 
-f_obs_in = f_true_in + np.random.normal(0, f_err, len(f_true_in))
-f_obs_eg = f_true_eg + np.random.normal(0, f_err, len(f_true_eg))
+f_obs_in = f_true_in + np.random.normal(0, f_err_in, len(f_true_in))
+f_obs_eg = f_true_eg + np.random.normal(0, f_err_eg, len(f_true_eg))
 f_obs = np.concatenate([f_obs_in, f_obs_eg])
 
 
@@ -84,7 +87,7 @@ with pm.Model() as model:
     x = tt.dot(P2Y, p)
 
     # Run the smoothing filter
-    S = get_S(ydeg_inf, 0.1)
+    S = get_S(ydeg_inf, 2/ydeg_inf)
     x_s = tt.dot(S, x[:, None]).flatten()
 
     map.amp = x_s[0]
@@ -111,7 +114,18 @@ with pm.Model() as model:
     pm.Deterministic("flux_eg_dense", flux_eg_dense)
     flux_dense = tt.concatenate([flux_in_dense, flux_eg_dense])
 
-    pm.Normal("obs", mu=flux, sd=f_err * np.ones_like(f_obs), observed=f_obs)
+    pm.Normal(
+        "obs_in",
+        mu=flux_in,
+        sd=f_err_in * np.ones_like(f_obs_in),
+        observed=f_obs_in,
+    )
+    pm.Normal(
+        "obs_eg",
+        mu=flux_eg,
+        sd=f_err_eg * np.ones_like(f_obs_eg),
+        observed=f_obs_eg,
+    )
 
 with model:
     soln = xo.optimize(options=dict(maxiter=99999))
@@ -126,7 +140,8 @@ map[1:, :] = soln["y1"]
 norm = np.max(np.concatenate([soln["flux_in_dense"], soln["flux_eg_dense"]]))
 f_obs_in /= norm
 f_obs_eg /= norm
-f_err /= norm
+f_err_in /= norm
+f_err_eg /= norm
 
 flux_in_dense = soln["flux_in_dense"] / norm
 flux_eg_dense = soln["flux_eg_dense"] / norm
@@ -176,10 +191,10 @@ gs2 = fig.add_gridspec(
 ax_map_true = fig.add_subplot(gs0[0, :nim])
 ax_map_inf = fig.add_subplot(gs0[0, nim:])
 map_true.show(
-    ax=ax_map_true, projection="molleweide", norm=cmap_norm,
+    ax=ax_map_true, projection="molleweide", norm=cmap_norm, res=resol
 )
 map.show(
-    ax=ax_map_inf, projection="molleweide", colorbar=True, norm=cmap_norm,
+    ax=ax_map_inf, projection="molleweide", colorbar=True, norm=cmap_norm, res=resol
 )
 ax_map_true.set_title("True map")
 ax_map_inf.set_title("Inferred map")
@@ -212,7 +227,7 @@ for j in range(2):
     a = ax_im[j]
     for n in range(nim):
         # Show the image
-        map.show(ax=a[n], res=resol, grid=False, norm=cmap_norm)
+        map.show(ax=a[n], res=resol, grid=False, norm=cmap_norm, res=resol,
 
         # Outline
         x = np.linspace(-1, 1, 1000)
@@ -240,32 +255,44 @@ for j in range(2):
 
 # Plot ingress
 ax_lc[0].errorbar(  # Data
-    xo_in, f_obs_in, f_err, color="black", fmt=".", ecolor="black", alpha=0.4,
+    xo_in,
+    f_obs_in,
+    f_err_in,
+    color="black",
+    fmt=".",
+    ecolor="black",
+    alpha=0.4,
 )
 
 ax_lc[0].plot(xo_in_dense, flux_in_dense, "C1-")  # Model
 
 # Residuals
 ax_res[0].errorbar(
-    xo_in, res_in, f_err, color="black", fmt=".", ecolor="black", alpha=0.4,
+    xo_in, res_in, f_err_in, color="black", fmt=".", ecolor="black", alpha=0.4,
 )
 
 # Plot egress
 ax_lc[1].errorbar(
-    xo_eg, f_obs_eg, f_err, color="black", fmt=".", ecolor="black", alpha=0.4,
+    xo_eg,
+    f_obs_eg,
+    f_err_eg,
+    color="black",
+    fmt=".",
+    ecolor="black",
+    alpha=0.4,
 )
 
 ax_lc[1].plot(xo_eg_dense, flux_eg_dense, "C1-")
 
 ax_res[1].errorbar(
-    xo_eg, res_eg, f_err, color="black", fmt=".", ecolor="black", alpha=0.4,
+    xo_eg, res_eg, f_err_eg, color="black", fmt=".", ecolor="black", alpha=0.4,
 )
 
 # Make broken axis
 for ax in (ax_lc, ax_res):
     ax[0].spines["right"].set_visible(False)
     ax[1].spines["left"].set_visible(False)
-    ax[1].tick_params(axis='y', colors=(0,0,0,0))
+    ax[1].tick_params(axis="y", colors=(0, 0, 0, 0))
 
     d = 0.01
     kwargs = dict(transform=ax[0].transAxes, color="k", clip_on=False)
@@ -276,30 +303,27 @@ for ax in (ax_lc, ax_res):
     ax[1].plot((-d, +d), (1 - d, 1 + d), **kwargs)
     ax[1].plot((-d, +d), (-d, +d), **kwargs)
 
-# Ticks
-for a in ax_lc:
-    a.set_ylim(bottom=-0.05)
-    a.set_xticklabels([])
-    a.set_yticks(np.arange(0, 1.2, 0.2))
-    a.grid()
-
+#  Ticks
 for a in (ax_lc[0], ax_res[0]):
-    a.set_xticks(np.arange(-39.5, -37., 0.5))
+    a.set_xticks(np.arange(-39.5, -37.0, 0.5))
     a.xaxis.set_minor_locator(AutoMinorLocator())
     a.yaxis.set_minor_locator(AutoMinorLocator())
 
 for a in (ax_lc[1], ax_res[1]):
-    a.set_xticks(np.arange(37., 40., 0.5))
-#     a.set_xlim(left=-0.2)
+    a.set_xticks(np.arange(37.0, 40.0, 0.5))
     a.xaxis.set_minor_locator(AutoMinorLocator())
+    a.yaxis.set_ticklabels([])
+    a.yaxis.set_ticklabels([])
+    a.set_ylabel("")
+    a.set_ylabel("")
 
-for a in ax_res:
+for a in ax_lc:
+    a.set_ylim(-0.05, 1.05)
+    a.set_xticklabels([])
+    a.set_yticks(np.arange(0, 1.2, 0.2))
+
+for a in ax_lc + ax_res:
     a.grid()
-    a.set_ylim(-3.1, 3.1)
-
-for j in range(2):
-    ax_im[j][-1].set_zorder(-100)
-
 
 # Set common labels
 fig.text(0.5, 0.04, "Occultor x position [Io radii]", ha="center", va="center")

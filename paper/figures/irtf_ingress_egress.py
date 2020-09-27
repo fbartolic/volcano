@@ -243,9 +243,9 @@ gs2 = fig.add_gridspec(
 # Maps
 ax_map_in = fig.add_subplot(gs0[0, :nim])
 ax_map_eg = fig.add_subplot(gs0[0, nim:])
-map.show(ax=ax_map_in, projection="molleweide", colorbar=False, norm=cmap_norm)
+map.show(ax=ax_map_in, projection="molleweide", colorbar=False, norm=cmap_norm, res=resol)
 map_eg.show(
-    ax=ax_map_eg, projection="molleweide", colorbar=True, norm=cmap_norm
+    ax=ax_map_eg, projection="molleweide", colorbar=True, norm=cmap_norm, res=resol
 )
 ax_map_in.set_title("Inferred map\n ingress")
 ax_map_eg.set_title("Inferred map\n egress")
@@ -395,7 +395,7 @@ shifted_map = np.roll(combined_mosaic, int(11445 / 2), axis=1)
 
 fig, ax = plt.subplots(figsize=(8, 4))
 map.show(
-    projection="rectangular", ax=ax, colorbar=False,
+    projection="rectangular", ax=ax, colorbar=False, res=resol
 )
 
 ax.imshow(shifted_map, extent=(-180, 180, -90, 90), alpha=0.7, cmap="gray")

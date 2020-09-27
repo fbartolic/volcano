@@ -123,6 +123,7 @@ im1 = ax[0, 0].scatter(
 )
 
 #  Plot Ylm map
+resol = 150
 map = starry.Map(ydeg)
 map.amp = x_sample[0]
 map[1:, :] = x_sample[1:] / map.amp
@@ -130,6 +131,7 @@ map.show(
     ax=ax[0, 1],
     projection="molleweide",
     norm=colors.Normalize(vmin=0, vmax=vmax),
+    res=resol,
 )
 
 
