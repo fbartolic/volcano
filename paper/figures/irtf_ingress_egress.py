@@ -1,6 +1,6 @@
 import numpy as np
 from matplotlib import pyplot as plt
-import tifffile
+from PIL import Image
 
 import theano
 import theano.tensor as tt
@@ -243,9 +243,19 @@ gs2 = fig.add_gridspec(
 # Maps
 ax_map_in = fig.add_subplot(gs0[0, :nim])
 ax_map_eg = fig.add_subplot(gs0[0, nim:])
-map.show(ax=ax_map_in, projection="molleweide", colorbar=False, norm=cmap_norm, res=resol)
+map.show(
+    ax=ax_map_in,
+    projection="molleweide",
+    colorbar=False,
+    norm=cmap_norm,
+    res=resol,
+)
 map_eg.show(
-    ax=ax_map_eg, projection="molleweide", colorbar=True, norm=cmap_norm, res=resol
+    ax=ax_map_eg,
+    projection="molleweide",
+    colorbar=True,
+    norm=cmap_norm,
+    res=resol,
 )
 ax_map_in.set_title("Inferred map\n ingress")
 ax_map_eg.set_title("Inferred map\n egress")
@@ -388,15 +398,13 @@ ax_res[0].set_ylabel("Residuals\n (norm.)")
 fig.savefig("irtf_ingress_egress.pdf", bbox_inches="tight", dpi=500)
 
 # Plot inferred map over geological map of Io
-combined_mosaic = tifffile.imread("Io_SSI_VGR_bw_Equi_Clon180_8bit.tif")
+combined_mosaic = Image.open("Io_SSI_VGR_bw_Equi_Clon180_8bit.tif")
 
 # The loaded map is [0,360] while Starry expects [-180, 180]
 shifted_map = np.roll(combined_mosaic, int(11445 / 2), axis=1)
 
 fig, ax = plt.subplots(figsize=(8, 4))
-map.show(
-    projection="rectangular", ax=ax, colorbar=False, res=resol
-)
+map.show(projection="rectangular", ax=ax, colorbar=False, res=resol)
 
 ax.imshow(shifted_map, extent=(-180, 180, -90, 90), alpha=0.7, cmap="gray")
 ax.set_yticks(np.arange(-15, 60, 15))
