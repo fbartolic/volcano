@@ -176,9 +176,9 @@ with pm.Model() as model:
     x_s *= amp_eg
 
     pm.Deterministic("map_eg_amp", x_s[0])
-    pm.Deterministic("map_eg_y1", x_s[1:]/x_s[0])
+    pm.Deterministic("map_eg_y1", x_s[1:] / x_s[0])
 
-    flux_eg = tt.dot(A_eg, x_s[:, None]).flatten()  + tt.exp(ln_flux_offset[1])
+    flux_eg = tt.dot(A_eg, x_s[:, None]).flatten() + tt.exp(ln_flux_offset[1])
 
     # Dense grid
     pm.Deterministic(
@@ -213,7 +213,7 @@ map_eg.amp = soln["map_eg_amp"]
 map_eg[1:, :] = soln["map_eg_y1"]
 
 # Set up the plot
-resol = 150
+resol = 300
 nim = 8
 cmap_norm = colors.Normalize(vmin=-0.5, vmax=900)
 

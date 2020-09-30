@@ -123,7 +123,7 @@ im1 = ax[0, 0].scatter(
 )
 
 #  Plot Ylm map
-resol = 150
+resol = 300
 map = starry.Map(ydeg)
 map.amp = x_sample[0]
 map[1:, :] = x_sample[1:] / map.amp

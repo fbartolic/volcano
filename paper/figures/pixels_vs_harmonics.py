@@ -175,7 +175,7 @@ def plot_everything(
 ):
     t_dense = np.linspace(xo_im[0], xo_im[-1], len(soln["flux_dense"]))
     nim = len(ax_im)
-    resol = 150
+    resol = 300
 
     # Plot map
     map.show(
