@@ -171,11 +171,11 @@ def plot_everything(
     soln,
     flux_dense,
     residuals,
+    resol,
     show_cbar=True,
 ):
     t_dense = np.linspace(xo_im[0], xo_im[-1], len(soln["flux_dense"]))
     nim = len(ax_im)
-    resol = 300
 
     # Plot map
     map.show(
@@ -319,6 +319,7 @@ gs3 = fig.add_gridspec(
 )
 
 # True map subplot
+resol = 300
 ax_true_map = fig.add_subplot(gs0[0, :])
 map_true.show(
     ax=ax_true_map,
@@ -367,6 +368,7 @@ plot_everything(
     soln_ylm,
     flux_dense_ylm,
     res_ylm,
+    resol,
     show_cbar=False,
 )
 plot_everything(
@@ -378,6 +380,7 @@ plot_everything(
     soln_pix_gauss,
     flux_dense_pix_gauss,
     res_pix_gauss,
+    resol,
     show_cbar=False,
 )
 plot_everything(
@@ -389,6 +392,7 @@ plot_everything(
     soln_pix_exp,
     flux_dense_pix_exp,
     res_pix_exp,
+    resol,
     show_cbar=True,
 )
 
