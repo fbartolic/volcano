@@ -20,7 +20,6 @@ from volcano.utils import *
 np.random.seed(42)
 starry.config.lazy = True
 
-
 # Load light curves
 lc_in_n = np.load("irtf_ingress.npy")
 lc_eg_n = np.load("irtf_egress.npy")
@@ -107,16 +106,35 @@ lat, lon, Y2P, P2Y, Dx, Dy = map.get_pixel_transforms(oversample=4)
 npix = Y2P.shape[0]
 
 # Evalute MAP model on denser grid
-xo_dense_in = np.linspace(xo_in[0], xo_in[-1], 200)
-yo_dense_in = np.linspace(yo_in[0], yo_in[-1], 200)
-theta_dense_in = np.linspace(theta_in[0], theta_in[-1], 200)
+xo_in_dense = np.linspace(xo_in[0], xo_in[-1], 200)
+yo_in_dense = np.linspace(yo_in[0], yo_in[-1], 200)
+theta_in_dense = np.linspace(theta_in[0], theta_in[-1], 200)
 
-xo_dense_eg = np.linspace(xo_eg[0], xo_eg[-1], 200)
-yo_dense_eg = np.linspace(yo_eg[0], yo_eg[-1], 200)
-theta_dense_eg = np.linspace(theta_eg[0], theta_eg[-1], 200)
+xo_eg_dense = np.linspace(xo_eg[0], xo_eg[-1], 200)
+yo_eg_dense = np.linspace(yo_eg[0], yo_eg[-1], 200)
+theta_eg_dense = np.linspace(theta_eg[0], theta_eg[-1], 200)
 
 t_dense_in = np.linspace(t_in[0], t_in[-1], 200)
 t_dense_eg = np.linspace(t_eg[0], t_eg[-1], 200)
+
+# Compute design matrices
+map = starry.Map(ydeg_inf)
+A_in = theano.shared(
+    map.design_matrix(xo=xo_in, yo=yo_in, ro=ro_in, theta=theta_in).eval()
+)
+A_eg = theano.shared(
+    map.design_matrix(xo=xo_eg, yo=yo_eg, ro=ro_eg, theta=theta_eg).eval()
+)
+A_in_dense = theano.shared(
+    map.design_matrix(
+        xo=xo_in_dense, yo=yo_in_dense, ro=ro_in, theta=theta_in_dense
+    ).eval()
+)
+A_eg_dense = theano.shared(
+    map.design_matrix(
+        xo=xo_eg_dense, yo=yo_eg_dense, ro=ro_eg, theta=theta_eg_dense
+    ).eval()
+)
 
 
 def get_S(ydeg, sigma=0.1):
@@ -127,8 +145,6 @@ def get_S(ydeg, sigma=0.1):
 
 
 with pm.Model() as model:
-    map = starry.Map(ydeg_inf)
-
     p = pm.Exponential(
         "p", 1 / 10.0, shape=(npix,), testval=0.1 * np.random.rand(npix)
     )
@@ -138,11 +154,8 @@ with pm.Model() as model:
     S = get_S(ydeg_inf, 2 / ydeg_inf)
     x_s = tt.dot(S, x[:, None]).flatten()
 
-    map.amp = x_s[0]
-    map[1:, :] = x_s[1:] / x_s[0]
-
-    pm.Deterministic("map_in_amp", map.amp)
-    pm.Deterministic("map_in_y1", map[1:, :])
+    pm.Deterministic("map_in_amp", x_s[0])
+    pm.Deterministic("map_in_y1", x_s[1:] / x_s[0])
 
     # Flux offset
     ln_flux_offset = pm.Normal(
@@ -150,49 +163,27 @@ with pm.Model() as model:
     )
 
     # Compute flux
-    flux_in = map.flux(
-        xo=theano.shared(xo_in),
-        yo=theano.shared(yo_in),
-        ro=ro_in,
-        theta=theano.shared(theta_in),
-    ) + tt.exp(ln_flux_offset[0])
+    flux_in = tt.dot(A_in, x_s[:, None]).flatten() + tt.exp(ln_flux_offset[0])
 
     # Dense grid
     pm.Deterministic(
         "flux_dense_in",
-        map.flux(
-            xo=theano.shared(xo_dense_in),
-            yo=theano.shared(yo_dense_in),
-            ro=ro_in,
-            theta=theano.shared(theta_dense_in),
-        )
-        + tt.exp(ln_flux_offset[0]),
+        tt.dot(A_in_dense, x_s[:, None]).flatten() + tt.exp(ln_flux_offset[0]),
     )
 
     # Same coefficients for the second map except rescale amplitude
     amp_eg = pm.Normal("amp_eg", 1.0, 0.1, testval=1.0)
-    map.amp *= amp_eg
+    x_s *= amp_eg
 
-    pm.Deterministic("map_eg_amp", map.amp)
-    pm.Deterministic("map_eg_y1", map[1:, :])
+    pm.Deterministic("map_eg_amp", x_s[0])
+    pm.Deterministic("map_eg_y1", x_s[1:]/x_s[0])
 
-    flux_eg = map.flux(
-        xo=theano.shared(xo_eg),
-        yo=theano.shared(yo_eg),
-        ro=ro_eg,
-        theta=theano.shared(theta_eg),
-    ) + tt.exp(ln_flux_offset[1])
+    flux_eg = tt.dot(A_eg, x_s[:, None]).flatten()  + tt.exp(ln_flux_offset[1])
 
     # Dense grid
     pm.Deterministic(
         "flux_dense_eg",
-        map.flux(
-            xo=theano.shared(xo_dense_eg),
-            yo=theano.shared(yo_dense_eg),
-            ro=ro_eg,
-            theta=theano.shared(theta_dense_eg),
-        )
-        + tt.exp(ln_flux_offset[1]),
+        tt.dot(A_eg_dense, x_s[:, None]).flatten() + tt.exp(ln_flux_offset[1]),
     )
 
     pm.Deterministic("flux_pred_in", flux_in)

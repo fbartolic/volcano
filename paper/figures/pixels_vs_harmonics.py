@@ -62,8 +62,14 @@ yo_dense = np.linspace(yo_sim[0], yo_sim[-1], 200)
 PositiveNormal = pm.Bound(pm.Normal, lower=0.0)
 ncoeff = (ydeg_inf + 1) ** 2
 
+# Compute design matrix
+map = starry.Map(ydeg_inf)
+A = theano.shared(map.design_matrix(xo=xo_sim, yo=yo_sim, ro=ro).eval())
+A_dense = theano.shared(
+    map.design_matrix(xo=xo_dense, yo=yo_dense, ro=ro).eval()
+)
+
 with pm.Model() as model_ylm:
-    map = starry.Map(ydeg_inf)
 
     cov = (1e-01) ** 2 * np.eye(ncoeff - 1)
     y1 = pm.MvNormal(
@@ -76,16 +82,12 @@ with pm.Model() as model_ylm:
     ln_amp = pm.Normal("ln_amp", 0.0, 5.0, testval=np.log(20.0))
     pm.Deterministic("amp", tt.exp(ln_amp))
 
-    map.amp = tt.exp(ln_amp)
-    map[1:, :] = y1
-
-    flux = map.flux(xo=theano.shared(xo_sim), yo=theano.shared(yo_sim), ro=ro)
+    x = tt.exp(ln_amp) * tt.concatenate([[1.0], y1], axis=0)
+    flux = tt.dot(A, x[:, None]).flatten()
     pm.Deterministic("flux_pred", flux)
 
     # Dense grid
-    MAP_flux_ylm = map.flux(
-        xo=theano.shared(xo_dense), yo=theano.shared(yo_dense), ro=ro
-    )
+    MAP_flux_ylm = tt.dot(A_dense, x[:, None]).flatten()
     pm.Deterministic("flux_dense", flux)
 
     pm.Normal("obs", mu=flux, sd=f_err * tt.ones(len(f_obs)), observed=f_obs)
@@ -121,25 +123,18 @@ std_p = np.std(pix_samples)
 
 # Pixel model gaussian prior
 with pm.Model() as model_pix_gauss:
-    map = starry.Map(ydeg_inf)
-
     p = PositiveNormal("p", 0.0, std_p, shape=(npix,))
     x = tt.dot(P2Y, p)
 
-    map.amp = x[0]
-    map[1:, :] = x[1:] / map.amp
-
-    pm.Deterministic("amp", map.amp)
-    pm.Deterministic("y1", map[1:, :])
+    pm.Deterministic("amp", x[0])
+    pm.Deterministic("y1", x[1:] / x[0])
 
     # Compute flux
-    flux = map.flux(xo=theano.shared(xo_sim), yo=theano.shared(yo_sim), ro=ro)
+    flux = tt.dot(A, x[:, None]).flatten()
     pm.Deterministic("flux_pred", flux)
 
     # Dense grid
-    MAP_flux_pix_gauss = map.flux(
-        xo=theano.shared(xo_dense), yo=theano.shared(yo_dense), ro=ro
-    )
+    MAP_flux_pix_gauss = tt.dot(A_dense, x[:, None]).flatten()
     pm.Deterministic("flux_dense", flux)
 
     pm.Normal("obs", mu=flux, sd=f_err * np.ones_like(f_obs), observed=f_obs)
@@ -148,25 +143,18 @@ with pm.Model() as model_pix_gauss:
 
 # Pixel model exponential prior
 with pm.Model() as model_pix_exp:
-    map = starry.Map(ydeg_inf)
-
     p = pm.Exponential("p", 1 / std_p, shape=(npix,))
     x = tt.dot(P2Y, p)
 
-    map.amp = x[0]
-    map[1:, :] = x[1:] / map.amp
-
-    pm.Deterministic("amp", map.amp)
-    pm.Deterministic("y1", map[1:, :])
+    pm.Deterministic("amp", x[0])
+    pm.Deterministic("y1", x[1:] / x[0])
 
     # Compute flux
-    flux = map.flux(xo=theano.shared(xo_sim), yo=theano.shared(yo_sim), ro=ro)
+    flux = tt.dot(A, x[:, None]).flatten()
     pm.Deterministic("flux_pred", flux)
 
     # Dense grid
-    MAP_flux_pix_exp = map.flux(
-        xo=theano.shared(xo_dense), yo=theano.shared(yo_dense), ro=ro
-    )
+    MAP_flux_pix_exp = tt.dot(A_dense, x[:, None]).flatten()
     pm.Deterministic("flux_dense", flux)
 
     pm.Normal("obs", mu=flux, sd=f_err * np.ones_like(f_obs), observed=f_obs)

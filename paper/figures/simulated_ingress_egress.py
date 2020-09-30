@@ -66,13 +66,11 @@ f_obs_in = f_true_in + np.random.normal(0, f_err_in, len(f_true_in))
 f_obs_eg = f_true_eg + np.random.normal(0, f_err_eg, len(f_true_eg))
 f_obs = np.concatenate([f_obs_in, f_obs_eg])
 
-
 # Set up model
 ydeg_inf = 25
 map = starry.Map(ydeg_inf)
 lat, lon, Y2P, P2Y, Dx, Dy = map.get_pixel_transforms(oversample=4)
 npix = Y2P.shape[0]
-
 
 # Evalute MAP model on denser grid
 xo_in_dense = np.linspace(xo_in[0], xo_in[-1], 200)
@@ -80,36 +78,39 @@ yo_in_dense = np.linspace(yo_in[0], yo_in[-1], 200)
 xo_eg_dense = np.linspace(xo_eg[0], xo_eg[-1], 200)
 yo_eg_dense = np.linspace(yo_eg[0], yo_eg[-1], 200)
 
-with pm.Model() as model:
-    map = starry.Map(ydeg_inf)
+# Compute design matrix
+map = starry.Map(ydeg_inf)
+A_in = theano.shared(map.design_matrix(xo=xo_in, yo=yo_in, ro=ro).eval())
+A_eg = theano.shared(map.design_matrix(xo=xo_eg, yo=yo_eg, ro=ro).eval())
+A_in_dense = theano.shared(
+    map.design_matrix(xo=xo_in_dense, yo=yo_in_dense, ro=ro).eval()
+)
+A_eg_dense = theano.shared(
+    map.design_matrix(xo=xo_eg_dense, yo=yo_eg_dense, ro=ro).eval()
+)
 
+
+with pm.Model() as model:
     p = pm.Exponential("p", 1 / 10.0, shape=(npix,))
     x = tt.dot(P2Y, p)
 
     # Run the smoothing filter
-    S = get_S(ydeg_inf, 2/ydeg_inf)
+    S = get_S(ydeg_inf, 2 / ydeg_inf)
     x_s = tt.dot(S, x[:, None]).flatten()
 
-    map.amp = x_s[0]
-    map[1:, :] = x_s[1:] / map.amp
-
-    pm.Deterministic("amp", map.amp)
-    pm.Deterministic("y1", map[1:, :])
+    pm.Deterministic("amp", x_s[0])
+    pm.Deterministic("y1", x_s[1:] / x_s[0])
 
     # Compute flux
-    flux_in = map.flux(xo=theano.shared(xo_in), yo=theano.shared(yo_in), ro=ro)
-    flux_eg = map.flux(xo=theano.shared(xo_eg), yo=theano.shared(yo_eg), ro=ro)
+    flux_in = tt.dot(A_in, x_s[:, None]).flatten()
+    flux_eg = tt.dot(A_eg, x_s[:, None]).flatten()
     pm.Deterministic("flux_pred_in", flux_in)
     pm.Deterministic("flux_pred_eg", flux_eg)
     flux = tt.concatenate([flux_in, flux_eg])
 
     # Dense grid
-    flux_in_dense = map.flux(
-        xo=theano.shared(xo_in_dense), yo=theano.shared(yo_in_dense), ro=ro
-    )
-    flux_eg_dense = map.flux(
-        xo=theano.shared(xo_eg_dense), yo=theano.shared(yo_eg_dense), ro=ro
-    )
+    flux_in_dense = tt.dot(A_in_dense, x_s[:, None]).flatten()
+    flux_eg_dense = tt.dot(A_eg_dense, x_s[:, None]).flatten()
     pm.Deterministic("flux_in_dense", flux_in_dense)
     pm.Deterministic("flux_eg_dense", flux_eg_dense)
     flux_dense = tt.concatenate([flux_in_dense, flux_eg_dense])
@@ -194,7 +195,11 @@ map_true.show(
     ax=ax_map_true, projection="molleweide", norm=cmap_norm, res=resol
 )
 map.show(
-    ax=ax_map_inf, projection="molleweide", colorbar=True, norm=cmap_norm, res=resol
+    ax=ax_map_inf,
+    projection="molleweide",
+    colorbar=True,
+    norm=cmap_norm,
+    res=resol,
 )
 ax_map_true.set_title("True map")
 ax_map_inf.set_title("Inferred map")
@@ -227,7 +232,7 @@ for j in range(2):
     a = ax_im[j]
     for n in range(nim):
         # Show the image
-        map.show(ax=a[n], res=resol, grid=False, norm=cmap_norm, res=resol,
+        map.show(ax=a[n], res=resol, grid=False, norm=cmap_norm)
 
         # Outline
         x = np.linspace(-1, 1, 1000)
