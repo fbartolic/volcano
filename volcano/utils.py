@@ -178,7 +178,7 @@ def get_body_ephemeris(
     )
 
     # If the target body is Jupiter, compute the equatorial angular diameter
-    if body_id is "599":
+    if body_id == "599":
         dist = eph["delta"].to(u.km)
         jup_eq_rad = 71492 * u.km
         ang_width = 2 * jup_eq_rad / dist
