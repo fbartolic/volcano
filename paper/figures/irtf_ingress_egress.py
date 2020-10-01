@@ -136,14 +136,6 @@ A_eg_dense = theano.shared(
     ).eval()
 )
 
-
-def get_S(ydeg, sigma=0.1):
-    l = np.concatenate([np.repeat(l, 2 * l + 1) for l in range(ydeg + 1)])
-    s = np.exp(-0.5 * l * (l + 1) * sigma ** 2)
-    S = np.diag(s)
-    return S
-
-
 with pm.Model() as model:
     p = pm.Exponential(
         "p", 1 / 10.0, shape=(npix,), testval=0.1 * np.random.rand(npix)
@@ -151,7 +143,7 @@ with pm.Model() as model:
     x = tt.dot(P2Y, p)
 
     # Run the smoothing filter
-    S = get_S(ydeg_inf, 2 / ydeg_inf)
+    S = get_smoothing_filter(ydeg_inf, 2 / ydeg_inf)
     x_s = tt.dot(S, x[:, None]).flatten()
 
     pm.Deterministic("map_in_amp", x_s[0])

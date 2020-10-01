@@ -6,14 +6,6 @@ from matplotlib.ticker import AutoMinorLocator
 np.random.seed(42)
 starry.config.lazy = False
 
-
-def get_S(ydeg, sigma=0.1):
-    l = np.concatenate([np.repeat(l, 2 * l + 1) for l in range(ydeg + 1)])
-    s = np.exp(-0.5 * l * (l + 1) * sigma ** 2)
-    S = np.diag(s)
-    return S
-
-
 # Dummy featureless map
 map0 = starry.Map(ydeg=1)
 map0.show()
@@ -45,7 +37,7 @@ def get_map(deg, sig_smooth, sig_size):
         map = starry.Map(deg)
         map.add_spot(amp=2.0, sigma=sig_size, lat=0.0, lon=0, relative=False)
         map.amp = 20
-        S = get_S(deg, sig_smooth)
+        S = get_smoothing_filter(deg, sig_smooth)
         x = map.amp * map.y
         x_smooth = (S @ x[:, None]).reshape(-1)
         map[:, :] = x_smooth / x_smooth[0]

@@ -17,14 +17,6 @@ from volcano.utils import *
 np.random.seed(42)
 starry.config.lazy = True
 
-
-def get_S(ydeg, sigma=0.1):
-    l = np.concatenate([np.repeat(l, 2 * l + 1) for l in range(ydeg + 1)])
-    s = np.exp(-0.5 * l * (l + 1) * sigma ** 2)
-    S = np.diag(s)
-    return S
-
-
 xo_eg = np.linspace(37.15, 39.43, 150)
 yo_eg = np.linspace(-8.284, -8.27, 150)
 
@@ -49,7 +41,7 @@ map_true.amp = 20
 
 # Smooth the true map
 sigma_s = 2 / ydeg_true
-S_true = get_S(ydeg_true, sigma_s)
+S_true = get_smoothing_filter(ydeg_true, sigma_s)
 x = (map_true.amp * map_true.y).eval()
 x_smooth = (S_true @ x[:, None]).reshape(-1)
 map_true[:, :] = x_smooth / x_smooth[0]
@@ -95,7 +87,7 @@ with pm.Model() as model:
     x = tt.dot(P2Y, p)
 
     # Run the smoothing filter
-    S = get_S(ydeg_inf, 2 / ydeg_inf)
+    S = get_smoothing_filter(ydeg_inf, 2 / ydeg_inf)
     x_s = tt.dot(S, x[:, None]).flatten()
 
     pm.Deterministic("amp", x_s[0])

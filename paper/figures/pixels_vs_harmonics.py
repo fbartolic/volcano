@@ -17,13 +17,6 @@ np.random.seed(42)
 starry.config.lazy = True
 
 # Set up mock map
-def get_S(ydeg, sigma=0.1):
-    l = np.concatenate([np.repeat(l, 2 * l + 1) for l in range(ydeg + 1)])
-    s = np.exp(-0.5 * l * (l + 1) * sigma ** 2)
-    S = np.diag(s)
-    return S
-
-
 xo_sim = np.linspace(37.15, 39.43, 120)
 yo_sim = np.linspace(-8.284, -8.27, 120)
 ro = 39.1
@@ -38,7 +31,7 @@ map_true.add_spot(
 
 # Smooth the true map
 sigma_s = 2 / ydeg_true
-S_true = get_S(ydeg_true, sigma_s)
+S_true = get_smoothing_filter(ydeg_true, sigma_s)
 x = (map_true.amp * map_true.y).eval()
 x_smooth = (S_true @ x[:, None]).reshape(-1)
 map_true[:, :] = x_smooth / x_smooth[0]
