@@ -517,3 +517,29 @@ def rotate_vectors(x, y, theta_rot):
     res = np.einsum("ijk,jk->ki", R, r_stacked)
 
     return res[:, 0], res[:, 1]
+
+
+def get_smoothing_filter(ydeg, sigma=0.1):
+    """
+    Returns a smoothing matrix which applies an isotropic Gaussian beam filter 
+    to a spherical harmonic coefficient vector. This helps suppress ringing 
+    artefacts around spot like features. The standard deviation of the Gaussian
+    filter controls the strength of the smoothing. Features on angular scales
+    smaller than ~ 1/sigma are strongly suppressed.
+
+    Parameters
+    ----------
+    ydeg : int
+        Degree of the map.
+    sigma : float, optional
+        Standard deviation of the Gaussian filter, by default 0.1
+
+    Returns
+    -------
+    ndarray
+        Diagonal matrix of shape (ncoeff, ncoeff) where ncoeff = (l + 1)^2.
+    """
+    l = np.concatenate([np.repeat(l, 2 * l + 1) for l in range(ydeg + 1)])
+    s = np.exp(-0.5 * l * (l + 1) * sigma ** 2)
+    S = np.diag(s)
+    return S
