@@ -258,8 +258,8 @@ The flux can then be computed as a linear operation on the pixels:
     \label{eq:linear_model_pix}
 \end{equation}
 We use the symbol $\mathbf{p}'$ to denote pixels which are mapped to spherical harmonic coefficients using $\mathbf{P}^\dagger$ and $\mathbf{p}$ for those generated from $\mathbf{y}$ using $\mathbf{P}$.
-In the rest of the paper we call the former kind pixels \emph{schmixels}.
-In Section~\ref{ssec:schmixels_vs_harmonics} we test differences between fitting a model for spherical harmonic coefficients vs. fitting for schmixels.
+In the rest of the paper we call the former kind pixels \emph{sphixels}.
+In Section~\ref{ssec:sphixels_vs_harmonics} we test differences between fitting a model for spherical harmonic coefficients vs. fitting for sphixels.
 
 \subsection{Nonnegative Matrix Factorization}
 \label{ssec:nmf}
@@ -418,40 +418,40 @@ Figure~\ref{fig:information_content} does not reflect this fact.
 When modeling the observations taken while Io is in sunlight, we have to take into account the reflected light component.
 Although \textsf{starry} supports computing occultations and phase curves in reflected light, we only fit in eclipse observations in this work.
 
-\subsection{Schmixels vs. spherical harmonics}
-\label{ssec:schmixels_vs_harmonics}
+\subsection{Sphixels vs. spherical harmonics}
+\label{ssec:sphixels_vs_harmonics}
 To test inference with the static map model defined in Section~\ref{ssec:static} 
 we use \textsf{starry} to generate a single simulated light curve of an occultation of Io by Jupiter from an $l=30$ map.
 The simulated map consists of a spherical harmonic expansion of a bright spot with a Gaussian profile which we add using the built in \textsf{add\_spot} function in \textsf{starry}.
 The expansion is in the quantity $\cos(\Delta\theta)$ where $\Delta\theta$ is the angular separation between the center of the spot and another point on the surface of the sphere. 
 We place the spot at 13 degrees latitude and 51 degrees East longitude, set the diameter of the spot ($2\Delta\theta$) to 5 degrees and the amplitude to 55\% of the total luminosity of a spotless map.
 We take ephemeris parameters (assumed to be fixed) from a real occultation and assume an observational cadence of 1s and errorbars equal to 2\% of the total flux, similar to high quality IRTF light curves.
-We use this dataset to test the difference between fitting a model in the spherical harmonic basis (Eq.~\ref{eq:linear_model}) and in the schmixel basis (Eq.~\ref{eq:linear_model_pix})
+We use this dataset to test the difference between fitting a model in the spherical harmonic basis (Eq.~\ref{eq:linear_model}) and in the sphixel basis (Eq.~\ref{eq:linear_model_pix})
 by fitting for an $l=20$ map.
 Since we are only fitting a single light curve, the inferred maps will be strongly prior dominated.
 
 In the first case we place a Gaussian prior on $Y_{lm}$ coefficients with covariance $\boldsymbol{\Lambda}=\mathrm{diag}(1^2,0.1^2,\dots,0.1^2)$ and optimize for the values of the coefficients.
-In the second case we fit for schmixel $\mathbf{p}'$ evaluated on a fixed (latitude, longitude) grid with two sets of positive priors, a Half Gaussian prior with zero mean and an Exponential prior.
-To ensure we have a grid of high enough resolution we use 4 times as many schmixels as spherical harmonic coefficients.
+In the second case we fit for sphixel $\mathbf{p}'$ evaluated on a fixed (latitude, longitude) grid with two sets of positive priors, a Half Gaussian prior with zero mean and an Exponential prior.
+To ensure we have a grid of high enough resolution we use 4 times as many sphixels as spherical harmonic coefficients.
 
-To evaluate the flux (Eq.~\ref{eq:linear_model_pix}) we map the schmixels to a spherical harmonic coefficient vector $\mathbf{y}$ using the matrix $\mathbf{P}^\dagger$ at each evaluation of the posterior.
-As the end product of the inference we do not use the schmixels $\mathbf{p}'$ but rather the spherical harmonic coefficients $\mathbf{y}=\mathbf{P}^\dagger\mathbf{p}'$ generated from the schmixels.
+To evaluate the flux (Eq.~\ref{eq:linear_model_pix}) we map the sphixels to a spherical harmonic coefficient vector $\mathbf{y}$ using the matrix $\mathbf{P}^\dagger$ at each evaluation of the posterior.
+As the end product of the inference we do not use the sphixels $\mathbf{p}'$ but rather the spherical harmonic coefficients $\mathbf{y}=\mathbf{P}^\dagger\mathbf{p}'$ generated from the sphixels.
 The coefficents $\mathbf{y}$ can then be used to evaluate the map on a pixelated grid of arbitrary resolution via the matrix $\mathbf{P}$. 
-Although the priors on schmixels $\mathbf{p}'$ are strictly positive, the pixels $\mathbf{P}\,\mathbf{y}$ don't completely respect those priors because some information is lost in going from schmixels to spherical harmonics  and there will still be some regions of the map with negative intensity.
-To visualize the effect of the transformation from schmixels to spherical harmonics, in Figure~\ref{fig:schmixels_to_pixels} we plot a single draw of schmixels from an Exponential prior (left), convert them to spherical harmonics (middle) and then generate another pixelated map from the spherical harmonics on a grid of the same size as the schmixel grid.
+Although the priors on sphixels $\mathbf{p}'$ are strictly positive, the pixels $\mathbf{P}\,\mathbf{y}$ don't completely respect those priors because some information is lost in going from sphixels to spherical harmonics  and there will still be some regions of the map with negative intensity.
+To visualize the effect of the transformation from sphixels to spherical harmonics, in Figure~\ref{fig:sphixels_to_pixels} we plot a single draw of sphixels from an Exponential prior (left), convert them to spherical harmonics (middle) and then generate another pixelated map from the spherical harmonics on a grid of the same size as the sphixel grid.
 The middle map is visibly smoother than the prior map and based on the histograms shown in black, it seems that the effective prior is closer to a Gaussian than an Exponential.
 There is also minimal leakage into negative values.
 
 \begin{figure}[h!]
     \begin{centering}
-    \includegraphics[width=1.\linewidth]{figures/schmixels_to_pixels.pdf}
-    \oscaption{schmixels_to_pixels}{%
+    \includegraphics[width=1.\linewidth]{figures/sphixels_to_pixels.pdf}
+    \oscaption{sphixels_to_pixels}{%
         Mapping from a pixelated map in which we set our priors (left) to the spherical harmonic basis which we use to compute the model (middle) and then back to pixels (right).
         The mapping from spherical harmonics to pixels is exact but the reverse is not true
-        so to differentiate between pixels mapped to spherical harmonics and pixels constructed from spherical harmonics we call the former "schmixels".
-        Since there are many more schmixels than there are spherical harmonics coefficients 
+        so to differentiate between pixels mapped to spherical harmonics and pixels constructed from spherical harmonics we call the former "sphixels".
+        Since there are many more sphixels than there are spherical harmonics coefficients 
        the map drawn from an Exponential prior on the left can only be approximately represented in the $Y_{lm}$ basis and the effective prior on pixels ends up looking more like a Gaussian with a heavier right tail than an Exponential.
-  \label{fig:schmixels_to_pixels}
+  \label{fig:sphixels_to_pixels}
     }
     \end{centering}
 \end{figure}
@@ -459,15 +459,15 @@ There is also minimal leakage into negative values.
 \begin{figure}[h!]
     \begin{centering}
     \includegraphics[width=1.\linewidth]{figures/pixels_vs_harmonics.pdf}
-    \oscaption{schmixels_vs_harmonics}{%
+    \oscaption{sphixels_vs_harmonics}{%
         Maximum A Posteriori (MAP) estimates of $l=20$ maps (second panel from the top) produced by fitting a simulated light curve (bottom) which was generated from an $l=30$ map consisting of a single bright spot (top). 
         The small circles beneath each inferred map show the progression of the occultation.
         The map on the left corresponds to a model in which we directly fit for spherical harmonic coefficients $\mathbf{y}$ with a Gaussian prior.
-        The map in the middle comes from a model in which we instead fit for schmixels $\mathbf{p}'$ with a Half Gaussian prior but still use $\mathbf{y}$ to compute the flux.
+        The map in the middle comes from a model in which we instead fit for sphixels $\mathbf{p}'$ with a Half Gaussian prior but still use $\mathbf{y}$ to compute the flux.
         The map on the right is the same as the middle one except we use an Exponential prior.
         The scale parameter of the Half Gaussian and the Exponential prior is set to a value which approximates the scale of Gaussian prior on $\mathbf{y}$ to ensure fair comparison between the solutions. 
-        While all models fit the data reasonably well, the ones in which we fit for schmixels result in more plausible and sparse maps. The location of the true spot is not recovered correctly because a single light curve does not contain enough information to break the degeneracy in position along the limb of the occultor.
-        \label{fig:schmixels_vs_harmonics}
+        While all models fit the data reasonably well, the ones in which we fit for sphixels result in more plausible and sparse maps. The location of the true spot is not recovered correctly because a single light curve does not contain enough information to break the degeneracy in position along the limb of the occultor.
+        \label{fig:sphixels_vs_harmonics}
     }
     \end{centering}
 \end{figure}
@@ -475,7 +475,7 @@ There is also minimal leakage into negative values.
 To ensure that the difference in the inferred maps is not in part due to a difference in the scale of the priors, we take 10000 prior samples of the $y$ in the spherical harmonic model, compute the standard deviation and use that as the scale parameter of the Half Gaussian and the Exponential prior.
 We fit all models for the Maximum A Posteriori (MAP) estimate of the parameters using the
 \textsf{BFGS} algorithm as implemented in \textsf{scipy.optimize.minimize} in the \textsf{scipy} package (CITE) and the exact gradients of the model with respect to all parameters provided by \textsf{Theano}. 
-The results are shown in Figure~\ref{fig:schmixels_vs_harmonics}.
+The results are shown in Figure~\ref{fig:sphixels_vs_harmonics}.
 The top subplot shows the true map with a localized bright spot and the 
 inferred maps are shown in the second row from the top together with the progression of the occultation (miniature maps). 
 Bottom subplots show the simulated light curves, the predicted flux from the model and the normalized residuals.
@@ -490,15 +490,15 @@ For example, we find that for some fits at low $l$, the model would place a brig
 This is happening to a lesser extent in the shown map where a small spot is visible at the right edge of the observed hemisphere in order to amplify the visible bright arc through ringing.
 
 
-The schmixel model with Half Gaussian priors produces a simpler map in which the unobserved hemisphere has much lower intensity but the arc is less sharply defined and more extended and as a result the predicted flux does not rise steeply enough compared to the light curve.
-Finally, the Exponential prior on schmixels results in a map with the most spot like feature but it also has noticeable ringing.
-This is somewhat surprising because based on Figure~\ref{fig:schmixels_to_pixels}, we wouldn't expect much difference between the Half Gaussian and the Exponential priors.
+The sphixel model with Half Gaussian priors produces a simpler map in which the unobserved hemisphere has much lower intensity but the arc is less sharply defined and more extended and as a result the predicted flux does not rise steeply enough compared to the light curve.
+Finally, the Exponential prior on sphixels results in a map with the most spot like feature but it also has noticeable ringing.
+This is somewhat surprising because based on Figure~\ref{fig:sphixels_to_pixels}, we wouldn't expect much difference between the Half Gaussian and the Exponential priors.
 It seems that the heavier tail of the Exponential is nevertheless able to induce a sparser solution.
 In the next section, we tackle the issue of ringing artefacts.
 
 \subsection{Smoothing out spurious features}
 \label{ssec:spurious_features}
-To suppress ringing which results in regions of negative intensity surrounding a spot like feature as in Figure~\ref{fig:schmixels_vs_harmonics}, we apply a spatial smoothing filter to the spherical harmonics.
+To suppress ringing which results in regions of negative intensity surrounding a spot like feature as in Figure~\ref{fig:sphixels_vs_harmonics}, we apply a spatial smoothing filter to the spherical harmonics.
 Mathematically, the filtering operation is a convolution between the map and some kernel function $B(\theta,\phi)$.
 Assuming both the map and the kernel function are expanded in terms of spherical harmonics, the convolution operation is simply a multiplication between the two sets of spherical harmonic coefficients.
 We choose a simple azimuthally symmetric Gaussian kernel function given by
@@ -552,10 +552,10 @@ We find that setting $\sigma_s=2/l$ where $l$ is the order of expansion of the m
 
 \subsection{Fitting simulated ingress/egress light curves}
 In this section we test a model which includes the smoothing filter. 
-We use the same map to generate the data as in Figure~\ref{fig:schmixels_vs_harmonics} except this time we simulate two light curves in order to break the degeneracy in the location of the spot, an ingress light curve generated from real ephemeris of Io disappearing behind the limb of Jupiter and egress light curve generated when Io reappears.
+We use the same map to generate the data as in Figure~\ref{fig:sphixels_vs_harmonics} except this time we simulate two light curves in order to break the degeneracy in the location of the spot, an ingress light curve generated from real ephemeris of Io disappearing behind the limb of Jupiter and egress light curve generated when Io reappears.
 We generate the light curves from an $l=25$ map and fit a map of the same order. 
 We apply a Gaussian smoothing filter to both the simulated map and the map we fit to the data and set the smoothing parameter to $\sigma_s=2/l=2/25$. 
-We use an Exponential prior on the schmixels and set the scale parameter to 10.
+We use an Exponential prior on the sphixels and set the scale parameter to 10.
 The results are shown in Figure~\ref{fig:ingress_egress_simulated}.
 
 \begin{figure}[h!]
@@ -565,13 +565,13 @@ The results are shown in Figure~\ref{fig:ingress_egress_simulated}.
 Maximum A Posteriori (MAP) estimate of an $l=25$ map (right) produced by fitting a pair of simulated ingress and egress occultation light curves (bottom) which were generated from a $l=25$ map consisting of a single bright spot (left). 
        A Gaussian smoothing filter is applied to reduce the ringing artefacts.
        Small circles beneath each inferred map show the progression of the occultation.
-        The model is able to recover the position of the true spot (marked with a grey cross) and there is noticeably less ringing than in Figure~\ref{fig:schmixels_vs_harmonics}.
+        The model is able to recover the position of the true spot (marked with a grey cross) and there is noticeably less ringing than in Figure~\ref{fig:sphixels_vs_harmonics}.
         \label{fig:ingress_egress_simulated}
     }
     \end{centering}
 \end{figure}
 
-The inferred map looks significantly better than the one in Figure~\ref{fig:schmixels_vs_harmonics}. 
+The inferred map looks significantly better than the one in Figure~\ref{fig:sphixels_vs_harmonics}. 
 With two occultation light curves the model is able to break the degeneracy in the location of the spot and thanks to the smoothing filter there is almost no visible ringing around the spot in the inferred map.
 Some residuals in the data are still present (WHY).
 In the next section, we fit a pair of light curves from the IRTF dataset described in Section~\ref{sec:data}.

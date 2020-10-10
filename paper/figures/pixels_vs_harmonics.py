@@ -400,8 +400,8 @@ fig.text(0.5, 0.05, "Occultor x-position [Io radii]", ha="center")
 ax_map[0].set_title(
     "Gaussian prior on $\mathrm{Y}_{lm}$\n coefficients", pad=20
 )
-ax_map[1].set_title("Positive Gaussian\n prior on schmixels", pad=20)
-ax_map[2].set_title("Exponential\n prior on schmixels", pad=20)
+ax_map[1].set_title("Positive Gaussian\n prior on sphixels", pad=20)
+ax_map[2].set_title("Exponential\n prior on sphixels", pad=20)
 
 #  Ticks
 for a in ax_lc:
