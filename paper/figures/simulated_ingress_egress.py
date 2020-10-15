@@ -143,9 +143,7 @@ flux_obs_eg = soln["flux_pred_eg"] / norm
 
 # Compute residuals
 res_in = f_obs_in - flux_obs_in
-res_in = res_in / np.std(res_in)
 res_eg = f_obs_eg - flux_obs_eg
-res_eg = res_eg / np.std(res_eg)
 
 
 def lon_lat_to_mollweide(lon, lat):
@@ -265,7 +263,13 @@ ax_lc[0].plot(xo_in_dense, flux_in_dense, "C1-")  # Model
 
 # Residuals
 ax_res[0].errorbar(
-    xo_in, res_in, f_err_in, color="black", fmt=".", ecolor="black", alpha=0.4,
+    xo_in,
+    res_in / np.std(res_in),
+    f_err_in / np.std(res_in),
+    color="black",
+    fmt=".",
+    ecolor="black",
+    alpha=0.4,
 )
 
 # Plot egress
@@ -282,7 +286,13 @@ ax_lc[1].errorbar(
 ax_lc[1].plot(xo_eg_dense, flux_eg_dense, "C1-")
 
 ax_res[1].errorbar(
-    xo_eg, res_eg, f_err_eg, color="black", fmt=".", ecolor="black", alpha=0.4,
+    xo_eg,
+    res_eg / np.std(res_eg),
+    f_err_eg / np.std(res_eg),
+    color="black",
+    fmt=".",
+    ecolor="black",
+    alpha=0.4,
 )
 
 # Make broken axis

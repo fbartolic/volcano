@@ -190,10 +190,7 @@ with model:
 
 # Compute residuals
 res_in = lc_in["flux"].value - soln["flux_pred_in"]
-res_in = res_in / np.std(res_in)
-
 res_eg = lc_eg["flux"].value - soln["flux_pred_eg"]
-res_eg = res_eg / np.std(res_eg)
 
 # Initialize maps
 map = starry.Map(ydeg_inf)
@@ -308,7 +305,13 @@ ax_lc[0].plot(t_dense_in, soln["flux_dense_in"], "C1-")  # Model
 
 # Residuals
 ax_res[0].errorbar(
-    t_in, res_in, f_err_in, color="black", fmt=".", ecolor="black", alpha=0.4,
+    t_in,
+    res_in / np.std(res_in),
+    f_err_in / np.std(res_in),
+    color="black",
+    fmt=".",
+    ecolor="black",
+    alpha=0.4,
 )
 
 # Plot egress
@@ -325,7 +328,13 @@ ax_lc[1].errorbar(
 ax_lc[1].plot(t_dense_eg, soln["flux_dense_eg"], "C1-")
 
 ax_res[1].errorbar(
-    t_eg, res_eg, f_err_eg, color="black", fmt=".", ecolor="black", alpha=0.4,
+    t_eg,
+    res_eg / np.std(res_eg),
+    f_err_eg / np.std(res_eg),
+    color="black",
+    fmt=".",
+    ecolor="black",
+    alpha=0.4,
 )
 
 

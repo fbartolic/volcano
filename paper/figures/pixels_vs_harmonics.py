@@ -230,10 +230,11 @@ def plot_everything(
     ax_lc.set_xticklabels([])
 
     # Residuals
+    res_norm = np.std(res_pix_exp)  # normalize
     ax_res.errorbar(
         xo_sim,
-        residuals,
-        f_err,
+        residuals / res_norm,
+        f_err / res_norm,
         color="black",
         fmt=".",
         ecolor="black",
@@ -262,16 +263,10 @@ flux_dense_ylm = soln_ylm["flux_dense"] / norm
 flux_dense_pix_gauss = soln_pix_gauss["flux_dense"] / norm
 flux_dense_pix_exp = soln_pix_exp["flux_dense"] / norm
 
-# Compute residuals
+# Compute  residuals
 res_ylm = f_obs - MAP_obs_ylm
-res_ylm = res_ylm / np.std(res_ylm)
-
 res_pix_gauss = f_obs - MAP_obs_pix_gauss
-res_pix_gauss = res_pix_gauss / np.std(res_pix_gauss)
-
 res_pix_exp = f_obs - MAP_obs_pix_exp
-res_pix_exp = res_pix_exp / np.std(res_pix_exp)
-
 
 # Set up the plot
 nim = 8
