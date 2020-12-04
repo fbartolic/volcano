@@ -16,6 +16,29 @@ from volcano.utils import *
 np.random.seed(42)
 starry.config.lazy = True
 
+import numpy as np
+import os
+import sys
+
+import starry
+import jax.numpy as jnp
+from jax import random, jit, vmap, lax
+import numpyro
+import numpyro.distributions as dist
+from numpyro.infer import *
+
+numpyro.enable_x64()
+
+from matplotlib import colors
+import matplotlib.gridspec as gridspec
+from matplotlib.ticker import FormatStrFormatter, AutoMinorLocator
+
+from volcano.utils import *
+
+np.random.seed(42)
+starry.config.lazy = True
+
+
 # Set up mock map
 xo_sim = np.linspace(37.15, 39.43, 120)
 yo_sim = np.linspace(-8.284, -8.27, 120)
@@ -39,8 +62,10 @@ map_true.amp = x_smooth[0]
 
 # Generate mock light curve
 f_true = map_true.flux(ro=ro, xo=xo_sim, yo=yo_sim).eval()
-f_err = 0.02 * np.max(f_true)
+SN = 50
+f_err = np.max(f_true) / SN
 f_obs = f_true + np.random.normal(0, f_err, len(f_true))
+
 
 # Ylm model
 ydeg_inf = 20
@@ -48,147 +73,180 @@ map = starry.Map(ydeg_inf)
 lat, lon, Y2P, P2Y, Dx, Dy = map.get_pixel_transforms(oversample=4)
 npix = Y2P.shape[0]
 
+Y2P = jnp.array(Y2P)
+P2Y = jnp.array(P2Y)
+Dx = jnp.array(Dx)
+Dy = jnp.array(Dy)
+
 # Evalute MAP model on denser grid
 xo_dense = np.linspace(xo_sim[0], xo_sim[-1], 200)
 yo_dense = np.linspace(yo_sim[0], yo_sim[-1], 200)
 
-PositiveNormal = pm.Bound(pm.Normal, lower=0.0)
 ncoeff = (ydeg_inf + 1) ** 2
 
 # Compute design matrix
 map = starry.Map(ydeg_inf)
-A = theano.shared(map.design_matrix(xo=xo_sim, yo=yo_sim, ro=ro).eval())
-A_dense = theano.shared(
-    map.design_matrix(xo=xo_dense, yo=yo_dense, ro=ro).eval()
+A = jnp.array(map.design_matrix(xo=xo_sim, yo=yo_sim, ro=ro).eval())
+A_dense = jnp.array(map.design_matrix(xo=xo_dense, yo=yo_dense, ro=ro).eval())
+
+
+def model_ylm():
+    y1 = numpyro.sample(
+        "y1", dist.Normal(jnp.zeros(ncoeff - 1), 1e-01 * jnp.ones(ncoeff - 1))
+    )
+    amp = numpyro.sample("amp", dist.LogNormal(0.0, 1.0))
+
+    x = amp * jnp.concatenate([jnp.array([1.0]), y1], axis=0)
+    numpyro.deterministic("x", x)
+
+    flux = jnp.dot(A, x[:, None]).reshape(-1)
+    numpyro.deterministic("flux_pred", flux)
+
+    # Dense grid
+    flux_dense = jnp.dot(A_dense, x[:, None]).reshape(-1)
+    numpyro.deterministic("flux_dense", flux)
+
+    numpyro.sample(
+        "obs", dist.Normal(flux, f_err * jnp.ones(len(f_obs))), obs=f_obs
+    )
+
+
+init_vals = {"y1": 1e-03 * np.random.rand(ncoeff - 1), "amp": 4.0}
+
+nuts_kernel = NUTS(
+    model_ylm,
+    dense_mass=False,
+    init_strategy=init_to_value(values=init_vals),
+    target_accept_prob=0.95,
 )
 
-with pm.Model() as model_ylm:
+mcmc = MCMC(nuts_kernel, num_warmup=500, num_samples=1500)
+rng_key = random.PRNGKey(0)
+mcmc.run(rng_key)
+samples_ylm = mcmc.get_samples()
 
-    cov = (1e-01) ** 2 * np.eye(ncoeff - 1)
-    y1 = pm.MvNormal(
-        "y1",
-        np.zeros(ncoeff - 1),
-        cov,
-        shape=(ncoeff - 1,),
-        testval=1e-03 * np.random.rand(ncoeff - 1),
-    )  # testval=['y1'])
-    ln_amp = pm.Normal("ln_amp", 0.0, 5.0, testval=np.log(20.0))
-    pm.Deterministic("amp", tt.exp(ln_amp))
-
-    x = tt.exp(ln_amp) * tt.concatenate([[1.0], y1], axis=0)
-    flux = tt.dot(A, x[:, None]).flatten()
-    pm.Deterministic("flux_pred", flux)
-
-    # Dense grid
-    MAP_flux_ylm = tt.dot(A_dense, x[:, None]).flatten()
-    pm.Deterministic("flux_dense", flux)
-
-    pm.Normal("obs", mu=flux, sd=f_err * tt.ones(len(f_obs)), observed=f_obs)
-
-with model_ylm:
-    soln_ylm = xo.optimize(options=dict(maxiter=99999))
-
-
-# Compute the standard deviation of pixels in the Ylm model
-with pm.Model() as model_prior:
-    map = starry.Map(ydeg_inf)
-    cov = (1e-01) ** 2 * np.eye(ncoeff - 1)
-    y1 = pm.MvNormal(
-        "y1",
-        np.zeros(ncoeff - 1),
-        cov,
-        shape=(ncoeff - 1,),
-        testval=1e-03 * np.random.rand(ncoeff - 1),
-    )
-    ln_amp = pm.Normal("ln_amp", 0.0, 1.0, testval=np.log(4.0))
-    pm.Deterministic("amp", tt.exp(ln_amp))
-    trace_pp = pm.sample_prior_predictive(10000)
-
-pix_samples = []
-for amp, y1 in zip(trace_pp["amp"], trace_pp["y1"]):
-    x = amp * y1
-    x = np.insert(x, 0, amp, axis=0)
-    s = np.dot(Y2P, x[:, None]).reshape(-1)
-    pix_samples.append(s)
-
-pix_samples = np.concatenate(pix_samples)
-std_p = np.std(pix_samples)
+# Compute the standard deviation of pixels in the Ylm model  
+def model_ylm_prior():
+    y1 = numpyro.sample("y1", dist.Normal(jnp.zeros(ncoeff -1), 1e-01*jnp.ones(ncoeff - 1)))
+    amp = numpyro.sample("amp", dist.LogNormal(0., 1.))
+    x = numpyro.deterministic("x", amp*jnp.concatenate([jnp.array([1.]), y1]))
+    numpyro.deterministic("pix", jnp.dot(Y2P, x[:, None]).reshape(-1))
+    
+prior_samples = Predictive(model_ylm_prior, {}, num_samples=10000)(random.PRNGKey(1))
+std_p = np.std(np.concatenate(prior_samples['pix']))
 
 # Pixel model gaussian prior
-with pm.Model() as model_pix_gauss:
-    p = PositiveNormal("p", 0.0, std_p, shape=(npix,))
-    x = tt.dot(P2Y, p)
-
-    pm.Deterministic("amp", x[0])
-    pm.Deterministic("y1", x[1:] / x[0])
+def model_sphix_gauss():
+    p = numpyro.sample("p", dist.HalfNormal(std_p).expand([npix]))
+    x = jnp.dot(P2Y, p)
+    numpyro.deterministic("x", x)
 
     # Compute flux
-    flux = tt.dot(A, x[:, None]).flatten()
-    pm.Deterministic("flux_pred", flux)
+    flux = jnp.dot(A, x[:, None]).reshape(-1)
+    numpyro.deterministic("flux_pred", flux)
 
     # Dense grid
-    MAP_flux_pix_gauss = tt.dot(A_dense, x[:, None]).flatten()
-    pm.Deterministic("flux_dense", flux)
+    flux_dense = jnp.dot(A_dense, x[:, None]).reshape(-1)
+    numpyro.deterministic("flux_dense", flux)
 
-    pm.Normal("obs", mu=flux, sd=f_err * np.ones_like(f_obs), observed=f_obs)
+    numpyro.sample("obs", dist.Normal(flux, f_err*jnp.ones(len(f_obs))), obs=f_obs)
 
-    soln_pix_gauss = xo.optimize(options=dict(maxiter=99999))
+
+nuts_kernel = NUTS(
+    model_sphix_gauss,
+    dense_mass=False,
+    target_accept_prob=0.95,
+)
+
+mcmc = MCMC(nuts_kernel, num_warmup=500, num_samples=1500)
+rng_key = random.PRNGKey(2)
+mcmc.run(rng_key)
+samples_sphix_gauss = mcmc.get_samples()
 
 # Pixel model exponential prior
-with pm.Model() as model_pix_exp:
-    p = pm.Exponential("p", 1 / std_p, shape=(npix,))
-    x = tt.dot(P2Y, p)
-
-    pm.Deterministic("amp", x[0])
-    pm.Deterministic("y1", x[1:] / x[0])
+def model_sphix_exp():
+    p = numpyro.sample("p", dist.Exponential(1/std_p).expand([npix]))
+    x = jnp.dot(P2Y, p)
+    numpyro.deterministic("x", x)
 
     # Compute flux
-    flux = tt.dot(A, x[:, None]).flatten()
-    pm.Deterministic("flux_pred", flux)
+    flux = jnp.dot(A, x[:, None]).reshape(-1)
+    numpyro.deterministic("flux_pred", flux)
 
     # Dense grid
-    MAP_flux_pix_exp = tt.dot(A_dense, x[:, None]).flatten()
-    pm.Deterministic("flux_dense", flux)
+    flux_dense = jnp.dot(A_dense, x[:, None]).reshape(-1)
+    numpyro.deterministic("flux_dense", flux)
 
-    pm.Normal("obs", mu=flux, sd=f_err * np.ones_like(f_obs), observed=f_obs)
+    numpyro.sample("obs", dist.Normal(flux, f_err*jnp.ones(len(f_obs))), obs=f_obs)
 
-    soln_pix_exp = xo.optimize(options=dict(maxiter=99999))
 
+nuts_kernel = NUTS(
+    model_sphix_exp,
+    dense_mass=False,
+    target_accept_prob=0.95,
+)
+
+mcmc = MCMC(nuts_kernel, num_warmup=500, num_samples=1500)
+rng_key = random.PRNGKey(3)
+mcmc.run(rng_key)
+samples_sphix_exp = mcmc.get_samples()
+
+
+# Compute median maps
+resol = 300
+def get_median_map(ydeg_inf, samples, projection="Mollweide", inc=90, theta=0., nsamples=20, resol=300):
+    imgs = []
+    map = starry.Map(ydeg=ydeg_inf)
+    map.inc = inc
+    
+    for n in np.random.randint(0, len(samples), 10):
+        x = samples[n]
+        map.amp = x[0]
+        map[1:, :] = x[1:] / map.amp
+        
+        if projection=="Mollweide":
+            im = map.render(projection='Mollweide', res=resol).eval()
+        else:
+            im = map.render(theta=theta, res=resol).eval()
+        imgs.append(im)
+
+    return np.median(imgs, axis=0)
+
+median_map_moll_ylm = get_median_map(ydeg_inf, samples_ylm['x'], resol=resol)
+median_map_ylm = get_median_map(ydeg_inf, samples_ylm['x'], projection=None, resol=resol)
+
+median_map_moll_sphix_gauss = get_median_map(ydeg_inf, samples_sphix_gauss['x'], resol=resol)
+median_map_sphix_gauss = get_median_map(ydeg_inf, samples_sphix_gauss['x'], projection=None, resol=resol)
+
+median_map_moll_sphix_exp = get_median_map(ydeg_inf, samples_sphix_exp['x'], resol=resol)
+median_map_sphix_exp = get_median_map(ydeg_inf, samples_sphix_exp['x'], projection=None, resol=resol)
+
+norm = np.max(np.median(samples_ylm['flux_dense'], axis=0))
 
 def plot_everything(
-    map,
+    median_map_moll,
+    median_map,
     ax_map,
     ax_im,
     ax_lc,
     ax_res,
-    soln,
-    flux_dense,
+    samples,
     residuals,
-    resol,
     show_cbar=True,
+    cmap_norm=colors.Normalize(vmin=-0.5)
 ):
-    t_dense = np.linspace(xo_im[0], xo_im[-1], len(soln["flux_dense"]))
+    t_dense = np.linspace(xo_im[0], xo_im[-1], len(samples["flux_dense"][-1]))
     nim = len(ax_im)
-
+    
     # Plot map
-    map.show(
-        projection="molleweide",
-        ax=ax_map,
-        colorbar=show_cbar,
-        norm=colors.Normalize(vmin=-0.5, vmax=20),
-        res=resol,
-    )
+    im = map.show(image=median_map_moll, ax=ax_map, projection="Mollweide", 
+                  norm=cmap_norm, colorbar=show_cbar)
     ax_map.axis("off")
 
     # Plot mini maps
     for n in range(nim):
         # Show the image
-        map.show(
-            ax=ax_im[n],
-            res=resol,
-            grid=False,
-            norm=colors.Normalize(vmin=-0.5, vmax=20),
-        )
+        map.show(image=median_map, ax=ax_im[n], grid=False, norm=cmap_norm)
 
         # Outline
         x = np.linspace(-1, 1, 1000)
@@ -217,56 +275,46 @@ def plot_everything(
     # Plot light curve and fit
     ax_lc.errorbar(
         xo_sim,
-        f_obs,
-        f_err,
+        f_obs/norm,
+        f_err/norm,
         color="black",
-        fmt=".",
+        marker="o",
+        linestyle='',
         ecolor="black",
         alpha=0.4,
     )
-    ax_lc.plot(t_dense, flux_dense, "C1-")
+    
+    for s in np.random.randint(0, len(samples['flux_dense']), 10):
+        ax_lc.plot(t_dense, samples['flux_dense'][s, :]/norm, "C1-", alpha=0.3)  # Model
+
     ax_lc.set_ylim(bottom=0.0)
     ax_lc.set_ylabel("Flux")
     ax_lc.set_xticklabels([])
 
     # Residuals
-    res_norm = np.std(res_pix_exp)  # normalize
     ax_res.errorbar(
         xo_sim,
-        residuals / res_norm,
-        f_err / res_norm,
+        residuals / np.std(residuals),
+        (f_err/norm) / np.std(residuals),
         color="black",
-        fmt=".",
+        marker="o",
+        linestyle='',
         ecolor="black",
         alpha=0.4,
     )
     ax_res.set(ylabel="Residuals\n (norm.)")
     ax_res.xaxis.set_major_formatter(plt.FormatStrFormatter("%0.1f"))
-
+    ax_res.set_ylim(-3, 3)
+    ax_res.set_yticks([-3,0,3])
+    
     # Appearance
     ax_im[-1].set_zorder(-100)
 
 
-# Normalize flux
-norm = np.max(soln_ylm["flux_dense"])
-f_obs /= norm
-f_err /= norm
-MAP_flux_ylm /= norm
-MAP_flux_pix_gauss /= norm
-MAP_flux_pix_exp /= norm
-
-MAP_obs_ylm = soln_ylm["flux_pred"] / norm
-MAP_obs_pix_gauss = soln_pix_gauss["flux_pred"] / norm
-MAP_obs_pix_exp = soln_pix_exp["flux_pred"] / norm
-
-flux_dense_ylm = soln_ylm["flux_dense"] / norm
-flux_dense_pix_gauss = soln_pix_gauss["flux_dense"] / norm
-flux_dense_pix_exp = soln_pix_exp["flux_dense"] / norm
-
 # Compute  residuals
-res_ylm = f_obs - MAP_obs_ylm
-res_pix_gauss = f_obs - MAP_obs_pix_gauss
-res_pix_exp = f_obs - MAP_obs_pix_exp
+res_ylm = (f_obs - np.median(samples_ylm["flux_dense"], axis=0))/norm
+res_pix_gauss = (f_obs - np.median(samples_sphix_gauss["flux_dense"], axis=0))/norm
+res_pix_exp = (f_obs - np.median(samples_sphix_exp["flux_dense"], axis=0))/norm
 
 # Set up the plot
 nim = 8
@@ -275,39 +323,23 @@ nim = 8
 xo_im = np.linspace(xo_sim[0], xo_sim[-1], nim)
 yo_im = np.linspace(yo_sim[0], yo_sim[-1], nim)
 
-# Initialize maps
-map_ylm = starry.Map(ydeg_inf)
-map_ylm.amp = soln_ylm["amp"]
-map_ylm[1:, :] = soln_ylm["y1"]
-
-map_pix_gauss = starry.Map(ydeg_inf)
-map_pix_gauss.amp = soln_pix_gauss["amp"]
-map_pix_gauss[1:, :] = soln_pix_gauss["y1"]
-
-map_pix_exp = starry.Map(ydeg_inf)
-map_pix_exp.amp = soln_pix_exp["amp"]
-map_pix_exp[1:, :] = soln_pix_exp["y1"]
-
-
-fig = plt.figure(figsize=(12, 10))
-fig.subplots_adjust(wspace=0.0)
+fig = plt.figure(figsize=(24, 18))
 
 heights = [3, 2, 3, 1]
 gs0 = fig.add_gridspec(
-    nrows=1, ncols=3 * nim, bottom=0.735, left=0.05, right=0.98,
+    nrows=1, ncols=3 * nim, bottom=0.713, left=0.05, right=0.98, hspace=0., wspace=0.1
 )
 gs1 = fig.add_gridspec(
-    nrows=4, ncols=nim, height_ratios=heights, top=0.6, left=0.03, right=0.32
+    nrows=4, ncols=nim, height_ratios=heights, top=0.65, left=0.03, right=0.33, hspace=0.1, wspace=0.1
 )
 gs2 = fig.add_gridspec(
-    nrows=4, ncols=nim, height_ratios=heights, top=0.6, left=0.36, right=0.65
+    nrows=4, ncols=nim, height_ratios=heights, top=0.65, left=0.35, right=0.66, hspace=0.1, wspace=0.1
 )
 gs3 = fig.add_gridspec(
-    nrows=4, ncols=nim, height_ratios=heights, top=0.6, left=0.69, right=0.98
+    nrows=4, ncols=nim, height_ratios=heights, top=0.65, left=0.68, right=0.98, hspace=0.1, wspace=0.1
 )
 
 # True map subplot
-resol = 300
 ax_true_map = fig.add_subplot(gs0[0, :])
 map_true.show(
     ax=ax_true_map,
@@ -348,40 +380,40 @@ ax_res = [
 ]
 
 plot_everything(
-    map_ylm,
+    median_map_moll_ylm,
+    median_map_ylm,
     ax_map[0],
     ax_im[0],
     ax_lc[0],
     ax_res[0],
-    soln_ylm,
-    flux_dense_ylm,
+    samples_ylm,
     res_ylm,
-    resol,
     show_cbar=False,
+    cmap_norm=colors.Normalize(vmin=-0.5, vmax=20)
 )
 plot_everything(
-    map_pix_gauss,
+    median_map_moll_sphix_gauss,
+    median_map_sphix_gauss,
     ax_map[1],
     ax_im[1],
     ax_lc[1],
     ax_res[1],
-    soln_pix_gauss,
-    flux_dense_pix_gauss,
+    samples_sphix_gauss,
     res_pix_gauss,
-    resol,
     show_cbar=False,
+    cmap_norm=colors.Normalize(vmin=-0.5, vmax=20)
 )
 plot_everything(
-    map_pix_exp,
+    median_map_moll_sphix_exp,
+    median_map_sphix_exp,
     ax_map[2],
     ax_im[2],
     ax_lc[2],
     ax_res[2],
-    soln_pix_exp,
-    flux_dense_pix_exp,
+    samples_sphix_exp,
     res_pix_exp,
-    resol,
     show_cbar=True,
+    cmap_norm=colors.Normalize(vmin=-0.5, vmax=20)
 )
 
 for a in ax_lc[1:] + ax_res[1:]:
@@ -390,7 +422,7 @@ for a in ax_lc[1:] + ax_res[1:]:
     a.set_ylabel("")
     a.set_ylabel("")
 
-fig.text(0.5, 0.05, "Occultor x-position [Io radii]", ha="center")
+fig.text(0.5, 0.06, "Occultor x-position [Io radii]", ha="center")
 
 ax_map[0].set_title(
     "Gaussian prior on $\mathrm{Y}_{lm}$\n coefficients", pad=20
@@ -400,7 +432,7 @@ ax_map[2].set_title("Exponential\n prior on sphixels", pad=20)
 
 #  Ticks
 for a in ax_lc:
-    a.set_ylim(-0.05, 1.05)
+    a.set_ylim(-0.1, 1.1)
     a.set_xticklabels([])
     a.set_yticks(np.arange(0, 1.2, 0.2))
 
@@ -409,9 +441,6 @@ for a in ax_lc + ax_res:
     a.yaxis.set_minor_locator(AutoMinorLocator())
     a.set_xticks(np.arange(37.0, 40.0, 0.5))
     a.grid()
-
-for a in ax_res:
-    a.set_ylim(-5.0, 5.0)
 
 # Save
 fig.savefig("pixels_vs_harmonics.pdf", bbox_inches="tight", dpi=500)
