@@ -17,7 +17,7 @@ from matplotlib.ticker import FormatStrFormatter, AutoMinorLocator
 from volcano.utils import *
 
 np.random.seed(42)
-starry.config.lazy = True
+starry.config.lazy = False
 numpyro.enable_x64()
 
 xo_eg = np.linspace(37.15, 39.43, 150)
@@ -48,14 +48,14 @@ map_true.amp = 20
 # Smooth the true map
 sigma_s = 2 / ydeg_true
 S_true = get_smoothing_filter(ydeg_true, sigma_s)
-x = (map_true.amp * map_true.y).eval()
+x = map_true.amp * map_true.y
 xsmooth = (S_true @ x[:, None]).reshape(-1)
 map_true[:, :] = xsmooth / xsmooth[0]
 map_true.amp = xsmooth[0]
 
 # Generate mock ingress and egress light curves
-f_true_in = map_true.flux(ro=ro, xo=xo_in, yo=yo_in, theta=theta_in).eval()
-f_true_eg = map_true.flux(ro=ro, xo=xo_eg, yo=yo_eg, theta=theta_eg).eval()
+f_true_in = map_true.flux(ro=ro, xo=xo_in, yo=yo_in, theta=theta_in)
+f_true_eg = map_true.flux(ro=ro, xo=xo_eg, yo=yo_eg, theta=theta_eg)
 
 # S/N = 50
 f_err_in_50 = np.max(np.concatenate([f_true_in, f_true_eg])) / 50
@@ -88,21 +88,13 @@ yo_eg_dense = np.linspace(yo_eg[0], yo_eg[-1], 200)
 
 # Compute design matrix
 map = starry.Map(ydeg_inf)
-A_in = jnp.array(
-    map.design_matrix(xo=xo_in, yo=yo_in, ro=ro, theta=theta_in).eval()
-)
-A_eg = jnp.array(
-    map.design_matrix(xo=xo_eg, yo=yo_eg, ro=ro, theta=theta_eg).eval()
-)
+A_in = jnp.array(map.design_matrix(xo=xo_in, yo=yo_in, ro=ro, theta=theta_in))
+A_eg = jnp.array(map.design_matrix(xo=xo_eg, yo=yo_eg, ro=ro, theta=theta_eg))
 A_in_dense = jnp.array(
-    map.design_matrix(
-        xo=xo_in_dense, yo=yo_in_dense, ro=ro, theta=theta_in
-    ).eval()
+    map.design_matrix(xo=xo_in_dense, yo=yo_in_dense, ro=ro, theta=theta_in)
 )
 A_eg_dense = jnp.array(
-    map.design_matrix(
-        xo=xo_eg_dense, yo=yo_eg_dense, ro=ro, theta=theta_eg
-    ).eval()
+    map.design_matrix(xo=xo_eg_dense, yo=yo_eg_dense, ro=ro, theta=theta_eg)
 )
 
 
@@ -198,34 +190,6 @@ mcmc = MCMC(nuts_kernel, num_warmup=500, num_samples=1500)
 rng_key = random.PRNGKey(1)
 mcmc.run(rng_key, f_obs_in_10, f_obs_eg_10, f_err_in_10, f_err_eg_10)
 samples_10 = mcmc.get_samples()
-
-
-def get_median_map(
-    ydeg_inf,
-    samples_ylm,
-    projection="Mollweide",
-    inc=90,
-    theta=0.0,
-    nsamples=10,
-    resol=300,
-):
-    imgs = []
-    map = starry.Map(ydeg=ydeg_inf)
-    map.inc = inc
-
-    for n in np.random.randint(0, len(samples_ylm), 10):
-        x = samples_ylm[n]
-        map.amp = x[0]
-        map[1:, :] = x[1:] / map.amp
-
-        if projection == "Mollweide":
-            im = map.render(projection="Mollweide", res=resol).eval()
-        else:
-            im = map.render(theta=theta, res=resol).eval()
-        imgs.append(im)
-
-    return np.median(imgs, axis=0)
-
 
 # Compute median maps
 median_map_moll_50 = get_median_map(ydeg_inf, samples_50["x"])

@@ -195,9 +195,9 @@ for a in (ax[1, 0], ax[1, 2]):
 
 ax[1, 1].axis("off")
 
-ax[0, 0].set_title("Schmixels\n(draw from prior)")
+ax[0, 0].set_title("Sphixels\n(draw from prior)")
 ax[0, 1].set_title("Spherical\nharmonics")
 ax[0, 2].set_title("Pixels")
 
 # Save
-fig.savefig("schmixels_to_pixels.pdf", bbox_inches="tight", dpi=500)
+fig.savefig("sphixels_to_pixels.pdf", bbox_inches="tight", dpi=500)
