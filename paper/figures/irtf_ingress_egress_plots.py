@@ -409,8 +409,8 @@ def make_plots(
     fig.savefig(f"irtf_spot_overlay_{year}.pdf", bbox_inches="tight", dpi=500)
 
 # Plots for the the 1998 pair of light curves
-lc_in_numpy = np.load("irtf_ingress.npy")
-lc_eg_numpy = np.load("irtf_egress.npy")
+lc_in_numpy = np.load("irtf_1998_ingress.npy")
+lc_eg_numpy = np.load("irtf_1998_egress.npy")
 
 yticks = np.arange(0, 60, 10)
 ylim = (-2, 52)
@@ -434,8 +434,8 @@ make_plots(
 )
 
 # Plots for the 2017 pair of light curves
-lc_in_numpy2 = np.load("irtf_ingress2.npy")
-lc_eg_numpy2 = np.load("irtf_egress2.npy")
+lc_in_numpy2 = np.load("irtf_2017_ingress.npy")
+lc_eg_numpy2 = np.load("irtf_2017_egress.npy")
 
 with open("irtf_2017_samples.pkl", "rb") as handle:
     samples2 = pkl.load(handle)
