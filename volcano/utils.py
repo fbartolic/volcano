@@ -5,6 +5,10 @@ from astropy.timeseries import TimeSeries
 from astroquery.jplhorizons import Horizons
 from scipy.interpolate import interp1d
 
+import starry
+
+starry.config.lazy = False
+
 
 def get_body_ephemeris(
     times, body_id="501", step="1m", return_orientation=True
@@ -156,7 +160,7 @@ def get_body_ephemeris(
     epochs = {"start": start, "stop": end, "step": step}
     obj = Horizons(id=body_id, epochs=epochs, id_type="id")
 
-    eph = obj.ephemerides(quantities="1,13, 20", extra_precision=True)
+    eph = obj.ephemerides(quantities="1,13,20", extra_precision=True)
     times_jpl = Time(eph["datetime_jd"], format="jd")
 
     # Store all data in a TimeSeries object
@@ -527,19 +531,63 @@ def get_smoothing_filter(ydeg, sigma=0.1):
     filter controls the strength of the smoothing. Features on angular scales
     smaller than ~ 1/sigma are strongly suppressed.
 
-    Parameters
-    ----------
-    ydeg : int
-        Degree of the map.
-    sigma : float, optional
-        Standard deviation of the Gaussian filter, by default 0.1
+    Args:
+        ydeg (int): Degree of the map.
+        sigma (float, optional): Standard deviation of the Gaussian filter.
+            Defaults to 0.1.
 
-    Returns
-    -------
-    ndarray
-        Diagonal matrix of shape (ncoeff, ncoeff) where ncoeff = (l + 1)^2.
+    Returns:
+        ndarray: Diagonal matrix of shape (ncoeff, ncoeff) where ncoeff = (l + 1)^2.
     """
     l = np.concatenate([np.repeat(l, 2 * l + 1) for l in range(ydeg + 1)])
     s = np.exp(-0.5 * l * (l + 1) * sigma ** 2)
     S = np.diag(s)
     return S
+
+
+def get_median_map(
+    ydeg,
+    samples_ylm,
+    projection="Mollweide",
+    inc=90,
+    theta=0.0,
+    nsamples=15,
+    resol=300,
+):
+    """
+    Given a set of samples from a posterior distribution over the spherical
+    harmonic coefficients, the function computes a median map in pixel space.
+
+    Args:
+        ydeg (int): Degree of the map.
+        samples_ylm (list): List of (amplitude weighted) Ylm samples.
+        projection (str, optional): Map projection. Defaults to "Mollweide".
+        inc (int, optional): Map inclination. Defaults to 90.
+        theta (float, optional): Map phase. Defaults to 0.0.
+        nsamples (int, optional): Number of samples to use to compute the 
+            median. Defaults to 15.
+        resol (int, optional): Map resolution. Defaults to 300.
+
+    Returns:
+        ndarray: Pixelated map in the requested projection. Shape (resol, resol).
+    """
+    if len(samples_ylm) < nsamples:
+        raise ValueError(
+            "Length of Ylm samples list has to be greater than", "nsamples"
+        )
+    imgs = []
+    map = starry.Map(ydeg=ydeg)
+    map.inc = inc
+
+    for n in np.random.randint(0, len(samples_ylm), nsamples):
+        x = samples_ylm[n]
+        map.amp = x[0]
+        map[1:, :] = x[1:] / map.amp
+
+        if projection == "Mollweide" or projection == "Rectangular":
+            im = map.render(projection=projection, res=resol)
+        else:
+            im = map.render(theta=theta, res=resol)
+        imgs.append(im)
+
+    return np.nanmedian(imgs, axis=0), np.nanstd(imgs, axis=0)
