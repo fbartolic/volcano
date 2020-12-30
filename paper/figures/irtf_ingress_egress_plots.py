@@ -42,8 +42,8 @@ def get_pos_rot(eph_io, eph_jup, method=""):
 
 
 def make_plots(
-    lc_in_n,
-    lc_eg_n,
+    lc_in,
+    lc_eg,
     samples,
     yticks,
     ylim,
@@ -52,19 +52,6 @@ def make_plots(
     res_yticks,
     cmap_norm=colors.Normalize(vmin=0.0, vmax=1500),
 ):
-    lc_in = TimeSeries(
-        time=Time(lc_in_n[:, 0], format="mjd"),
-        data=Table(
-            lc_in_n[:, 1:] * u.GW / u.um / u.sr, names=["flux", "flux_err"]
-        ),
-    )
-    lc_eg = TimeSeries(
-        time=Time(lc_eg_n[:, 0], format="mjd"),
-        data=Table(
-            lc_eg_n[:, 1:] * u.GW / u.um / u.sr, names=["flux", "flux_err"]
-        ),
-    )
-
     #  Compute epheremis
     eph_list_io = []
     eph_list_jup = []
@@ -380,7 +367,9 @@ def make_plots(
     ax_res[0].set_ylabel("Residuals\n (norm.)")
 
     year = lc_in.time[0].isot[:4]
-    fig.savefig(f"irtf_ingress_egress_{year}.pdf", bbox_inches="tight", dpi=500)
+    fig.savefig(
+        f"irtf_ingress_egress_{year}.pdf", bbox_inches="tight", dpi=500
+    )
 
     # Plot inferred hot spot on top of Galileo maps
     combined_mosaic = Image.open("Io_SSI_VGR_bw_Equi_Clon180_8bit.tif")
@@ -390,16 +379,17 @@ def make_plots(
 
     median_map_rect_in, std_map_rect_in = get_median_map(
         ydeg_inf, samples["x_in"], projection="Rectangular"
-
     )
     fig, ax = plt.subplots(figsize=(8, 4))
     map.show(
-        image=median_map_rect_in, projection="rectangular",  ax=ax, colorbar=False,
-
+        image=median_map_rect_in,
+        projection="rectangular",
+        ax=ax,
+        colorbar=False,
     )
-    ax.imshow(galileo_map, extent=(-180, 180, -90, 90), alpha=0.7, cmap='gray')
-    ax.set_yticks(np.arange(-15, 60, 15));
-    ax.set_xticks(np.arange(15, 105, 15));
+    ax.imshow(galileo_map, extent=(-180, 180, -90, 90), alpha=0.7, cmap="gray")
+    ax.set_yticks(np.arange(-15, 60, 15))
+    ax.set_xticks(np.arange(15, 105, 15))
     ax.set_xlabel("Longitude [deg]")
     ax.set_ylabel("Latitude [deg]")
     ax.set(xlim=(15, 90), ylim=(-15, 45))
@@ -408,9 +398,13 @@ def make_plots(
 
     fig.savefig(f"irtf_spot_overlay_{year}.pdf", bbox_inches="tight", dpi=500)
 
+
 # Plots for the the 1998 pair of light curves
-lc_in_numpy = np.load("irtf_1998_ingress.npy")
-lc_eg_numpy = np.load("irtf_1998_egress.npy")
+with open("../../data/irtf_processed/lc_1998-08-27.pkl", "rb") as handle:
+    lc_in = pkl.load(handle)
+
+with open("../../data/irtf_processed/lc_1998-11-29.pkl", "rb") as handle:
+    lc_eg = pkl.load(handle)
 
 yticks = np.arange(0, 60, 10)
 ylim = (-2, 52)
@@ -422,8 +416,8 @@ with open("irtf_1998_samples.pkl", "rb") as handle:
     samples = pkl.load(handle)
 
 make_plots(
-    lc_in_numpy,
-    lc_eg_numpy,
+    lc_in,
+    lc_eg,
     samples,
     yticks,
     ylim,
@@ -434,8 +428,12 @@ make_plots(
 )
 
 # Plots for the 2017 pair of light curves
-lc_in_numpy2 = np.load("irtf_2017_ingress.npy")
-lc_eg_numpy2 = np.load("irtf_2017_egress.npy")
+with open("../../data/irtf_processed/lc_2017-03-31.pkl", "rb") as handle:
+    lc_in = pkl.load(handle)
+
+with open("../../data/irtf_processed/lc_2017-05-11.pkl", "rb") as handle:
+    lc_eg = pkl.load(handle)
+
 
 with open("irtf_2017_samples.pkl", "rb") as handle:
     samples2 = pkl.load(handle)
@@ -447,8 +445,8 @@ xticks_eg = np.arange(0, 5.5, 0.5)
 res_yticks = [-3.0, 0.0, 3.0]
 
 make_plots(
-    lc_in_numpy2,
-    lc_eg_numpy2,
+    lc_in,
+    lc_eg,
     samples2,
     yticks,
     ylim,

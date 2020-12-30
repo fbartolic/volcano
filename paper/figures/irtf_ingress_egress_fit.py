@@ -25,20 +25,7 @@ starry.config.lazy = False
 numpyro.enable_x64()
 
 
-def fit_model(ydeg_inf, lc_in_numpy, lc_eg_numpy):
-    lc_in = TimeSeries(
-        time=Time(lc_in_numpy[:, 0], format="mjd"),
-        data=Table(
-            lc_in_numpy[:, 1:] * u.GW / u.um / u.sr, names=["flux", "flux_err"]
-        ),
-    )
-    lc_eg = TimeSeries(
-        time=Time(lc_eg_numpy[:, 0], format="mjd"),
-        data=Table(
-            lc_eg_numpy[:, 1:] * u.GW / u.um / u.sr, names=["flux", "flux_err"]
-        ),
-    )
-
+def fit_model(ydeg_inf, lc_in, lc_eg):
     # Compute ephemeris
     eph_list_io = []
     eph_list_jup = []
@@ -213,7 +200,7 @@ def fit_model(ydeg_inf, lc_in_numpy, lc_eg_numpy):
         numpyro.deterministic("flux_eg_dense", flux_eg_dense)
 
         # Rescale errorbars
-        ln_K = numpyro.sample("ln_K", dist.HalfNormal(0.1).expand([2]))
+        ln_K = numpyro.sample("ln_K", dist.HalfNormal(0.05).expand([2]))
 
         # GP likelihood
         params = estimate_inverse_gamma_parameters(0.001, t_eg[-1])
@@ -250,7 +237,7 @@ def fit_model(ydeg_inf, lc_in_numpy, lc_eg_numpy):
         "tau_raw": 0.1,
         "c2_raw": 5 ** 2,
         "ln_flux_offset": -2 * np.ones(2),
-        "ln_K": 0.001 * np.ones(2),
+        "ln_K": 1e-05 * np.ones(2),
         "sigma_gp": 0.001 * np.ones(2) * f_err_in[0],
         "rho_gp": 0.15 * np.ones(2),
     }
@@ -270,19 +257,25 @@ def fit_model(ydeg_inf, lc_in_numpy, lc_eg_numpy):
 
 
 # Fit the 1998 pair of light curves
-lc_in_numpy = np.load("irtf_1998_ingress.npy")
-lc_eg_numpy = np.load("irtf_1998_egress.npy")
+with open("../../data/irtf_processed/lc_1998-08-27.pkl", "rb") as handle:
+    lc_in = pkl.load(handle)
 
-samples = fit_model(25, lc_in_numpy, lc_eg_numpy)
+with open("../../data/irtf_processed/lc_1998-11-29.pkl", "rb") as handle:
+    lc_eg = pkl.load(handle)
+
+samples = fit_model(25, lc_in, lc_eg)
 
 with open("irtf_1998_samples.pkl", "wb") as handle:
     pkl.dump(samples, handle)
 
 # Fit the 2017 pair of light curves
-lc_in_numpy2 = np.load("irtf_2017_ingress.npy")
-lc_eg_numpy2 = np.load("irtf_2017_egress.npy")
+with open("../../data/irtf_processed/lc_2017-03-31.pkl", "rb") as handle:
+    lc_in = pkl.load(handle)
 
-samples2 = fit_model(25, lc_in_numpy2, lc_eg_numpy2)
+with open("../../data/irtf_processed/lc_2017-05-11.pkl", "rb") as handle:
+    lc_eg = pkl.load(handle)
+
+samples2 = fit_model(25, lc_in, lc_eg)
 
 with open("irtf_2017_samples.pkl", "wb") as handle:
     pkl.dump(samples2, handle)
