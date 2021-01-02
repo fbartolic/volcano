@@ -92,21 +92,19 @@ Finally, in \S\ref{sec:exoplanets} we discuss applications of the model to futur
     \begin{centering}
     \includegraphics[width=0.5\linewidth]{figures/irtf_max_flux.pdf}
     \oscaption{irtf_dataset}{%
-        Maximum flux for each curve taken using NASA's IRTF telescope during an
-        occultation of Io by Jupiter.
+        Maximum flux for each IRTF light curve of Io observed during an occultation of Io by Jupiter.
        \label{fig:irtf_max_flux}
     }
     \end{centering}
 \end{figure}
 
-The dataset we use to infer maps of Io's surface consists of 112 observations of Io in the near infrared taken from 1996 until 2018 using various instruments at NASA's IRTF observatory.
-Figure~\ref{fig:irtf_max_flux} shows the maximum flux in $\mathrm{GW}/\mu \mathrm{m}/\mathrm{sr}$ for each light curve plotted as a function of time which approximately corresponds to the disc integrated flux of Io at the beginning of ingress or the end of egress prior to it being occulted by Jupiter.
-Two features of this plot are apparent.
-First although the observations span decades the cadence is non-uniform with only a few observations taken between 2008 and 2016.
-Second, the baseline brightness is varying stochastically by a large amount and there are several notable events of increased volcanic activity.
+The dataset we use to infer maps of Io's surface consists of 112 observations of Io in the near infrared taken from 1996 until 2018 using different instruments at NASA's IRTF observatory, the NSFCam  1-5 $\mu m$ camera \citep{shure1994} (TODO: WHICH FILTERS), the SpeX 0.8-5.5 $\mu m$ spectrographer/imager \citep{rayner2003} (TODO: DETAILS) and the iShell 1.1-5.3 $\mu m$  spectrographer/imager \citep{johnrayner2016}.
+Although the observations span decades, the cadence is non-uniform, there are only a few observations taken between 2008 and 2016.
 All of the observations were taken while Io was \emph{in eclipse}, meaning that it was in Jupiter's shadow and all of the observed emission from the surface is due to thermal radiation.
 Observations of Io \emph{in sunlight} on the other hand probe both the thermal (volcanic) emission and the surface albedo variations in the near infrared.
-
+Figure~\ref{fig:irtf_max_flux} shows the maximum flux in units of $\mathrm{GW}/\mu \mathrm{m}/\mathrm{sr}$ (TODO: UNDERSTAND THESE UNITS) for each light curve plotted as a function of time.
+This value is approximately equal to the total flux emitted from the Jupiter facing side of Io.
+The baseline brightness is varying stochastically by a large amount and there are several notable events of intense volcanic activity.
 
 \begin{figure}[h!]
     \begin{centering}
@@ -122,33 +120,39 @@ Observations of Io \emph{in sunlight} on the other hand probe both the thermal (
 
 In Figure~\ref{fig:irtf_sample_lightcurves} we display a random subset of all the light curves
 in the dataset.
-All occultations last for $\sim4$ min and the cadence for each light varies but it on the order of a second.
-It follows that over the course of a single exposure Jupiter's limb move by about 15km which provides a lower bound for the size of the features on the surface that we can reliably estimate.
-The shapes of light curves strongly deviate from the smooth variability one would expect assuming a homogeneous distribution of thermal emission on the surface.
-Especially prominent are light curves with clear step-like features which are present when bright spots come in or out of view during the course of an occultation.
-The fact that these features are so clearly visible means that even individual light curves encode a wealth of information about the surface.
+All occultations last for $\sim4$ min.
+The exposure cadence for each light curve is around a second with some variation between light curves.
+It follows that over the course of a single exposure Jupiter's limb passes over about 15km on Io's surface which provides a lower bound for the size of the features that we can reliably estimate.
+The shapes of light curves strongly deviate from the smooth variability one would expect assuming uniform thermal surface emission.
+Especially prominent are light curves with clear step-like features which are present when bright localized spots come in or out of view during the course of an occultation.
+The fact that these features are so clearly visible means that even individual light curves encode precise information on the longitudinal position of the spots.
 
-The photometric quality varies from year to year because multiple instruments were used over the years.
-An additional issue is that estimated errorbars aren't provided.
-As with all ground based photometry, the observations are influenced by atmospheric variability which induces correlated noise in the light curves.
-Because of this the flux isn't always monotonically increasing or decreasing as one would expect.
-All of these issues need to be accounted for in the final model.
+The photometric quality of the light curves varies from year to year because multiple instruments were used over the years. 
+As with all ground based photometry, the observations are influenced by atmospheric variability which results in some correlated noise in the light curves and because of this the flux is not always monotonically increasing or decreasing as one would expect.
+The light curves lack errorbars. 
+To estimate the errorbars we do some basic pre-processing on the light curves. 
+We filter each light curve with the Savitzky-Golay filter as implemented in \textsf{SciPy} \citep{virtanen2020} with
+a third order polynomial and a window length equal to 5\% of the number of data points and rounded up to the nearest odd integer. 
+After filtering, we compute the residuals with respect to the filtered model and run iterative sigma-clipping, removing all data points 5 median absolute deviations (MAD) from the median value. 
+Finally, we estimate the errorbars by computing the standard deviation of the sigma clipped residuals.
+This estimate is far from perfect which is why we introducing a rescaling parameter when fitting the model.
+
 
 \section{Model}
 \label{sec:model}
 \subsection{Orbital parameters}
 \label{ssec:orbital_parameters}
-To model the occultations we need to know the projected separation between Jupiter and Io and the orientation of Io at any given time.
-We use the \href{https://ssd.jpl.nasa.gov/horizons.cgi}{JPL Horizons database} and the latest planetary ephemeris DE430 \citep{folkner2014} which are accurate to a few kilometers on Io's surface.
-Specifically, we use the Right Ascension and Declination, the angular (equatorial) diameter (\textsf{Ang-diam}), the visibility flag indicating whether Io is occulted or not and whether it is in partial or total eclipse (\textsf{Ang-sep/v}), the longitude and latitude at the center of Io's disc as seen from Earth (\textsf{Ob-lon}, \textsf{Ob-lat}), the sub-solar point longitude and latitude which specify the direction pointing towards the Sun on Io's surface (\textsf{Sl-lon}, \textsf{Sl-lat}), the distance from Io to the Sun (\textsf{r}) and
-the counterclockwise angle between the Celestial North Pole unit vector projected onto the plane of the sky and the Io's north pole (\textsf{NP.ang}).
-All longitudes are positive to the west.
-\textsf{HORIZONS} provides all ephemeris with a minimum cadence of 1 second so we interpolate all values such that we can evaluate them for arbitrary times.
+To model the occultations we need to know the projected relative position of Jupiter with respect to Io and the orientation of Io at any given time.
+To compute the geometry, we use the \href{https://ssd.jpl.nasa.gov/horizons.cgi}{JPL Horizons database} and the latest planetary ephemeris DE430 \citep{folkner2014} which is accurate to a few kilometers on Io's surface.
+For both Jupiter and Io we need the Right Ascension and Declination and the angular (equatorial) diameter (\textsf{Ang-diam}).
+In addition, we need to fix the orientation of Io we need the longitude and the latitude at the center of Io's disc as seen from Earth (\textsf{Ob-lon}, \textsf{Ob-lat}) and the counterclockwise angle between the Celestial North Pole unit vector projected onto the plane of the sky and the Io's north pole (\textsf{NP.ang}).
+All longitudes are positive  in the direction of West.
+\textsf{HORIZONS} provides all ephemeris with a minimum cadence of 1 second so we interpolate all values so that we can evaluate them for arbitrary times.
 
 The coordinate system in \textsf{starry} is defined to be right handed such that the $\hat{z}$
 axis points towards the observer and the $\hat{x}$ axis points to the right on the plane of the sky.
 The radius of the occulted sphere is fixed to 1 and the orientation is specified by three angles,
-the counterclockwise obliquity angle \textsf{obl} between the $\hat{y}$ axis and the North Pole of the sphere, the inclination angle \textsf{inc} which is set to $90^\circ$ if the North Pole is aligned with the $\hat{y}$ axis and the phase angle \textsf{theta} rotates the sphere around the $\hat{y}$ axis in the eastward direction.
+the counterclockwise obliquity angle \textsf{obl} between the $\hat{y}$ axis and the North Pole of the sphere, the inclination angle \textsf{inc} which is set to $90^\circ$ if the North Pole is aligned with the $\hat{y}$ axis and the phase angle \textsf{theta} which rotates the sphere around the $\hat{y}$ axis in the eastward direction.
 We have $\mathrm{obl}=\textsf{NP.ang}$, $\mathrm{inc}=90^\circ-\textsf{Ob-lat}$ and
 $\mathrm{theta}=\textsf{Ob-lon}$.
 The occultor position relative to the occulted object is given by
@@ -157,61 +161,56 @@ The occultor position relative to the occulted object is given by
     \mathrm{yo}/\gamma&=\Delta\delta\\
     \mathrm{zo}/\gamma&=1
 \end{align}
-where $\Delta\alpha$ are the $\Delta\delta$ differences in Right Ascension and Declination respectively relative to the occulted object and $\gamma$ is the angular radius of the occulted sphere.
-If the occulted object is illuminated by the Sun then we also need to specify the coordinates of the light source which are given by
-\begin{align}
-    \mathrm{xs}&=r\cos\theta\sin\phi\\
-    \mathrm{ys}&=r\sin\theta\\
-    \mathrm{zs}&=r\cos\theta\cos\phi
-\end{align}
-where $\theta$ is obtained by subtracting \textsf{Ob-lat} from \textsf{Sl-lat} and similarly $\phi$ is obtained by subtracting \textsf{Ob-lon} from \textsf{Sl-lon}.
-$r$ is equal to the heliocentric distance of the occulted object \textsf{r}.
+where $\Delta\alpha$ and $\Delta\delta$ are differences in Right Ascension and Declination respectively relative to the occulted object and $\gamma$ is the angular radius of the occulted sphere.
 
-\subsection{Effective radius of Jupiter}
+\subsection{Jupiter's effective radius}
 Although the sky position of Jupiter relative to Io is known to a precision of a few kilometers, several complications arise when attempting to compute Jupiter's radius.
-First, Jupiter is not spherical and its equatorial radius is larger than the polar radius by thousands of kilometers. 
-Because \textsf{starry} does not support occultations by non-spherical occultors we 
-assume that Jupiter is locally spherical at the point of an occultation and estimate an effective radius from measurements of Jupiter's shape which are based on Voyager radio occultation measurements \citep{lindal1981}.
-These data come in the form of a plot of effective radius  as a function of planetocentric latitude at a fixed pressure of 100 mbar \citep[Fig.~7 in ][]{lindal1981}.
-When computing the occultation latitude we ignore the variation in effective radius along Jupiter's limb projected on Io's surface and instead fix Jupiter's latitude to the value corresponding to the center of Io's disc.
+First, Jupiter is not spherical and its equatorial radius is greater than the polar radius by thousands of kilometers. 
+Because \textsf{starry} does not support occultations by non-spherical occultors and because the effect is negligible at the resolution of our maps, we assume that Jupiter is locally spherical at the point of an occultation. 
+We estimate an effective radius from the measurements of Jupiter's shape from Voyager radio occultation data \citep{lindal1981}.
+These data come in the form of a plot of effective radius  as a function of Jupiter's planetocentric latitude at a fixed pressure of 100 mbar \citep[Fig.~7 in ][]{lindal1981}.
+When computing the occultation latitude we fix Jupiter's latitude to the value at the center of Io's disc because 
+the variation of Jupiter's effective radius along Io's disc is negligible.
 
-The second complication is that Jupiter is gaseous which means that it does not have a well defined boundary.
+
+Second, Jupiter is gaseous so it does not have a well defined boundary.
 In principle, we should compute an effective radius of Jupiter at different locations (pressure) in the atmosphere and model an occultation of Io by a fuzzy occultor.
-Although this can be done with Starry, it is not necessary because the characteristic scale height of Jupiter is around 27 km (CITE) which is below the uncertainty of our inferred maps.
-Instead, we follow \cite{spencer1990} and compute the effective radius of Jupiter at about 2.2 mbar, this is the pressure (and the associated effective radius) at which during an occultation a bright source on the surface of Io fades by 50\% due to differential refraction.
+Although this is possible with Starry, it is unnecessary for our models because the characteristic scale height of Jupiter is around 27 km (CITE) which is below the uncertainty of our inferred maps.
+Instead, we follow the approach in \cite{spencer1990} and compute the effective radius of Jupiter at about 2.2 mbar, the pressure (and the associated effective radius) at which a  bright source on the surface of Io fades by 50\% due to differential refraction during the course of an occultation.
 
-Since the effective radius information is provided only at a fixed pressure of 100 mbar, 
-to adjust those values for a lower pressure of 2.2 mbar, we assume an exponential pressure profile $P=P_0\, e^{-\Delta r/H}$ where $H$ is the scale height and $\Delta r$ is the height difference between the two pressure levels.
+Third, the information on the effective radius in \citep{lindal1981} is provided only at a fixed pressure of 100 mbar.
+To adjust the values for a lower pressure of 2.2 mbar we assume an exponential pressure profile $P=P_0\, e^{-\Delta r/H}$ where $H$ is the scale height and $\Delta r$ is the height difference between the two pressure levels.
 It follows that to convert the shape profile at 100 mbar to 2.2 mbar we need to add the factor
 $-H\ln(2.2/100)$ which is assumed to be constant in the $\pm 21$ deg latitude range in which the occultations occur.
-Besides refractive absorption there is a also a slight additional methane molecular absorption which \cite{spencer1990} estimate to be equal to around 12\% in their filter, 
-we choose to ignore this because it is far below the resolution of our maps.
+In addition to refractive absorption in Jupiter's atmosphere there is a also slight additional molecular absorption due to methane which \cite{spencer1990} estimate to be equal to around 12\% in their filter, we choose to ignore this because it is far below the resolution of our maps.
 
-Finally, we have to account for the fact that the light from Io is getting significantly bent at the point of half reflective intensity in Jupiter's atmosphere 
-which results in a smaller shadow of Jupiter on the surface of Io then would be the case if the light didn't get bent.
+Finally, we have to account for the fact that the light from Io is getting significantly bent at the point of half reflective intensity in Jupiter's atmosphere which results in a smaller shadow of Jupiter on the surface of Io then would be the case for a straight propagation.
 It is zero at the beginning of the disappearance of a hot spot when there is no refraction, increasing to one scale height $H$ at the half intensity point and then increasing further to a large value when Io disappears behind Jupiter's limb.
 We ignore the variation in the bending and adopt a fixed value of one scale height for this effect which we subtract from the value of the effective radius.
 
-In summary, to compute an effective radius of Jupiter for a given occultation of Io we first have to compute the latitude at which the occultation is occurring, use a modified shape profile from \cite{lindal1981} to get an effective radius and finally subtract one scale height due to light bending.
-There are substantial uncertainties in each of these steps, most notably the shape profile data are quite old and it is not clear that the structure of Jupiter's atmosphere stayed the same since 1980s. 
-The shape profile also depends on the wind velocity structure and temperature which we ignore.
+In summary, to compute an effective radius of Jupiter for a given occultation of Io first we have to compute Jupiter's planetocentric latitude at which Io's disk disappears or reappears behind the limb, then use a modified shape profile from \cite{lindal1981} to get an effective radius and finally we have to subtract one scale height due to light bending.
+There are substantial uncertainties in each of these steps.
+The data about on the shape profile are quite old and it is not known if the structure of Jupiter's atmosphere stayed the same since 1980s. 
+The shape profile also depends on the wind velocity structure and temperature which we do not take into account.
 In addition to uncertainties about the atmospheric structure, there are uncertainties associated with digitizing the data shown in Fig.~7 in \cite{lindal1981} because it is not available in table form.
-We digitizing this figure by reading off the data points "by eye" and then interpolating them using cubic spline interpolation.
-Finally we add the pressure conversion factor and subtract one scale height due to light bending.
+We digitized the figure by reading off the data points "by eye" and then interpolating them using cubic spline interpolation.
 
 Throughout this paper the highest resolution maps we fit to the data are of order $l=25$ which corresponds to a characteristic length scale of around 230 km on the surface of Io.
-Quantifying the uncertainty in each of these steps is beyond the scope of this paper but we are confident that the errors in the radius estimate are below the typical resolution of our inferred maps. 
-We provide justification for this assumption in section~\ref{ssec:static_map} where we infer the location of Loki and it ends up matching well with the high resolution geological map of Io.
+This is about an order of magnitude larger than the errors introduced in the effective radius estimate above so we are not concerned with substantial errors in our radius estimate.
 
-\subsection{Static map model}
-\label{ssec:static}
+\subsection{Model specification}
+\label{ssec:model_spec}
 Given the geometry of on occultation event at an arbitrary time, computing the predicted flux with \textsf{starry} is straightforward.
 \textsf{starry} computes the integrated flux of an unocculted or an occulted sphere analytically assuming that the surface map can be expanded in terms of spherical harmonics $Y_{lm}(\theta,\phi)$ up to a certain \emph{degree} $l$.
-The map is thus defined by a vector of spherical harmonic coefficients $\mathbf{y}$ multiplying the spherical harmonic basis $\tilde{\mathbf{y}}(x, y)=\left(Y_{0,0} Y_{1,-1} Y_{1,0} Y_{1,1} Y_{2,-2} Y_{2,-1} Y_{2,0} Y_{2,1} Y_{2,2} \cdots\right)^{\top}$ and the total number of coefficients is $(l+1)^2$.
+The map is thus defined by a vector of spherical harmonic coefficients $\mathbf{y}$ which multiplies the spherical harmonic basis $\tilde{\mathbf{y}}(x, y)=\left(Y_{0,0} Y_{1,-1} Y_{1,0} Y_{1,1} Y_{2,-2} Y_{2,-1} Y_{2,0} Y_{2,1} Y_{2,2} \cdots\right)^{\top}$ and the total number of coefficients is $(l+1)^2$.
 In addition to computing \emph{thermal} phase curves and occultation light curves, \textsf{starry} also solves the considerably more complex problem of computing reflected light phase curves and occultations when the sphere is illuminated by a distant light source \citep[Luger et al. 2020 in prep][]{} which is complicated by the presence of the terminator line.
 In the case of a reflected light map, the coefficient vector $\mathbf{y}$ represents spherical albedo in a given wavelength range.
-Most importantly, conditional on the parameters specifying the geometry of the occultations being fixed, the \textsf{starry} model is \emph{linear} for both emitted and reflected light maps.
-This is achieved by representing all rotations, changes of basis and integrals with complicated boundaries needed to compute the flux as linear transformations.
+We only use data taken while Io was in eclipse shadowed by Jupiter so we do not need to model the reflected light component. 
+If instead we had occultation data or phase curves taken while Io is illuminated by the Sun and if both the thermal component and the reflected sunlight component of observed flux were comparable, it would be necessary to simultaneously fit for two vectors of spherical harmonic coefficients, 
+one for the albedo distribution and the other for thermal emission.
+
+Importantly, conditional on the parameters specifying the geometry of the occultations being fixed, the \textsf{starry} model is \emph{linear} for both emitted and reflected light maps.
+\cite{luger2019} achieved this by representing all rotations, changes of basis transformations and integrals with complicated boundaries which are needed to compute the flux as linear transformations.
 Since a sequence of linear mappings is also linear, the predicted flux can be written as
 \begin{equation}
     \mathbf{f}=\mathbf{A}\,\mathbf{y}
@@ -222,22 +221,29 @@ matrix of shape $(T, N)$ (with $N=(l+1)^2$) which encodes information all operat
 If the geometry isn't known precisely then the matrix $\mathbf{A}$ is not fixed and the model is no longer linear.
 
 The characteristic angular scale of features that can be represented with a given map is set by the degree of the map and it is approximately equal to $\frac{180^\circ}{l}$.
-State of the art inferences involving phase curves and secondary eclipses of exoplanets are able to constrain features of order $l=1$ (inferring a bright spot on single hemisphere) but for Io we need to fit much higher order maps because the typical scale of volcanic spots is on the order of tens of kilometers (a few degrees).
-\textsf{starry} can handle computations with maps up to $l\approx 20$ before numerical instabilities kick in (TODO: make this statement more precise).
+For reference, state of the art inferences involving phase curves and secondary eclipses of exoplanets are able to constrain features of order $l=1$ (inferring a bright spot offset from the substellar point) but for Io we need to fit much higher order maps because the typical scale of volcanic spots is on the order of tens of kilometers (a few degrees).
+\textsf{starry} can handle maps up to $l\approx 20$ before numerical instabilities kick in (TODO: make this statement more precise).
 
 Although \textsf{starry} is built around the idea of expanding surface features in a spherical harmonic basis, this is not the ideal basis for doing inference because it makes it difficult to ensure that the intensity is positive everywhere on the map.
-The positivity constraint is important not only because we want to avoid having unphysical regions on inferred maps but because it also imposes a strong constraint on the map which reduces the complexity of the inference problem.
-There is no analytic way to determine weather a given spherical harmonic map $\mathbf{y}$ is positive-valued everywhere on the sphere. 
-The only way of circumventing this problem that we are aware of is to evaluate the intensity on a (sufficiently fine) discrete grid of \emph{pixels} $\mathbf{p}$ on the sphere and then either fit for $\mathbf{y}$ while rejecting inference steps where any of the pixels $\mathbf{p}$ end up being negative, or we can treat the pixels as model parameters but still compute the actual light curve model in the $Y_{lm}$ basis where everything is fast. 
+The positivity constraint is important not only because we want to avoid having unphysical regions on inferred maps but also because it imposes a strong constraint on the map which substantially reduces the complexity of the inference problem.
+Unfortunately, there is no analytic way to determine weather a given spherical harmonic map $\mathbf{y}$ is positive-valued everywhere on the sphere. 
+
+The are two ways of circumventing this problem that we are aware of.
+The first is to evaluate the intensity on a (sufficiently fine) discrete grid of \emph{pixels} $\mathbf{p}$ on the sphere and then either fit for $\mathbf{y}$ while rejecting steps when fitting the model for which any of the pixels $\mathbf{p}$ end up being negative.
+The second is to treat the pixels as model parameters but still compute the actual light curve model in the $Y_{lm}$ basis where everything is fast. 
 We opt for the latter approach because it is much easier to implement.
-There exists a linear operator $\mathbf{P}$ which maps $\mathbf{y}$ it to pixels:
+The mapping from spherical harmonics $\mathbf{y}$ to pixels $\mathbf{p}$ can be expressed as a linear operator 
+$\mathbf{P}$:
 \begin{equation}
     \mathbf{p}=\mathbf{P}\,\mathbf{y}
 \end{equation}
-Each row of $\mathbf{P}$ contains values of each of spherical harmonic coefficients at a point on the grid. 
+Each row of $\mathbf{P}$ contains values of each of spherical harmonic coefficients at a given point on the grid. 
 To construct the grid we use an equal area Molleweide projection so that we don't end up with more pixels in some areas of the sphere than others.
-The grid needs to be fine enough to ensure positivity over most of the sphere, we find that we need to have more pixels than spherical harmonics by a factor of at least 4.
-Although we can't invert $\mathbf{P}$ to obtain the inverse transform we can still compute the Moore-Penrose pseudoinverse $\mathbf{P}^\dagger$ by solving the linear system $\mathbf{P}\,\mathbf{P}^\dagger=\mathbf{I}$ where $\mathbf{I}$ is the identity matrix. 
+The grid needs to be fine enough to ensure positivity over most of the sphere.
+We find that we need to have more pixels than spherical harmonics by a factor of at least 4.
+This increases the computational cost of the inference somewhat because the number of parameters we have to fit increases fourfold.
+
+Because $\mathbf{P}$ is not a square matrix, we cannot compute its inverse to obtain the inverse transform, however we can still compute the Moore-Penrose pseudoinverse $\mathbf{P}^\dagger$ by solving the linear system $\mathbf{P}\,\mathbf{P}^\dagger=\mathbf{I}$ where $\mathbf{I}$ is the identity matrix. 
 The solution is given by
 \begin{equation}
 \mathbf{P}^\dagger=\left(\mathbf{P}^{\top} \mathbf{P}+\lambda \mathbf{I}\right)^{-1} \mathbf{P}^{\top}
@@ -247,54 +253,64 @@ We then have
 \begin{equation}
     \mathbf{y}'=\mathbf{P}^\dagger\mathbf{p}'
 \end{equation}
-Both matrices can be easily pre-computed with \textsf{starry} before doing inference.
-
-The flux can then be computed as a linear operation on the pixels: 
+Both matrices can easily be pre-computed with \textsf{starry} before doing inference.
+We use the symbol $\mathbf{p}'$ to denote pixels which are mapped to spherical harmonic coefficients using $\mathbf{P}^\dagger$ and $\mathbf{p}$ for those generated from $\mathbf{y}$ using $\mathbf{P}$.
+In the rest of the paper we call the former kind of pixels \emph{sphixels}.
+Setting $\mathbf{A}'\equiv \mathbf{A}\,\mathbf{P}^\dagger$, we see that the flux is also linear in the spixels:
 \begin{equation}
-    \mathbf{f}=\mathbf{A}\,\mathbf{P}^\dagger\,\mathbf{p}'
+    \mathbf{f}=\mathbf{A}'\,\mathbf{p}'
     \label{eq:linear_model_pix}
 \end{equation}
-We use the symbol $\mathbf{p}'$ to denote pixels which are mapped to spherical harmonic coefficients using $\mathbf{P}^\dagger$ and $\mathbf{p}$ for those generated from $\mathbf{y}$ using $\mathbf{P}$.
-In the rest of the paper we call the former kind pixels \emph{sphixels}.
-In Section~\ref{ssec:sphixels_vs_harmonics} we test differences between fitting a model for spherical harmonic coefficients vs. fitting for sphixels.
+
+\begin{figure}[h!]
+    \begin{centering}
+    \includegraphics[width=1.\linewidth]{figures/sphixels_to_pixels.pdf}
+    \oscaption{sphixels_to_pixels}{%
+        Transformation of a pixelated map in which we set our priors (left) to the spherical harmonic basis which we use to compute the model (middle) and then again to pixels.
+        The mapping from spherical harmonics to pixels is exact but the reverse is not true so to differentiate between pixels mapped to spherical harmonics and pixels constructed from spherical harmonics we call the former "sphixels".
+        Since there are many more sphixels than there are spherical harmonics coefficients a sphixel map 
+       drawn from an Exponential prior on the left can only be approximately represented in the $Y_{lm}$ basis and the effective prior on pixels ends up looking more like a skewed Gaussian with a heavy right tail than an Exponential.
+  \label{fig:sphixels_to_pixels}
+    }
+    \end{centering}
+\end{figure}
+
+
+To visualize the effect of the transformation from sphixels to spherical harmonics, in Figure~\ref{fig:sphixels_to_pixels} we plot a single draw of sphixels $\mathbf{p}'$ from an Exponential prior (left) in the Mollweide projection, map them to spherical harmonics (middle), and then generate another pixelated map from the spherical harmonics on a grid of the same size as the initial sphixel grid.
+The middle map is visibly smoother than the prior map and looking at the histograms (black) the effective prior looks more like a skewed Gaussian with a heavy right tail than an Exponential distribution.
+There is also minimal leakage into negative values of intensity.
+The reason for this is that the pixels $\mathbf{P}\,\mathbf{y}'$ generated from $\mathbf{P}^\dagger\mathbf{p}'$ do not completely respect the Exponential prior because some information is lost in going from sphixels to spherical harmonics.
+Nevertheless, in Section~\ref{ssec:sphixels_vs_harmonics} we find that setting priors on sphixels is a far better solution than using the spherical harmonic coefficients.
 
 \subsection{The likelihood}
 \label{ssec:likelihood}
-Given Eq.~\ref{eq:nmf} we can write down the likelihood for our data and in Section~\ref{sec:inverse_problem} we dicuss in detail the priors which make the problems of inferring static and dynamic maps tractable.
-Assuming a Gaussian noise process for the data with a dense covariance matrix, the (log) likelihood is
+Given Eq.~\ref{eq:linear_model_pix} we can write down the likelihood for our data.
+We assume a Gaussian likelihood for the data with a dense covariance matrix generated with from a Gaussian Process.
+To compute the Gaussian process likelihood we use the fast Celerite method \citep{foreman-mackey2017} as implemented in the \textsf{celerite2} package (TODO: cite).
 \begin{equation}
     \ln\mathcal{L}=-\frac{1}{2}\left[\mathbb{f}_\mathrm{obs}-(\mathbb{f} + \mathbb{b})\right]^{\top} \boldsymbol{\Sigma}^{-1}\left[\mathbb{f}_\mathrm{obs}-(\mathbb{f} + \mathbb{b})\right]
 \end{equation}
 where $\mathbb{f}_\mathrm{obs}$ is the vector of stacked observed light curves, $\boldsymbol{\Sigma}$ is the data covariance matrix and $\mathbb{b}$ is a fixed flux offset per light curve accounting for stray flux not attributed to Io (mostly due to Jupiter).
-We model the data covariance with a Gaussian Process using the fast Celerite method\citep{foreman-mackey2017} as implemented in the \textsf{exoplanet} package (TODO: cite) to capute correlations imposed by the seeing plus an additional white noise term which is different for each light curve.
-The IRTF data isn't provided with any uncertainties so we estimate the uncertainties by filtering the data with the Savitzky Golay filter as implemented in \textsf{SciPy} (TODO: CITE) and estimating the variance of the residuals.
-We assume identical errors for all data points in a given light curve but allow for a rescaling factor when fitting the model.
-In the next section, we add priors to this likelihood and fit the model on simulated data using optimization and Variational Inference (VI).
-
-%TODO: mention that A depends on the geometry and that we fit for some of those parameters.
+An important assumption here is that a single static map generates all of the light curves, an assumption which is violated if the surface emission changed substantially between observations. 
+For this reason we fit at most two light curves at a time relatively closely spaced in time.
 
 \section{The inverse problem}
 \label{sec:inverse_problem}
-Having defined the forward models in the previous section, in this section we focus on choosing priors, doing inference and testing the models on simulated data.
-We compute the information content of different kinds of occultation and phase light curves and , we test the differences between fitting in the $Y_{lm}$ basis vs. fitting in the pixel basis, prior choices for pixel maps and priors for NMF. 
-To fit the models, we use  variational inference and Hamiltonian Monte Carlo.
+Having defined the forward model in the previous section, in this section we describe how to solve the inverse problem in a Bayesian setting.
 
-% bulk of the results in the paper
 \subsection{The information content of a light curve}
 \label{ssec:information_content}
-The mapping problem is famously ill posed.
-In other words, certain linear combinations of spherical harmonic coefficients will be in the nullspace of the linear mapping  $\mathbf{A}$ in Eq.~\ref{eq:linear_model}.
-This means that even if we had noiseless observations, certain features would still be impossible to recover.
-To recover surface features from observed flux integrated over the disc of the object we need
-to have some mechanism which breaks the various degeneracies.
-For phase curves in emitted light, we can only recover longitudinal variations in intensity.
-Occultations are a lot better thanks to the limb of the occultor sweeping across the surface of the occulted sphere.
-Even better are grazing occultations with an occultor of a small diameter sweeping across the disc at different latitudes and therefore breaking the latitudinal degeneracies. 
+The mapping problem is famously ill posed meaning that specific linear combinations of spherical harmonic coefficients will be in the nullspace of the linear mapping  $\mathbf{A}$ in Eq.~\ref{eq:linear_model}.
+This means that even if we had noiseless observations it would still be impossible to recover certain features.
+To recover the greatest information about the surface we need to have some mechanism which breaks the various degeneracies.
+With phase curves only we can recover longitudinal variations in emission.
+Occultations are a lot better because the limb of the occultor sweeps across the surface of the occulted sphere, thereby exposing or blocking light from different points on the surface.
+Best case scenario is having phase curve observations plus a series of occultations by a small occultor at different latitudes and different phases.
 Observing phase curves and occultations in reflected light improves the model even more because of the nonuniform illumination profile of the incident radiation and the presence of a day/night terminator line \citep[][Luger et al. 2020 in prep]{luger2019a}.
 In some cases for reflected light observations (phase curves of an inclined planet for example) there is no nullspace at all at low degrees of the map.
 
-To compute how much information can in principle be obtained by observing occultations of Io by Jupiter and other moons or phase curves we need to compute some measure of how much does observing Io at certain times reduce our prior uncertainty on the map features.
-Given that the model for a static map (Eq.~\ref{eq:linear_model}) is linear, under Gaussian priors with covariance $\boldsymbol{\Lambda}$ on the spherical harmonic coefficients and a Gaussian likelihood, the posterior is analytic and the mean is given by
+We can reformulate these statements more precisely by computing a measure of information content of the different kinds of observations.
+Given that our model is linear, assuming Gaussian priors on the spherical harmonic coefficients with covariance $\boldsymbol{\Lambda}$ and a Gaussian likelihood, the posterior can be computed analytically and its mean is given by
 \begin{equation}
     \widehat{\mathbf{y}}=\boldsymbol{\Sigma}_{\hat{\mathbf{y}}}\left(\mathbf{A}^{\top} \boldsymbol{\Sigma}_{\mathbf{f}}^{-1} \mathbf{f}+\boldsymbol{\Lambda}_{\mathbf{y}}^{-1} \boldsymbol{\mu}_{\mathbf{y}}\right)
 \end{equation}
@@ -303,122 +319,100 @@ where the posterior covariance matrix $\boldsymbol{\Sigma}_{\hat{\mathbf{y}}}$ i
 \boldsymbol{\Sigma}_{\hat{\mathbf{y}}}=\left( \mathbf{A}^{\top} \boldsymbol{\Sigma}_{\mathbf{f}}^{-1} \mathbf{A} +\boldsymbol{\Lambda}_{\mathbf{y}}^{-1}\right)^{-1}
 \end{equation}
 The posterior covariance matrix depends on the design matrix $\mathbf{A}$, the prior covariance  $\boldsymbol{\Lambda}$ and the data covariance $\boldsymbol{\Sigma}_{\mathbf{f}}$.
-We first compute the design matrices using \textsf{starry} for different kinds of events a over the course of a single year: occultations by Jupiter, occultations by Europa, Ganymede and Callisto and phase curves.
-
-We take the ephemeris data  from \textsf{JPL HORIZONS} and assume that it is known exactly, we also assume all observations are of the emitted light component independent of whether Io is in sunlight or in eclipse.
-This is because we are interested in constraining the volcanic emission rather than the albedo.
-Given the fixed design matrices, we can compute the variance reduction of the posterior relative to the prior known as \emph{posterior shrinkage}, defined as
+We define the information content as the variance reduction of the posterior relative to the prior which is called \emph{posterior shrinkage}.
+It is defined as
 \begin{equation}
     1-\frac{\sigma^2_\mathrm{post}}{\sigma^2_\mathrm{prior}}
 \end{equation}
 where $\sigma^2_\mathrm{prior}$ is the prior and $\sigma^2_\mathrm{post}$ is the posterior variance for a given parameter.
-To compute this quantity for each spherical harmonic coefficient in $\mathbf{y}$ we divide the diagonal elements of matrices $\boldsymbol{\Sigma}_{\hat{\mathbf{y}}}$ and $\boldsymbol{\Lambda}$, divide them, and average over all $m$-modes. 
+For each spherical harmonic coefficient in $\mathbf{y}$ the posterior shrinkage is then the ratio of the diagonal elements of matrices $\boldsymbol{\Sigma}_{\hat{\mathbf{y}}}$ and $\boldsymbol{\Lambda}$.
+In order to compute the posterior shrinkage we first compute the design matrices using \textsf{starry} for different kinds of events a over the course of a single year: occultations by Jupiter, occultations by Europa, Ganymede and Callisto and phase curves.
+We take the ephemeris data from \textsf{JPL HORIZONS} and assume that it is known exactly and we also assume all observations are of the emitted light component independent of whether Io is in sunlight or in eclipse because we are interested in constraining the volcanic emission rather than the albedo.
 We need to assume some variance for the Gaussian prior on the $Y_{l,m}$ coefficients so we choose a broad prior $\boldsymbol{\Lambda}=\mathrm{diag}(1^2,0.1^2,\dots,0.1^2)$.
 Although the posterior shrinkage depends on this prior the main results do not change for a different choice of the prior.
-The result is plotted in Fig.~\ref{fig:information_content}.
+
 \begin{figure}[h!]
     \begin{centering}
     \includegraphics[width=0.5\linewidth]{figures/information_content.pdf}
     \oscaption{InformationContent}{
-        The information content of different kinds of observations of Io as a function of spherical harmonic degree (angular scale of surface features).
-        On the y axis is posterior shrinkage (the variance ratio between the prior and the posterior distribution) for each spherical harmonic coefficient at a given degree $l$ on the x axis, averaged across all $m$ modes.
-        Posterior shrinkage of 1 represent maximum information gain in updating from the prior to the posterior while a shrinkage of 0 represents no information gain. 
-        We compute the posterior variance for different kinds of simulated observations of Io over
-        the course of a single year: phase curves (blue), occultations by Jupiter (orange), combined phase curves and occultations by Jupiter (green) and occulltations of Io by other Galilean moons (red lines). 
-        Solid lines represent observations at SNR=100 while dashed lines represent observations at SNR=10.
+        The posterior shrinkage of different kinds of observations of Io as a function of spherical harmonic degree (angular scale), averaged across all $m$ modes.
+    Posterior shrinkage of 1 represent maximum information gain in updating from the prior to the posterior while 0 represents no information gain. 
+    The posterior variance has been computed for different kinds of simulated observations of Io over the course of a single year: phase curves (blue), occultations by Jupiter (orange), combined phase curves and occultations by Jupiter (green) and occulltations of Io by other Galilean moons (red lines). 
+        Solid lines are for observations at SNR=100 and dashed are for observations at SNR=10.
         \label{fig:information_content}
     }
     \end{centering}
 \end{figure}
-The plot shows posterior shrinkage for phase curve observations (blue lines), occultations by Jupiter (orange), the previous two combined (green) and mutual occultations by other Galilean moons (red). 
-Solid lines correspond to SNR=100 while dashed lines correspond to SNR=10 where the signal is defined as the min-max difference of the predicted flux.
 
-        It is clear that observations of mutual occultations of Io (red lines) are by far the most informative and most useful for constraining surface features. The posterior shrinkage is near unity at all angular scales $l$ up to $l=18$ owing to degeneracy breaking features of these occcultations. 
-        Occultations by Jupiter (orange lines) are far less informative because we only see one side of Io during an occultation (hence the kink in the curve at $l=1$) and the position of Jupiter's limb on the surface of Io does not vary significantly so latitudinal features are only weakly constrained.
-        The posterior shrinkage is exactly zero for phase curves at all odd degrees above $l=2$ because phase curves for objects rotating about an axis perpendicular to the line of sight encode zero information on these coefficients because they are in the nullspace.
-Although observations of mutual occultations most easily break the degeneracies, they only occur every 6 years and more importantly they almost never occur while Io is in eclipse.
-This means that only the brightest volcanoes will be visible above the reflected light background emission due to the Sun.
+Fig.~\ref{fig:information_content} shows the posterior shrinkage as a function of $l$ (averaged over all $m$ modes) for phase curve observations (blue lines), occultations by Jupiter (orange), the former two combined (green) and mutual occultations by other Galilean moons (red).
+Solid lines correspond to SNR=100 while dashed lines correspond to SNR=10 where the signal is defined as the min-max difference of the predicted flux.
+As expected, the mutual occultations of Io by other moons are by far the most informative with posterior shrinkage near unity at all angular scales up to $l=18$. 
+Occultations by Jupiter are far less informative because we only see one side of Io during an occultation.
+This is also why there is a kink in the curve at $l=1$.
+We also see that the shrinkage is exactly zero for phase curves at all odd degrees above $l=2$ because phase curves for objects rotating about an axis perpendicular to the line of sight encode zero information on these coefficients because they are in the nullspace.
+Although observations of mutual occultations most easily break the degeneracies, they only occur every 6 years and more importantly they almost never occur while Io is in eclipse which means that only the brightest volcanoes will be visible above the reflected light background emission due to the Sun.
 Figure~\ref{fig:information_content} does not reflect this fact.
-When modeling the observations taken while Io is in sunlight, we have to take into account the reflected light component.
-Although \textsf{starry} supports computing occultations and phase curves in reflected light, we only fit in eclipse observations in this work.
+
+Although Figure~\ref{fig:information_content} gives us some idea about which kinds of observations are most informative, it doesn't really tell us how well we can constrain very bright spot like features we expect to see on Io.
+To answer this question we have to simulate some data and the inference process.
 
 \subsection{Sphixels vs. spherical harmonics}
 \label{ssec:sphixels_vs_harmonics}
-To test inference with the static map model defined in Section~\ref{ssec:static} 
-we use \textsf{starry} to generate a single simulated light curve of an occultation of Io by Jupiter from an $l=30$ map.
-The simulated map consists of a spherical harmonic expansion of a bright spot with a Gaussian profile which we add using the built in \textsf{add\_spot} function in \textsf{starry}.
+We use \textsf{starry} to generate a single simulated light curve of an occultation of Io by Jupiter from an $l=30$ map with known coefficients.
+The simulated map consists of a spherical harmonic expansion of a bright spot with a Gaussian profile which we add to a featureless map using the built in \textsf{add\_spot} function in \textsf{starry}.
 The expansion is in the quantity $\cos(\Delta\theta)$ where $\Delta\theta$ is the angular separation between the center of the spot and another point on the surface of the sphere. 
-We place the spot at 13 degrees latitude and 51 degrees East longitude, set the diameter of the spot ($2\Delta\theta$) to 5 degrees and the amplitude to 55\% of the total luminosity of a spotless map.
-We take ephemeris parameters (assumed to be fixed) from a real occultation and assume an observational cadence of 1s and errorbars equal to 2\% of the total flux, similar to high quality IRTF light curves.
-We use this dataset to test the difference between fitting a model in the spherical harmonic basis (Eq.~\ref{eq:linear_model}) and in the sphixel basis (Eq.~\ref{eq:linear_model_pix})
-by fitting for an $l=20$ map.
-Since we are only fitting a single light curve, the inferred maps will be strongly prior dominated.
+We place the spot at $13^\circ$ N latitude and $51^\circ$ E longitude, we set the diameter of the spot (given by  $2\Delta\theta$) to $5^\circ$ and the amplitude of the spot such that the total \emph{luminosity} (by default equal to 4 in \textsf{starry}) of the map increases by 50\% with the addition of the spot.
+We take ephemeris parameters (assumed to be fixed) from a real occultation of Io and assume an observational cadence of 1s and SNR=50.
+We use this dataset to test the difference between fitting setting a prior in the spherical harmonic basis (Eq.~\ref{eq:linear_model}) and in the sphixel basis (Eq.~\ref{eq:linear_model_pix}) by fitting an $l=20$ map to the dataset.
+Since we are only fitting a single light curve the inferred maps will be strongly prior dominated.
 
 In the first case we place a Gaussian prior on $Y_{lm}$ coefficients with covariance $\boldsymbol{\Lambda}=\mathrm{diag}(1^2,0.1^2,\dots,0.1^2)$ and optimize for the values of the coefficients.
-In the second case we fit for sphixel $\mathbf{p}'$ evaluated on a fixed (latitude, longitude) grid with two sets of positive priors, a Half Gaussian prior with zero mean and an Exponential prior.
-To ensure we have a grid of high enough resolution we use 4 times as many sphixels as spherical harmonic coefficients.
-
+In the second case we fit for sphixels $\mathbf{p}'$ evaluated on a fixed (latitude, longitude) grid with two sets of positive priors, a Half Gaussian prior with zero mean and an Exponential prior.
+We use four times as many sphixels as spherical harmonics.
 To evaluate the flux (Eq.~\ref{eq:linear_model_pix}) we map the sphixels to a spherical harmonic coefficient vector $\mathbf{y}$ using the matrix $\mathbf{P}^\dagger$ at each evaluation of the posterior.
-As the end product of the inference we do not use the sphixels $\mathbf{p}'$ but rather the spherical harmonic coefficients $\mathbf{y}=\mathbf{P}^\dagger\mathbf{p}'$ generated from the sphixels.
-The coefficents $\mathbf{y}$ can then be used to evaluate the map on a pixelated grid of arbitrary resolution via the matrix $\mathbf{P}$. 
-Although the priors on sphixels $\mathbf{p}'$ are strictly positive, the pixels $\mathbf{P}\,\mathbf{y}$ don't completely respect those priors because some information is lost in going from sphixels to spherical harmonics  and there will still be some regions of the map with negative intensity.
-To visualize the effect of the transformation from sphixels to spherical harmonics, in Figure~\ref{fig:sphixels_to_pixels} we plot a single draw of sphixels from an Exponential prior (left), convert them to spherical harmonics (middle) and then generate another pixelated map from the spherical harmonics on a grid of the same size as the sphixel grid.
-The middle map is visibly smoother than the prior map and based on the histograms shown in black, it seems that the effective prior is closer to a Gaussian than an Exponential.
-There is also minimal leakage into negative values.
-
-\begin{figure}[h!]
-    \begin{centering}
-    \includegraphics[width=1.\linewidth]{figures/sphixels_to_pixels.pdf}
-    \oscaption{sphixels_to_pixels}{%
-        Mapping from a pixelated map in which we set our priors (left) to the spherical harmonic basis which we use to compute the model (middle) and then back to pixels (right).
-        The mapping from spherical harmonics to pixels is exact but the reverse is not true
-        so to differentiate between pixels mapped to spherical harmonics and pixels constructed from spherical harmonics we call the former "sphixels".
-        Since there are many more sphixels than there are spherical harmonics coefficients 
-       the map drawn from an Exponential prior on the left can only be approximately represented in the $Y_{lm}$ basis and the effective prior on pixels ends up looking more like a Gaussian with a heavier right tail than an Exponential.
-  \label{fig:sphixels_to_pixels}
-    }
-    \end{centering}
-\end{figure}
+As the end product of the inference we do not use the sphixels $\mathbf{p}'$ but rather the spherical harmonic coefficients $\mathbf{y}'=\mathbf{P}^\dagger\mathbf{p}'$ generated from the sphixels.
+The coefficents $\mathbf{y}'$ can then be used to evaluate the map on a pixelated grid of arbitrary resolution via the matrix $\mathbf{P}$. 
 
 \begin{figure}[h!]
     \begin{centering}
     \includegraphics[width=1.\linewidth]{figures/pixels_vs_harmonics.pdf}
     \oscaption{sphixels_vs_harmonics}{%
-        Maximum A Posteriori (MAP) estimates of $l=20$ maps (second panel from the top) produced by fitting a simulated light curve (bottom) which was generated from an $l=30$ map consisting of a single bright spot (top). 
+        Median estimates of $l=20$ maps (second panel from the top) produced by fitting a simulated light curve (bottom) which had been generated from an $l=30$ map consisting of a single bright spot (top). 
         The small circles beneath each inferred map show the progression of the occultation.
         The map on the left corresponds to a model in which we directly fit for spherical harmonic coefficients $\mathbf{y}$ with a Gaussian prior.
-        The map in the middle comes from a model in which we instead fit for sphixels $\mathbf{p}'$ with a Half Gaussian prior but still use $\mathbf{y}$ to compute the flux.
+        The map in the middle corresponds to a model in which we instead fit for sphixels $\mathbf{p}'$ with a Half Gaussian prior but still use $\mathbf{y}$ to compute the flux.
         The map on the right is the same as the middle one except we use an Exponential prior.
         The scale parameter of the Half Gaussian and the Exponential prior is set to a value which approximates the scale of Gaussian prior on $\mathbf{y}$ to ensure fair comparison between the solutions. 
-        While all models fit the data reasonably well, the ones in which we fit for sphixels result in more plausible and sparse maps. The location of the true spot is not recovered correctly because a single light curve does not contain enough information to break the degeneracy in position along the limb of the occultor.
+        The location of the true spot is not recovered correctly because a single light curve does not contain enough information to break the degeneracy in position along the limb of the occultor.
         \label{fig:sphixels_vs_harmonics}
     }
     \end{centering}
 \end{figure}
 
 To ensure that the difference in the inferred maps is not in part due to a difference in the scale of the priors, we take 10000 prior samples of the $y$ in the spherical harmonic model, compute the standard deviation and use that as the scale parameter of the Half Gaussian and the Exponential prior.
-We fit all models for the Maximum A Posteriori (MAP) estimate of the parameters using the
-\textsf{BFGS} algorithm as implemented in \textsf{scipy.optimize.minimize} in the \textsf{scipy} package (CITE) and the exact gradients of the model with respect to all parameters provided by \textsf{Theano}. 
+We implement the model in the probabilistic programming language \textsf{numpyro} (CITE) which is built on top of the \textsf{JAX} library and fit it with Hamiltonian Monte Carlo using the No-U-Turn-Sampler (NUTS) (CITE).
+\textsf{JAX} is a \textsf{numpy} like library which supports automatic differentiation, parallelization and GPUs.
+We run the chains until for X tuning steps and Y final steps (TODO: HOW MANY?), monitoring divergences and the R-hat  diagnostic to check for convergence.
+Because these models have many hundreds if not thousands of parameters, it wouldn't be possible to fit them (at least for nontrivial priors) without automatic differentiation.
+
 The results are shown in Figure~\ref{fig:sphixels_vs_harmonics}.
 The top subplot shows the true map with a localized bright spot and the 
 inferred maps are shown in the second row from the top together with the progression of the occultation (miniature maps). 
 Bottom subplots show the simulated light curves, the predicted flux from the model and the normalized residuals.
 The difference between the inferred maps is substantial despite the fact that the predicted flux is similar in all three cases.
-
 The inferred map from the spherical harmonic model (left) has near zero intensity on the observer facing side of Io except for a bright arc tracing the projected limb of Jupiter at the location of the true spot.
-The flux on the unobserved side of Io is nearly uniform and significantly higher than the flux on the observer facing side which results in an unrealistic transition between the bright and the dark region at $\pm 90$ degrees longitude. 
+The flux on the unobserved side of Io is nearly uniform and significantly higher than the flux on the observer facing side which results in an unrealistic transition between the bright and the dark region at $\pm 90^\circ$ longitude. 
 A very clear "ringing" pattern is visible in the with high intensity peaks and low (in some regions negative) intensity troughs.
-These features are a consequence of the finite order spherical harmonic expansion of the map and we could in principle get rid of them by fitting a higher order map but at $l=20$ we are already pushing the limits of what \textsf{starry} can do.
+These features are a consequence of the finite order spherical harmonic expansion of the map and we could in principle get rid of them by fitting a much higher order map but at $l=20$ we are already pushing the limits of what \textsf{starry} can handle.
 Besides avoiding unphysical negative intensities, ringing is undesirable because we want to avoid situations in which the model uses the rings to explain the data instead of just placing a spot directly. 
 For example, we find that for some fits at low $l$, the model would place a bright spot on the unobserved side of Io in order to produce a ringing artefact on the observed side to explain an increase or decrease in brightness in the light curve. 
 This is happening to a lesser extent in the shown map where a small spot is visible at the right edge of the observed hemisphere in order to amplify the visible bright arc through ringing.
 
-
 The sphixel model with Half Gaussian priors produces a simpler map in which the unobserved hemisphere has much lower intensity but the arc is less sharply defined and more extended and as a result the predicted flux does not rise steeply enough compared to the light curve.
-Finally, the Exponential prior on sphixels results in a map with the most spot like feature but it also has noticeable ringing.
-This is somewhat surprising because based on Figure~\ref{fig:sphixels_to_pixels}, we wouldn't expect much difference between the Half Gaussian and the Exponential priors.
+Finally, the Exponential prior on sphixels results in a map with the most spot like feature 
+which is somewhat surprising because based on Figure~\ref{fig:sphixels_to_pixels}, we wouldn't expect much difference between the Half Gaussian and the Exponential priors.
 It seems that the heavier tail of the Exponential is nevertheless able to induce a sparser solution.
-In the next section, we tackle the issue of ringing artefacts.
+The rightmost map also has the most visible ringing artefacts, an issue which we discuss in the following section.
 
 \subsection{Smoothing out spurious features}
 \label{ssec:spurious_features}
@@ -443,7 +437,7 @@ For $\sigma_s\ll 1$ $B_l$ can be approximated as \citep{seon2007,white1995}
 The effect of this filter is to exponentially suppress features on scales smaller than $l\sim \sigma_s^{-1}$.
 
 Figure~\ref{fig:smoothing_kernel} shows the effect of (Gaussian) smoothing on a spherical harmonic expansion of a spot with a Gaussian intensity profile.
-We place the spot at zero degrees latitude and longitude and set the size of the spot $\Delta\theta$ to 5 degrees.
+We place the spot at $0^\circ$ latitude and longitude and set the size of the spot $\Delta\theta$ to $5^\circ$.
 All three subplots show the exact profile of the spot (black line) and expansions up to three different orders $l$ (colored lines).
 The subplot on the left shows the expansion with no smoothing ($\sigma_s=0$) in which case the symmetric ringing around the center of the spot is clearly visible even at relatively high order ($l=20$).
 The middle subplot shows an intermediate level of smoothing where $\sigma_s=0.1$, meaning that all features on scales above $l\approx 10$ are exponentially suppressed.
@@ -455,33 +449,62 @@ For $\sigma_s=0.2$ (right) there is practically no ringing, but the expansions a
     \includegraphics[width=1.\linewidth]{figures/smoothing_kernel.pdf}
     \oscaption{smoothing_kernel}{%
        Normalized intensity of a spherical harmonic expansion of 
-        a Gaussian spot placed at zero degrees latitude and longitude.
+        a Gaussian spot placed at $0^\circ$ latitude and longitude.
         The expansion is in the quantity $\cos\Delta\theta$ where $\Delta\theta=5^\circ$.
         The three plots show the spot profile for increasing values of the smoothing parameter 
     $\sigma_s=0$. 
         The colored lines correspond to spot expansions up to a certain order and the black line is the exact expansion.
         The purpose of smoothing is to taper higher order spherical harmonic coefficients in order to suppress ringing artefacts which result in negative intensities.
-        It is apparent that no smoothing results in significant ringing, high levels of smoothing suppress the ringing completely but as a result they increase the spot size and eliminate differences between expansions above a certain order.
-        Intermediate levels of smoothing provide a compromise beteween the two extremes.
+        High levels of smoothing suppress the ringing completely but as a result they increase the spot size and eliminate differences between expansions above a certain order.
+        Intermediate levels of smoothing provide a compromise between the two extremes.
                \label{fig:smoothing_kernel}
     }
     \end{centering}
 \end{figure}
 
-Thus, there is a trade-off between smoothing and being able to resolve smaller scale features
-in the maps. 
+Thus, there is a trade-off between smoothing and the ability to resolve smaller scale features
+in maps. 
 In principle we can always get rid of ringing by fitting sufficiently high order maps.
 In practice, computing the analytic integrals computed by \textsf{starry} becomes computationally unstable above $l\approx 25$ so instead of going to very high order we apply some smoothing to mitigate the ringing.
-We find that setting $\sigma_s=2/l$ where $l$ is the order of expansion of the map provides the best results .
+We find that setting $\sigma_s=2/l$ where $l$ is the order of expansion of the map  is a good default setting for $\sigma_s$.
 
+\section{Results with simulated data}
+\label{sec:results_sim}
 \subsection{Fitting simulated ingress/egress light curves}
-In this section we test a model which includes the smoothing filter. 
-We use the same map to generate the data as in Figure~\ref{fig:sphixels_vs_harmonics} except this time we simulate two light curves in order to break the degeneracy in the location of the spot, an ingress light curve generated from real ephemeris of Io disappearing behind the limb of Jupiter and egress light curve generated when Io reappears.
+In this section we use the same map to generate the data as in Figure~\ref{fig:sphixels_vs_harmonics} except now we simulate two light curves in order to break the degeneracy in the location of the spot, an ingress light curve generated from real ephemeris of Io disappearing behind the limb of Jupiter and egress light curve generated when Io reappears.
 We generate the light curves from an $l=25$ map and fit a map of the same order. 
-We apply a Gaussian smoothing filter to both the simulated map and the map we fit to the data and set the smoothing parameter to $\sigma_s=2/l=2/25$. 
-We use an Exponential prior on the sphixels and set the scale parameter to 10.
-The results are shown in Figure~\ref{fig:ingress_egress_simulated}.
+We apply a Gaussian smoothing filter to both the simulated map and the map we fit to the data and set the smoothing parameter to $\sigma_s=2/l=2/25$.
 
+The prior we place on the sphixels is a sparse prior called the Regularized Horseshoe Prior (also known as the "Finnish Horseshoe") (CITE). 
+It is an improvement on the Horseshoe Prior (CITE).
+The horseshoe prior is a prior designed for use in sparse linear regression which is exactly what we are doing.
+The horseshoe prior sets a scale for each of the regression coefficients (sphixels) which is a product of a global scale $\tau$ and a local scale $\lambda_m$.
+It is defined hierarchically as 
+\begin{equation}
+\mathcal{Half}-\mathcal{C} 
+\end{equation}
+\begin{equation}
+\begin{aligned}
+\beta_{m} & \sim \mathcal{N}\left(0, \tau \cdot \lambda_{m}\right) \\
+    \lambda_{m} & \sim \mathcal{Half}-\mathcal{C} (0,1) \\
+    \tau & \sim \mathcal{Half-C} \left(0, \tau_{0}\right)
+\end{aligned}
+\end{equation}
+where $\tau_0$ is a characteristic global scale.
+
+The regularized horseshoe prior is 
+\begin{equation}
+\begin{aligned}
+\beta_{m} & \sim \mathcal{N}\left(0, \tau \cdot \lambda_{m}\right) \\
+\tilde{\lambda}_{m} &=\frac{c \lambda_{m}}{\sqrt{c^{2}+\tau^{2} \lambda_{m}^{2}}} \\
+\lambda_{m} & \sim \mathcal{Half-C}(0,1) \\
+c^{2} & \sim \mathcal{Inv-G}\left(\frac{\nu}{2}, \frac{\nu}{2} s^{2}\right) \\
+\tau & \sim \mathcal{Half-C}\left(0, \tau_{0}\right)
+\end{aligned}
+\end{equation}
+
+
+The results are shown in Figure~\ref{fig:ingress_egress_simulated}.
 \begin{figure}[h!]
     \begin{centering}
     \includegraphics[width=1.\linewidth]{figures/ingress_egress_sim_snr_50.pdf}
@@ -513,11 +536,14 @@ The inferred map looks significantly better than the one in Figure~\ref{fig:sphi
 With two occultation light curves the model is able to break the degeneracy in the location of the spot and thanks to the smoothing filter there is almost no visible ringing around the spot in the inferred map.
 Some residuals in the data are still present (WHY).
 
+\subsection{Comparison to a parametric model}
 
-\section{Results}
+
+
+\section{Results with IRTF data}
 \label{sec:results}
 
-\begin{figure}[h!]
+\begin{figure}[ht!]
     \begin{centering}
     \includegraphics[width=1.\linewidth]{figures/irtf_ingress_egress_1998.pdf}
     \oscaption{irtf_ingress_egress_1998}{%
@@ -533,7 +559,7 @@ Some residuals in the data are still present (WHY).
 \end{figure}
 
 
-\begin{figure}[h!]
+\begin{figure}[ht!]
     \begin{centering}
     \includegraphics[width=1.\linewidth]{figures/irtf_ingress_egress_2017.pdf}
     \oscaption{irtf_ingress_egress_2017}{%
@@ -549,7 +575,7 @@ Some residuals in the data are still present (WHY).
 \end{figure}
 
 
-\begin{figure}[h!]
+\begin{figure}[ht!]
     \begin{centering}
     \includegraphics[width=.5\linewidth]{figures/irtf_spot_overlay_1998.pdf}
     \oscaption{irtf_ingress_egress_loki}{%
@@ -563,6 +589,7 @@ Some residuals in the data are still present (WHY).
 
 \section{Conclusions}
 \label{sec:conclusions}
+\clearpage
 
 % Bibliography
 \bibliography{bib}
