@@ -553,6 +553,7 @@ def get_median_map(
     theta=0.0,
     nsamples=15,
     resol=300,
+    return_std=False,
 ):
     """
     Given a set of samples from a posterior distribution over the spherical
@@ -567,6 +568,8 @@ def get_median_map(
         nsamples (int, optional): Number of samples to use to compute the 
             median. Defaults to 15.
         resol (int, optional): Map resolution. Defaults to 300.
+        return_std(bool, optional): If true, the function returns both the
+        median map and the standard deviation as a tuple. By default False.
 
     Returns:
         ndarray: Pixelated map in the requested projection. Shape (resol, resol).
@@ -590,4 +593,7 @@ def get_median_map(
             im = map.render(theta=theta, res=resol)
         imgs.append(im)
 
-    return np.nanmedian(imgs, axis=0), np.nanstd(imgs, axis=0)
+    if return_std:
+        return np.nanmedian(imgs, axis=0), np.nanstd(imgs, axis=0)
+    else:
+        return np.nanmedian(imgs, axis=0)
