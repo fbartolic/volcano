@@ -135,7 +135,7 @@ def fit_model(ydeg_inf, lc_in, lc_eg):
     print("tau0", tau0)
 
     # Other constants for the model
-    slab_scale = 50.0
+    slab_scale = 100.0
     slab_df = 10
 
     def model():
@@ -200,10 +200,13 @@ def fit_model(ydeg_inf, lc_in, lc_eg):
         numpyro.deterministic("flux_eg_dense", flux_eg_dense)
 
         # Rescale errorbars
-        ln_K = numpyro.sample("ln_K", dist.HalfNormal(0.05).expand([2]))
+        K = numpyro.sample("K", dist.Normal(0.85, 0.05).expand([2]))
+        #        K = numpyro.deterministic("K", np.array([1.0, 1.0]))
 
         # GP likelihood
-        params = estimate_inverse_gamma_parameters(0.001, t_eg[-1])
+        params = estimate_inverse_gamma_parameters(
+            np.min(np.diff(t_eg)), t_eg[-1] - t_eg[0]
+        )
         sigma = numpyro.sample(
             "sigma_gp", dist.HalfNormal(0.1 * f_err_in[0]).expand([2])
         )
@@ -211,6 +214,7 @@ def fit_model(ydeg_inf, lc_in, lc_eg):
             "rho_gp",
             dist.InverseGamma(params["alpha"], params["beta"]).expand([2]),
         )
+
         kernel_in = jax_terms.Matern32Term(sigma=sigma[0], rho=rho[0])
         kernel_eg = jax_terms.Matern32Term(sigma=sigma[1], rho=rho[1])
 
@@ -219,16 +223,12 @@ def fit_model(ydeg_inf, lc_in, lc_eg):
 
         # Ingress GP
         gp_in = celerite2.jax.GaussianProcess(kernel_in, mean=flux_in_fun)
-        gp_in.compute(
-            t_in, diag=(jnp.exp(ln_K[0]) * f_err_in) ** 2, check_sorted=False
-        )
+        gp_in.compute(t_in, diag=(K[0] * f_err_in) ** 2, check_sorted=False)
         numpyro.sample("obs_in", gp_in.numpyro_dist(), obs=f_obs_in)
 
         # Egress GP
         gp_eg = celerite2.jax.GaussianProcess(kernel_eg, mean=flux_eg_fun)
-        gp_eg.compute(
-            t_eg, diag=(jnp.exp(ln_K[1]) * f_err_eg) ** 2, check_sorted=False
-        )
+        gp_eg.compute(t_eg, diag=(K[1] * f_err_eg) ** 2, check_sorted=False)
         numpyro.sample("obs_eg", gp_eg.numpyro_dist(), obs=f_obs_eg)
 
     init_vals = {
@@ -237,7 +237,7 @@ def fit_model(ydeg_inf, lc_in, lc_eg):
         "tau_raw": 0.1,
         "c2_raw": 5 ** 2,
         "ln_flux_offset": -2 * np.ones(2),
-        "ln_K": 1e-05 * np.ones(2),
+        "K": 0.8 * np.ones(2),
         "sigma_gp": 0.001 * np.ones(2) * f_err_in[0],
         "rho_gp": 0.15 * np.ones(2),
     }
@@ -263,7 +263,7 @@ with open("../../data/irtf_processed/lc_1998-08-27.pkl", "rb") as handle:
 with open("../../data/irtf_processed/lc_1998-11-29.pkl", "rb") as handle:
     lc_eg = pkl.load(handle)
 
-samples = fit_model(25, lc_in, lc_eg)
+samples = fit_model(20, lc_in, lc_eg)
 
 with open("irtf_1998_samples.pkl", "wb") as handle:
     pkl.dump(samples, handle)
@@ -275,7 +275,7 @@ with open("../../data/irtf_processed/lc_2017-03-31.pkl", "rb") as handle:
 with open("../../data/irtf_processed/lc_2017-05-11.pkl", "rb") as handle:
     lc_eg = pkl.load(handle)
 
-samples2 = fit_model(25, lc_in, lc_eg)
+samples2 = fit_model(20, lc_in, lc_eg)
 
 with open("irtf_2017_samples.pkl", "wb") as handle:
     pkl.dump(samples2, handle)

@@ -93,7 +93,7 @@ def make_plots(
     theta_eg = eph_io_eg["theta"].value
 
     # Fit single map model with different map amplitudes for ingress and egress
-    ydeg_inf = 25
+    ydeg_inf = 20
     map = starry.Map(ydeg_inf)
 
     # Evalute MAP model on denser grid
@@ -108,16 +108,12 @@ def make_plots(
     t_in_dense = np.linspace(t_in[0], t_in[-1], 200)
     t_eg_dense = np.linspace(t_eg[0], t_eg[-1], 200)
 
-    median_map_moll_in, std_map_moll_in = get_median_map(
-        ydeg_inf, samples["x_in"]
-    )
-    median_map_moll_eg, std_map_moll_eg = get_median_map(
-        ydeg_inf, samples["x_eg"]
-    )
-    median_map_in, std_map_in = get_median_map(
+    median_map_moll_in = get_median_map(ydeg_inf, samples["x_in"])
+    median_map_moll_eg = get_median_map(ydeg_inf, samples["x_eg"])
+    median_map_in = get_median_map(
         ydeg_inf, samples["x_in"], projection=None, theta=np.mean(theta_in)
     )
-    median_map_eg, std_map_eg = get_median_map(
+    median_map_eg = get_median_map(
         ydeg_inf, samples["x_eg"], projection=None, theta=np.mean(theta_eg)
     )
 
@@ -137,7 +133,7 @@ def make_plots(
         gp = celerite2.GaussianProcess(
             kernel_in, t=t_in, mean=np.array(samples["flux_in"])[i]
         )
-        gp.compute(t_in, yerr=(np.exp(samples["ln_K"][i][0]) * f_err_in) ** 2)
+        gp.compute(t_in, yerr=(samples["K"][i][0] * f_err_in) ** 2)
         gp_pred_in_dense.append(
             gp.predict(f_obs_in, t=t_in_dense, include_mean=False)
         )
@@ -149,7 +145,7 @@ def make_plots(
         gp = celerite2.GaussianProcess(
             kernel_eg, t=t_eg, mean=np.array(samples["flux_eg"])[i]
         )
-        gp.compute(t_eg, yerr=(np.exp(samples["ln_K"][i][1]) * f_err_eg) ** 2)
+        gp.compute(t_eg, yerr=(samples["K"][i][1] * f_err_eg) ** 2)
         gp_pred_eg_dense.append(
             gp.predict(f_obs_eg, t=t_eg_dense, include_mean=False)
         )
@@ -159,7 +155,7 @@ def make_plots(
     res_eg = f_obs_eg - np.median(samples["flux_eg"], axis=0)
 
     # Errorbar rescaling
-    K = np.exp(np.median(samples["ln_K"], axis=0))
+    K = np.median(samples["K"], axis=0)
 
     # Set up the plot
     resol = 300
@@ -377,7 +373,7 @@ def make_plots(
     # The loaded map is [0,360] while Starry expects [-180, 180]
     galileo_map = np.roll(combined_mosaic, int(11445 / 2), axis=1)
 
-    median_map_rect_in, std_map_rect_in = get_median_map(
+    median_map_rect_in = get_median_map(
         ydeg_inf, samples["x_in"], projection="Rectangular"
     )
     fig, ax = plt.subplots(figsize=(8, 4))
@@ -408,8 +404,8 @@ with open("../../data/irtf_processed/lc_1998-11-29.pkl", "rb") as handle:
 
 yticks = np.arange(0, 60, 10)
 ylim = (-2, 52)
-xticks_in = np.arange(0, 4.5, 0.5)
-xticks_eg = np.arange(0, 6.0, 0.5)
+xticks_in = np.arange(0, 5, 1)
+xticks_eg = np.arange(0, 6, 1)
 res_yticks = [-3.0, 0.0, 3.0]
 
 with open("irtf_1998_samples.pkl", "rb") as handle:
@@ -424,7 +420,7 @@ make_plots(
     xticks_in,
     xticks_eg,
     res_yticks,
-    cmap_norm=colors.Normalize(vmin=0, vmax=1200),
+    cmap_norm=colors.Normalize(vmin=0, vmax=800),
 )
 
 # Plots for the 2017 pair of light curves
@@ -440,8 +436,8 @@ with open("irtf_2017_samples.pkl", "rb") as handle:
 
 yticks = np.arange(0, 100, 20)
 ylim = (-2, 82)
-xticks_in = np.arange(0, 4.5, 0.5)
-xticks_eg = np.arange(0, 5.5, 0.5)
+xticks_in = np.arange(0, 5, 1)
+xticks_eg = np.arange(0, 6, 1)
 res_yticks = [-3.0, 0.0, 3.0]
 
 make_plots(
@@ -453,5 +449,5 @@ make_plots(
     xticks_in,
     xticks_eg,
     res_yticks,
-    cmap_norm=colors.Normalize(vmin=0, vmax=2100),
+    cmap_norm=colors.Normalize(vmin=0, vmax=1800),
 )

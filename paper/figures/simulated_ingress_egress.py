@@ -33,9 +33,9 @@ theta_in = 350.0
 theta_eg = 10.0
 ro = 39.1
 
-ydeg_true = 25
+ydeg_true = 20
 map_true = starry.Map(ydeg_true)
-spot_ang_dim = 5 * np.pi / 180
+spot_ang_dim = 10 * np.pi / 180
 spot_sigma = 1 - np.cos(spot_ang_dim / 2)
 map_true.add_spot(
     amp=1.0, sigma=spot_sigma, lat=13.0, lon=51.0, relative=False
@@ -70,7 +70,7 @@ f_obs_in_10 = f_true_in + np.random.normal(0, f_err_in_10, len(f_true_in))
 f_obs_eg_10 = f_true_eg + np.random.normal(0, f_err_eg_10, len(f_true_eg))
 
 # Set up model
-ydeg_inf = 25
+ydeg_inf = 20
 map = starry.Map(ydeg_inf)
 lat, lon, Y2P, P2Y, Dx, Dy = map.get_pixel_transforms(oversample=4)
 npix = Y2P.shape[0]
@@ -116,12 +116,12 @@ def model(f_obs_in, f_obs_eg, f_err_in, f_err_eg):
     lamda_raw = numpyro.sample("lamda_raw", dist.HalfCauchy(1.0).expand([D]))
     tau_raw = numpyro.sample("tau_raw", dist.HalfCauchy(1.0))
     c2_raw = numpyro.sample(
-        "c2_raw", dist.InverseGamma(0.5 * slab_df, 0.5 * slab_df)
+        "c2_raw", dist.InverseGamma(0.5 * slab_df, 1.)
     )
 
     # Do the shifting/stretching
     tau = numpyro.deterministic("tau", tau_raw * tau0)
-    c2 = numpyro.deterministic("c2", slab_scale ** 2 * c2_raw)
+    c2 = numpyro.deterministic("c2", 0.5 * slab_df*slab_scale ** 2 * c2_raw)
     lamda_tilde = numpyro.deterministic(
         "lamda_tilde",
         jnp.sqrt(c2) * lamda_raw / jnp.sqrt(c2 + tau ** 2 * lamda_raw ** 2),
