@@ -8,6 +8,7 @@
 \bibliographystyle{aasjournal}
 
 % Begin!
+
 \begin{document}
 
 % Title
@@ -284,15 +285,33 @@ Nevertheless, in Section~\ref{ssec:sphixels_vs_harmonics} we find that setting p
 
 \subsection{The likelihood}
 \label{ssec:likelihood}
-Given Eq.~\ref{eq:linear_model_pix} we can write down the likelihood for our data.
-We assume a Gaussian likelihood for the data with a dense covariance matrix generated with from a Gaussian Process.
-To compute the Gaussian process likelihood we use the fast Celerite method \citep{foreman-mackey2017} as implemented in the \textsf{celerite2} package (TODO: cite).
+Assuming we have a single light curve with $N$ data points and a map specified with sphixels $\mathbf{p}'$, the (Gaussian) log likelihood is given by
 \begin{equation}
-    \ln\mathcal{L}=-\frac{1}{2}\left[\mathbb{f}_\mathrm{obs}-(\mathbb{f} + \mathbb{b})\right]^{\top} \boldsymbol{\Sigma}^{-1}\left[\mathbb{f}_\mathrm{obs}-(\mathbb{f} + \mathbb{b})\right]
+    \ln\mathcal{L}=-\frac{1}{2}\left[\mathbf{f}_\mathrm{obs}-\mathbf{f} \right]^{\top}
+    \boldsymbol{\Sigma}_l^{-1}\left[\mathbf{f}_\mathrm{obs}-\mathbf{f} \right]
+    \label{eq:likelihood}
 \end{equation}
-where $\mathbb{f}_\mathrm{obs}$ is the vector of stacked observed light curves, $\boldsymbol{\Sigma}$ is the data covariance matrix and $\mathbb{b}$ is a fixed flux offset per light curve accounting for stray flux not attributed to Io (mostly due to Jupiter).
-An important assumption here is that a single static map generates all of the light curves, an assumption which is violated if the surface emission changed substantially between observations. 
-For this reason we fit at most two light curves at a time relatively closely spaced in time.
+where $\mathbf{f}_\mathrm{obs}$ is the observed light curve, $\boldsymbol{\Sigma}$ is the data covariance matrix and $\mathbf{f}$ is predicted flux given by
+\begin{equation}
+    \mathbf{f}=\mathbf{A}'\,\mathbf{p}' +b\,\mathbf{1}_N
+    \label{eq:flux_model}
+\end{equation}
+where we have added a fixed flux offset parameter for each light curve in order to account for stray flux which cannot be attributed to Io.
+This flux is mostly due to light emitted from Jupiter.
+
+To model the data covariance $\boldsymbol{\Sigma}$ we use use a Gaussian Process and we compute the likelihood using the fast Celerite method \citep{foreman-mackey2017} as implemented in the \textsf{celerite2} package (CITE).
+We use the simple (approximate) Matern 3/2 function which is parametrized by two parameters, a standard deviation parameter $\sigma_\mathrm{GP}$ and a characteristic timescale parameter $\rho_\mathrm{GP}$.
+The kernel is given by 
+\begin{equation}
+    k(\tau)=\sigma_\mathrm{GP}^{2}\left[(1+1 / \epsilon) e^{-(1-\epsilon) \sqrt{3} \tau / \rho_\mathrm{GP}}(1-1 / \epsilon) e^{-(1+\epsilon) \sqrt{3} \tau / \rho_\mathrm{GP}}\right]
+\end{equation}
+where $\tau=|t_n-t_m|$ and $\epsilon$ controls the quality of the approximation.
+A single element of the data covariance matrix $\boldsymbol{\Sigma}$ is then 
+\begin{equation}
+    \boldsymbol{\Sigma}_{nm}=(K\sigma_n)^2\delta_{nm} + k(\tau\sigma_\mathrm{GP},\rho_\mathrm{GP})
+\end{equation}
+where $\sigma_n$ is the errorbar for the n-th data point and $K$ is a rescaling factor for the errorbar common to all data points in a single light curve.
+In cases where we fit multiple light curves assume independence and the total log likelihood is the product of individual likelihoods defined in Eq.~\ref{eq:likelihood}.
 
 \section{The inverse problem}
 \label{sec:inverse_problem}
@@ -380,6 +399,7 @@ The coefficents $\mathbf{y}'$ can then be used to evaluate the map on a pixelate
         Median estimates of $l=20$ maps (second panel from the top) produced by fitting a simulated light curve (bottom) which had been generated from an $l=30$ map consisting of a single bright spot (top). 
         The small circles beneath each inferred map show the progression of the occultation.
         The map on the left corresponds to a model in which we directly fit for spherical harmonic coefficients $\mathbf{y}$ with a Gaussian prior.
+        Orange lines show posterior samples in data space and the residuals shown at the bottom are computed with respect to the median of those samples.
         The map in the middle corresponds to a model in which we instead fit for sphixels $\mathbf{p}'$ with a Half Gaussian prior but still use $\mathbf{y}$ to compute the flux.
         The map on the right is the same as the middle one except we use an Exponential prior.
         The scale parameter of the Half Gaussian and the Exponential prior is set to a value which approximates the scale of Gaussian prior on $\mathbf{y}$ to ensure fair comparison between the solutions. 
@@ -468,52 +488,102 @@ In principle we can always get rid of ringing by fitting sufficiently high order
 In practice, computing the analytic integrals computed by \textsf{starry} becomes computationally unstable above $l\approx 25$ so instead of going to very high order we apply some smoothing to mitigate the ringing.
 We find that setting $\sigma_s=2/l$ where $l$ is the order of expansion of the map  is a good default setting for $\sigma_s$.
 
-\section{Results with simulated data}
+\section{Results for simulated data}
 \label{sec:results_sim}
 \subsection{Fitting simulated ingress/egress light curves}
-In this section we use the same map to generate the data as in Figure~\ref{fig:sphixels_vs_harmonics} except now we simulate two light curves in order to break the degeneracy in the location of the spot, an ingress light curve generated from real ephemeris of Io disappearing behind the limb of Jupiter and egress light curve generated when Io reappears.
-We generate the light curves from an $l=25$ map and fit a map of the same order. 
-We apply a Gaussian smoothing filter to both the simulated map and the map we fit to the data and set the smoothing parameter to $\sigma_s=2/l=2/25$.
+\label{ssec:fitting_sim_ingress_egress}
+In this section we generalize the simulated example from Section~\ref{ssec:sphixels_vs_harmonics} to include two light curves with 150 data points each.
+The first light curve corresponds to an ingress of Io as it is disappearing behind Jupiter and the second light curve corresponds to the egress when Io reappears. 
+As before we assume that we know the ephemeris exactly.
+The simulated map consists of two spots.
+The first spot is located at $13^\circ$ N latitude and $51^\circ$ E longitude and the second spot is at $-15^\circ$ N latitude and $-40^\circ$ E longitude.
+Both have the same angular diameter of $15^\circ$.
+The amplitude of the bright spot is set to 100\% and the amplitude of the faint spot is to 20\% of the luminosity of the featureless map. 
+We generate the light curves from an $l=20$ map and fit a map of the same order and we apply a Gaussian smoothing filter to both the simulated map and the inferred map with the smoothing parameter set to $\sigma_s=2/l=2/20$.
+We assume that the phase of Io changes linearly between $10^\circ$ W and $10^\circ$ E the beginning of the ingress and the end of the egress.
 
-The prior we place on the sphixels is a sparse prior called the Regularized Horseshoe Prior (also known as the "Finnish Horseshoe") (CITE). 
-It is an improvement on the Horseshoe Prior (CITE).
-The horseshoe prior is a prior designed for use in sparse linear regression which is exactly what we are doing.
-The horseshoe prior sets a scale for each of the regression coefficients (sphixels) which is a product of a global scale $\tau$ and a local scale $\lambda_m$.
+We place a sparse prior on the sphixels called the Regularized Horseshoe prior (also known as the "Finnish Horseshoe") \citep{piironen2017}. 
+This prior is specifically designed for use in Bayesian sparse linear regression. 
+It is an improvement on the Horseshoe prior introduced in \cite{carvalho2010}.
+The idea behind the Horseshoe prior is to set the scale for each regression coefficient (sphixel) to a product of a global scale $\tau$ and a local scale $\lambda_m$ where $m$ indexes all the sphixels.
 It is defined hierarchically as 
 \begin{equation}
-\mathcal{Half}-\mathcal{C} 
+\begin{aligned}
+    &\tau  \sim \mathrm{Half}-\mathcal{C} \left(0, \tau_{0}\right)\\
+    &\lambda_{m}  \sim \mathrm{Half}-\mathcal{C} (0,1) \\
+    &p_{m}  \sim \mathcal{N}\left(0, \tau \lambda_{m}\right) 
+\end{aligned}
+    \label{eq:horseshoe}
 \end{equation}
+where $p_m$ are the sphixels.
+Each local scale parameter is drawn from a unit scale heavy tailed Half Cauchy distribution which allows for very large values of the sphixels.
+The global scale parameter is also a free parameter, drawn from a Half Cauchy distribution with the scale equal to $\tau_0$.
+The Horseshoe prior is closely related to the spike-and-slab prior which is is a mixture between a delta function prior at zero (\emph{spike}) and some other prior elsewhere (\emph{slab}).
+
+The Regularized Horseshoe prior adds another level to Eq.~\ref{eq:horseshoe} to allow fine tuned control of sparsity and to regularize very large values of coefficients in cases where the data is only weakly constraining.
+\cite{piironen2017} show that the Regularized Horseshoe prior can be considered as a continuous counterpart of the spike-and-slab prior with a finite slab width $c$ whereas the Horseshoe prior resembles a spike-and-slab prior with a slab of infinite width.
+The Regularized Horseshoe is defined by
 \begin{equation}
 \begin{aligned}
-\beta_{m} & \sim \mathcal{N}\left(0, \tau \cdot \lambda_{m}\right) \\
-    \lambda_{m} & \sim \mathcal{Half}-\mathcal{C} (0,1) \\
-    \tau & \sim \mathcal{Half-C} \left(0, \tau_{0}\right)
+    &\tau  \sim \mathrm{Half}-\mathcal{C}\left(0, \tau_{0}\right)\\
+    &c^{2}  \sim \mathrm{Inv}-\mathcal{G}\left(\frac{\nu}{2}, \frac{\nu}{2} s^{2}\right) \\
+    &\overline{\lambda}_{m}  \sim \mathrm{Half}-\mathcal{C}(0,1) \\
+    &\lambda_{m} =\frac{c \overline{\lambda}_{m}}{\sqrt{c^{2}+\tau^{2} \overline{\lambda}_{m}^{2}}} \\
+    &p_{m}  \sim \mathcal{N}^+\left(0, \tau \lambda_{m}\right) 
 \end{aligned}
+    \label{eq:reg_horseshoe}
 \end{equation}
-where $\tau_0$ is a characteristic global scale.
+Integrating out the slab scale $c$ implies a marginal $\mathrm{Student}-\mathit{t}\,(\nu,0,s)$ prior for sphixels far from zero.
+When sphixels $p_m$ are close to zero ($\tau^2\overline{\lambda}_m^2\ll c^2$) we have $\lambda_m^2\rightarrow\overline{\lambda}_m^2$ and the prior approaches the original Horseshoe.
+When sphixels are far from zero ($\tau^2\overline{\lambda}_m^2\gg c^2$) then $\lambda_m^2\rightarrow c^2/\tau^2$ and the prior approaches $\mathcal{N}(0, c)$.
 
-The regularized horseshoe prior is 
+For setting the scale parameter $\tau_0$ for the prior on the global scale $\tau$, \cite{piironen2017} suggest the following expression
+\begin{equation}
+    \tau_0=\frac{p_0}{D-p_0}\frac{\sigma}{\sqrt{n}}
+    \label{eq:horseshoe_tau0}
+\end{equation}
+where $p_0$ is our prior guess for the number of significant (sphixels) which are sufficiently far above zero, $D$ is the total number of sphixels, $n$ is the number of data points and $\sigma$ is the standard deviation of the data points (the errobars).
+Thus, we only need to specify $p_0$, the degree of freedom parameter $\nu$ and the slab width $c$.
+
+When using the Regularized Horseshoe prior in a small data regime it is often necessary to use the non-centered parametrization to avoid funnels in the posterior which are often present in hierarchical models.
+The purpose of this reparametrization is to reduce the dependence between the hyperparameters in the posterior.
+To implement the non-centered parametrization we replace priors in Equation~\ref{eq:reg_horseshoe} with zero mean and unit variance priors and rescale them with deterministic transforms as follows
 \begin{equation}
 \begin{aligned}
-\beta_{m} & \sim \mathcal{N}\left(0, \tau \cdot \lambda_{m}\right) \\
-\tilde{\lambda}_{m} &=\frac{c \lambda_{m}}{\sqrt{c^{2}+\tau^{2} \lambda_{m}^{2}}} \\
-\lambda_{m} & \sim \mathcal{Half-C}(0,1) \\
-c^{2} & \sim \mathcal{Inv-G}\left(\frac{\nu}{2}, \frac{\nu}{2} s^{2}\right) \\
-\tau & \sim \mathcal{Half-C}\left(0, \tau_{0}\right)
+    &\overline{\tau} \sim \mathrm{Half}-\mathcal{C}\left(0, 1\right)\\
+    &\overline{c^{2}}  \sim \mathrm{Inv}-\mathcal{G}\left(\frac{\nu}{2}, 1\right) \\
+    &\overline{\lambda}_{m}  \sim \mathrm{Half}-\mathcal{C}(0,1) \\
+    &\overline{p}_{m}  \sim \mathcal{N}^+\left(0, 1\right)\\
+    &\tau=\tau_0\overline{\tau}\\
+    &c^2=\frac{\nu}{2}s^2\,\overline{c^2}\\
+    &\lambda_{m} =\frac{c \overline{\lambda}_{m}}{\sqrt{c^{2}+\tau^{2} \overline{\lambda}_{m}^{2}}} \\
+    &p_m = \tau\lambda_m\,\overline{p}_m
 \end{aligned}
+    \label{eq:reg_horseshoe_noncentered}
 \end{equation}
+We find that without using the non-centered parametrization the sampling is problematic and there are lots of divergences in the gradients of the parameters, with the non-centered parametrization there are no problems with sampling.
 
+To fully specify the prior, we set $p_0$ to 80\% of the total number of sphixels, $\nu=4$ and $c=10$. 
+We fit the model with NUTS with 500 warm-up steps and 1500 final steps. 
+The results for a light curve with SNR=50 are shown in Fig.~\ref{fig:ingress_egress_sim_snr_50} and the light curve with SNR=10 are shown in Fig.~\ref{fig:ingress_egress_sim_snr_10}.
+For both light curves we recover the locations of the two spots to a high accuracy. 
+The inferred bright spot is nearly indistinguishable from the true spot, the fainter spot is somewhat less well constrained but the error in position for both is at most a few degrees.
+Rinding artefacts are minimal because we of the smoothing filter.
+There are no discernible patterns in the residuals with respect to the median model in data space. 
+We found that with priors other than the Horseshoe class priors the model was not able to capture the first step in the light curve which is due to the fainter spot coming in our out of view, it would only recover the brighter spot.
+In Fig.~\ref{fig:ingress_egress_sim_snr_10} we show the output of the same model except assuming we have data of worse quality with SNR=10. 
+Despite the increased white noise the inferred map does not look substantially different from the one shown in Fig.~\ref{fig:ingress_egress_sim_snr_50}.
 
-The results are shown in Figure~\ref{fig:ingress_egress_simulated}.
 \begin{figure}[h!]
     \begin{centering}
     \includegraphics[width=1.\linewidth]{figures/ingress_egress_sim_snr_50.pdf}
     \oscaption{ingress_egress_sim_snr_50}{%
-Maximum A Posteriori (MAP) estimate of an $l=25$ map (right) produced by fitting a pair of simulated ingress and egress occultation light curves (bottom) which were generated from a $l=25$ map consisting of a single bright spot (left). 
-       A Gaussian smoothing filter is applied to reduce the ringing artefacts.
-       Small circles beneath each inferred map show the progression of the occultation.
-        The model is able to recover the position of the true spot (marked with a grey cross) and there is noticeably less ringing than in Figure~\ref{fig:sphixels_vs_harmonics}.
-        \label{fig:ingress_egress_sim_snr_50}
+        Median estimate of an $l=20$ map (middle panel) inferred by fitting a pair of simulated ingress/egress occultation light curves of Io assuming SNR=50.
+        The simulated map has the same degree as the inferred map and it consists of two hot spots.
+The small circles beneath the inferred map show the progression of the occultation. 
+        Orange lines show posterior samples in data space and the residuals shown at the bottom are computed with respect to the median of those samples.
+With the Regularized Horseshoe prior placed on sphixels, the model is able to recover the locations of both hot spots using only two light curves.
+       \label{fig:ingress_egress_sim_snr_50}
     }
     \end{centering}
 \end{figure}
@@ -523,69 +593,157 @@ Maximum A Posteriori (MAP) estimate of an $l=25$ map (right) produced by fitting
     \begin{centering}
         \includegraphics[width=1.\linewidth]{figures/ingress_egress_sim_snr_10.pdf}
     \oscaption{ingress_egress_sim_snr_10}{%
-Maximum A Posteriori (MAP) estimate of an $l=25$ map (right) produced by fitting a pair of simulated ingress and egress occultation light curves (bottom) which were generated from a $l=25$ map consisting of a single bright spot (left). 
-       A Gaussian smoothing filter is applied to reduce the ringing artefacts.
-       Small circles beneath each inferred map show the progression of the occultation.
-        The model is able to recover the position of the true spot (marked with a grey cross) and there is noticeably less ringing than in Figure~\ref{fig:sphixels_vs_harmonics}.
-        \label{fig:ingress_egress_sim_snr_10}
+        Same as Fig.~\ref{fig:ingress_egress_sim_snr_50} except for light curves with SNR=10.
+       \label{fig:ingress_egress_sim_snr_10}
     }
     \end{centering}
 \end{figure}
 
-The inferred map looks significantly better than the one in Figure~\ref{fig:sphixels_vs_harmonics}. 
-With two occultation light curves the model is able to break the degeneracy in the location of the spot and thanks to the smoothing filter there is almost no visible ringing around the spot in the inferred map.
-Some residuals in the data are still present (WHY).
-
 \subsection{Comparison to a parametric model}
+It is instructive to compare the model developed in the previous section to a parametric model in which we assume that the map contains some fixed number of spot and we fit for the positions, amplitudes and the sizes of the spots.
+A parametrized spot model might be useful if we want to fit for a small number of spots and we know what the map should look like.
+To test how the parametrized spot model compares to the model defined in Section~\ref{ssec:fitting_sim_ingress_egress} we fit it to the light curves shown in Figure~\ref{fig:ingress_egress_sim_snr_50}. 
+We then fit a model consisting of 5 parameters: the latitude, longitude, amplitude and size of the spot.
+We place uniform priors on the angles and positive Gaussian priors on other parameters. 
 
+We find that if the number of modeled spots matches the number of true spots the model easily converges to the true solution. 
+If the number of modeled spots is larger or smaller than the true number the model does not converge due to pathologies in the posterior distribution.
+To summarize, although a parametric approach likely would have been sufficient for modeling the light curves shown in this work, it won't work well when the number is unknown or if the features aren't spots and there is no need to restrict ourselves to a parametric model where the sphixel model gives the same results with fewer assumptions about the surface. 
+The computational advantages of the parametric spot model relative to the sphixel model are minimal. 
+Even though the spot model has only 5 parameters per spot and the sphixel model has thousands of parameters, the runtime for the sphixel model is only longer by a factor of a few. (TODO: add more details to this section).
 
-
-\section{Results with IRTF data}
+\section{Results for IRTF data}
 \label{sec:results}
+\subsection{1998 pair of occultations by Jupiter}
+Having demonstrated that our model works well on simulated data, int this section we use it to fit IRTF light curves of actual occultations of Io.
+Out of all the IRTF occultation light curves of Io by Jupiter, we choose two pairs of high quality ingress/egress light curves closely spaced in time so that that we can assume that the surface emission does not change substantially between the ingress and the egress occultation.
+We fit a pair of events from 1998, an ingress occultation observed on the 27th of August and an egress occultation observed on the 29th of November.
+For comparison, we also fit a pair of events from 2017, an ingress occultation observed on the 31st of March and an egress occultation observed on the 11th of May.
+
+We assume the same map for both the ingress and the egress light curve except for  a difference in the overall amplitude.
+The predicted fluxes are then:
+\begin{align}
+    \mathbf{f}_I&=\mathbf{A}_I'\,\mathbf{p}_I' +b_I\,\mathbf{1}_{N_I}\\
+    \mathbf{f}_E&=\mathbf{A}_E'\,\mathbf{p}_E' +b_E\,\mathbf{1}_{N_E}
+\end{align}
+where $\mathbf{f}_I$ is the predicted flux for the ingress light curve and $\mathbf{f}_E$ is the predicted flux for the egress light curve.
+Since we assume that the map is the same for both light curves up to an overall amplitude difference, we have
+\begin{equation}
+    \mathbf{p}'_E=a\,\mathbf{p}'_I
+\end{equation}
+where $a$ is the relative difference in amplitude.
+The log likelihood is the sum of the log likelihoods for individual light curves (Eq.~\ref{eq:likelihood}).
+We list all model parameters and their associated priors in Table~\ref{tab:priors}.
+\begin{table}
+\centering
+\begin{tabular}{l l l}
+    \hline
+Parameter & Description & Prior\\
+ \hline
+    $\tau$ & Global sphixel scale &  \begin{minipage}{0.5\textwidth}  \shortstack[l]{$\mathrm{Half}-\mathcal{C}(0,\tau_0)$, $\tau_0$ defined by Eq.~\ref{eq:horseshoe_tau0} \\with $p_0=0.8D$}\end{minipage}\\
+ $c^2$ & Slab scale squared & $\mathrm{Inv}-\mathcal{G}(2,2s^2)$, $s=10$\\
+    $\overline{\lambda}_m$  & Local sphixel scale & $\mathrm{Half}-\mathcal{C}(0,1)$\\
+    $p_m$ & Sphixels & $\mathcal{N}^+(0, \tau\lambda_m)$, $\lambda_{m} =c \overline{\lambda}_{m}/\sqrt{c^{2}+\tau^{2} \overline{\lambda}_{m}^{2}}$\\
+    $a$ & \begin{minipage}{0.2\textwidth}\shortstack[l]{Relative change in \\map amplitude}\end{minipage}& $\mathcal{N}(1, 0.1)$\\
+    $b_I$, $b_E$& Flux offset &$\mathcal{N}(0, 4)$\\
+    $K_I$, $K_E$& Errorbar rescaling factor&$\mathcal{N}(1,0.05)$\\
+    $\sigma_{\mathrm{GP},I}$, $\sigma_{\mathrm{GP},E}$ & GP standard deviation&$\mathcal{N}^+(0,0.1\sigma)$\\
+    $\rho_{\mathrm{GP},I}$, $\rho_{\mathrm{GP},E}$ & GP timescale  &  \begin{minipage}{0.5\textwidth}  \ \shortstack[l]{ \\$\mathrm{Inv}-\mathcal{G}(\alpha,\beta)$  with $\alpha$ and $\beta$ defined such that \\ $P(\rho_\mathrm{GP}<\Delta t_\mathrm{min})=P(\rho_\mathrm{GP}>(t_\mathrm{max}-t_\mathrm{min}))=0.01$}\end{minipage}
+\end{tabular}
+\caption{Parameters and priors for the final model. 
+    The subscript $I$ denotes parameters associated with the ingress light curve while the subscript $E$ denotes parameters associated with the egress light curve.
+    $\Delta t_\mathrm{min}$ is the minimum time between two consecutive data points in the ingress (egress) light curve and $(t_\mathrm{max}-t_\mathrm{min})$ is the duration of the ingress (egress) occultation.}
+    \label{tab:priors}
+\end{table}
+One of the more important priors is the prior on the characteristic timescale of the Matern 3/2 kernel for the Gaussian Process. 
+We choose an Inverse Gamma prior for this parameter with the parameters $\alpha$ and $\beta$ chosen such that 1\% of the probability is assigned to timescales smaller than the median spacing between the data points in the light curve  on the left tail of the distribution and 1\% of probability on the right tail is assigned for timescales longer than the duration of the occultation. 
+The purpose of this prior is to suppress the timescales for which the data provide much information\footnote{ \url{https://betanalpha.github.io/assets/case_studies/gaussian_processes.html}}.
+
+We run the MCMC for 500 warm-up steps and 2000 final steps, monitoring divergences and R-hat.
+The inferred map for the 1998 pair of events is shown in Figure~\ref{fig:irtf_ingress_egress_1998}.
+Selected inferred parameters parameters are shown in Table~\ref{tab:1998_parameters}. 
+The inferred map has two distinct hot spots, a bright hotspot and a faint hotspot.
+The orange lines in the second subplot from the bottom are posterior samples for the physical model in data space (not including the effects of the GP).
+The bottom panel shows the residuals with respect to the physical model and the posterior GP predictions.
+
+Most of the wiggles in the residuals are either due to surface emission features which were not accounted for by the model or due to atmospheric variability.
+The most notable feature in the residuals is visible at around 3.3 minutes in the ingress light curve and 3.6 minutes in the egress light curve when the bright spot comes in and out of view. 
+This feature is present because our model is limited in resolution so the inferred spot size is not small enough to explain the rapid change in flux seen in the data.
+The GP accounts for all three types of features - the model atmospheric variability, the emission due to surface features which are too faint to be well constrained by the physical model and the limitation of the physical model to capture the true size of the spot. 
+Although the GP could easily account for the small dip in both light curves due to the faint hot spot, it does not too that because the physical model provides a better explanation for the data (TODO: formalize this argument).
+Thus there is a trade-off between the explanatory power of the noise model and the physical model.
+
+To obtain the inferred location of the hot spots we optimize for the location of maximum intensity in the spot for each posterior map. 
+The location of the bright hotspot is $16.295_{-0.009}^{0.009}$$^\circ$ N latitude and $53.098_{-0.004}^{0.006}$$^\circ$ E longitude which corresponds to the location of Loki Patera.
+Figure~\ref{fig:irtf_ingress_egress_loki} shows the hotspot overlaid on top overlaid on top of the U.S. Geological Survey's map of the surface of Io (CITE) which was constructed from Galileo observations.
+The faint hot spot is at $-11{-0.0}^{0.0}$$^\circ$ N latitude and $323_{-0.0}^{0.0}$$^\circ$ E longitude (TODO: input exact location) which is most likely Kanehekili (TODO: CITE, check if this is true).
 
 \begin{figure}[ht!]
     \begin{centering}
     \includegraphics[width=1.\linewidth]{figures/irtf_ingress_egress_1998.pdf}
     \oscaption{irtf_ingress_egress_1998}{%
-        Maximum A Posteriori (MAP) estimate of $l=25$ maps (top) produced by fitting a pair of IRTF ingress (left) and egress (right) occultation light curves of Io by Jupiter from 1998.
-       The small circles beneath each inferred map show the progression of the occultation.
-        Both light curves are assumed to be generated from the same map except for a difference in the overall amplitude.
-        We allow for multiplicative rescaling of the error bars and an additive flux offset for each light curve.
-        The model places a single bright spot to explain most of the variance in the data.
-        The visible patterns in the residuals are likely due to additional hot spots and the limited resolution of our maps.
-        \label{fig:irtf_ingress_egress_1998}
+    Median estimates of two $l=20$ maps (top panel) inferred by fitting a pair of observations of occultations of Io by Jupiter from 1998.  
+        The map and light curve correspond to the ingress event and the ones on the right are the egress event. 
+        The two maps are (by construction) the same except for a difference in the overall amplitude. 
+        The observations were taken using the IRTF telescope in the NIR filter (TODO: which filter).
+The small circles beneath the inferred map show the progression of the occultation. 
+        Orange lines show posterior samples from the physical model (excluding the Gaussian Process).
+        The residuals (bottom) are computed with respect the median prediction from the physical model and the Gaussian Process predictions are shown on the same plot.
+The inferred map shows two hotspots, the bright hot spot is emission due to Loki and the faint hot spot is Kanehekili.
+     \label{fig:irtf_ingress_egress_1998}
     }
     \end{centering}
 \end{figure}
 
-
-\begin{figure}[ht!]
-    \begin{centering}
-    \includegraphics[width=1.\linewidth]{figures/irtf_ingress_egress_2017.pdf}
-    \oscaption{irtf_ingress_egress_2017}{%
-        Maximum A Posteriori (MAP) estimate of $l=25$ maps (top) produced by fitting a pair of IRTF ingress (left) and egress (right) occultation light curves of Io by Jupiter from 1998.
-       The small circles beneath each inferred map show the progression of the occultation.
-        Both light curves are assumed to be generated from the same map except for a difference in the overall amplitude.
-        We allow for multiplicative rescaling of the error bars and an additive flux offset for each light curve.
-        The model places a single bright spot to explain most of the variance in the data.
-        The visible patterns in the residuals are likely due to additional hot spots and the limited resolution of our maps.
-        \label{fig:irtf_ingress_egress_2017}
-    }
-    \end{centering}
-\end{figure}
+\begin{table}
+    \centering
+\begin{tabular}{l l l}
+    \hline
+    Parameter & Value & Unit\\
+ \hline
+ $\tau$ &  & \\
+    $c^2$ & &\\
+    $p_m$ & &\\
+    $a$ & &\\
+    $b_I$ & &\\
+    $b_E$ & &\\
+    $K_I$ & & \\
+    $K_E$ & &\\
+    $\sigma_{\mathrm{GP},I}$ && \\
+    $\sigma_{\mathrm{GP},E}$ & &\\
+    $\rho_{\mathrm{GP},I}$ & &\\
+    $\rho_{\mathrm{GP},E}$ &&  
+\end{tabular}
+    \caption{Inferred model parameters for the pair of occultations from 1998.}
+    \label{tab:1998_parameters}
+\end{table}
 
 
 \begin{figure}[ht!]
     \begin{centering}
     \includegraphics[width=.5\linewidth]{figures/irtf_spot_overlay_1998.pdf}
     \oscaption{irtf_ingress_egress_loki}{%
-        Hot spot from the inferred maps shown in Figure~\ref{fig:irtf_ingress_egress} overlaid on top of the U.S. Geological Survey's map of the surface of Io (CITE) which was
-        constructed from Galileo observations.
+        Zoom in on the bright hot spot from Figure~\ref{fig:irtf_ingress_egress_1998} overlaid on top of the U.S. Geological Survey's map of the surface of Io (CITE) which was        constructed from Galileo observations.
         The location of the hot spots matches the location of Loki Patera, the largest active volcano on the surface of Io. 
         \label{fig:irtf_ingress_egress_loki}
     }
     \end{centering}
 \end{figure}
+
+
+\subsection{2017 pair of occultations by Jupiter}
+
+\begin{figure}[ht!]
+    \begin{centering}
+    \includegraphics[width=1.\linewidth]{figures/irtf_ingress_egress_2017.pdf}
+    \oscaption{irtf_ingress_egress_2017}{%
+                \label{fig:irtf_ingress_egress_2017}
+    }
+    \end{centering}
+\end{figure}
+
+\subsection{What happens if we don't include the Gaussian Process?}
+
 
 \section{Conclusions}
 \label{sec:conclusions}
