@@ -199,10 +199,6 @@ def fit_model(ydeg_inf, lc_in, lc_eg):
         numpyro.deterministic("flux_in_dense", flux_in_dense)
         numpyro.deterministic("flux_eg_dense", flux_eg_dense)
 
-        # Rescale errorbars
-        K = numpyro.sample("K", dist.Normal(0.85, 0.05).expand([2]))
-        #        K = numpyro.deterministic("K", np.array([1.0, 1.0]))
-
         # GP likelihood
         params = estimate_inverse_gamma_parameters(
             np.min(np.diff(t_eg)), t_eg[-1] - t_eg[0]
@@ -221,14 +217,30 @@ def fit_model(ydeg_inf, lc_in, lc_eg):
         flux_in_fun = lambda _: flux_in
         flux_eg_fun = lambda _: flux_eg
 
+        # Flux dependent noise term in quadrature to the errorbars quadrature
+        bounded_normal = dist.Normal(1, 0.1)
+        bounded_normal.support = dist.constraints.greater_than(1.0)
+        alpha = numpyro.sample("alpha", bounded_normal.expand([2]))
+        beta = numpyro.sample("beta", dist.HalfNormal(1.0).expand([2]))
+
+        # White noise term
+        f_err_in_mod = numpyro.deterministic(
+            "f_err_in_mod",
+            jnp.sqrt((alpha[0] * f_err_in) ** 2 + beta[0] ** 2 * flux_in),
+        )
+        f_err_eg_mod = numpyro.deterministic(
+            "f_err_eg_mod",
+            jnp.sqrt((alpha[1] * f_err_eg) ** 2 + beta[1] ** 2 * flux_eg),
+        )
+
         # Ingress GP
         gp_in = celerite2.jax.GaussianProcess(kernel_in, mean=flux_in_fun)
-        gp_in.compute(t_in, diag=(K[0] * f_err_in) ** 2, check_sorted=False)
+        gp_in.compute(t_in, yerr=f_err_in_mod, check_sorted=False)
         numpyro.sample("obs_in", gp_in.numpyro_dist(), obs=f_obs_in)
 
         # Egress GP
         gp_eg = celerite2.jax.GaussianProcess(kernel_eg, mean=flux_eg_fun)
-        gp_eg.compute(t_eg, diag=(K[1] * f_err_eg) ** 2, check_sorted=False)
+        gp_eg.compute(t_eg, yerr=f_err_eg_mod, check_sorted=False)
         numpyro.sample("obs_eg", gp_eg.numpyro_dist(), obs=f_obs_eg)
 
     init_vals = {

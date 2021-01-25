@@ -96,7 +96,7 @@ def make_plots(
     ydeg_inf = 20
     map = starry.Map(ydeg_inf)
 
-    # Evalute MAP model on denser grid
+    # Evalute model on denser grid
     xo_in_dense = np.linspace(xo_in[0], xo_in[-1], 200)
     yo_in_dense = np.linspace(yo_in[0], yo_in[-1], 200)
     theta_in_dense = np.linspace(theta_in[0], theta_in[-1], 200)
@@ -133,7 +133,7 @@ def make_plots(
         gp = celerite2.GaussianProcess(
             kernel_in, t=t_in, mean=np.array(samples["flux_in"])[i]
         )
-        gp.compute(t_in, yerr=(samples["K"][i][0] * f_err_in) ** 2)
+        gp.compute(t_in, yerr=(samples["f_err_in_mod"][i]))
         gp_pred_in_dense.append(
             gp.predict(f_obs_in, t=t_in_dense, include_mean=False)
         )
@@ -145,17 +145,17 @@ def make_plots(
         gp = celerite2.GaussianProcess(
             kernel_eg, t=t_eg, mean=np.array(samples["flux_eg"])[i]
         )
-        gp.compute(t_eg, yerr=(samples["K"][i][1] * f_err_eg) ** 2)
+        gp.compute(t_eg, yerr=(samples["f_err_eg_mod"][i]))
         gp_pred_eg_dense.append(
             gp.predict(f_obs_eg, t=t_eg_dense, include_mean=False)
         )
 
     # Compute residuals
-    res_in = f_obs_in - np.median(samples["flux_in"], axis=0)
-    res_eg = f_obs_eg - np.median(samples["flux_eg"], axis=0)
+    f_in_median = np.median(samples["flux_in"], axis=0)
+    f_eg_median = np.median(samples["flux_eg"], axis=0)
 
-    # Errorbar rescaling
-    K = np.median(samples["K"], axis=0)
+    res_in = f_obs_in - f_in_median
+    res_eg = f_obs_eg - f_eg_median
 
     # Set up the plot
     resol = 300
@@ -204,12 +204,14 @@ def make_plots(
     ax_res = [fig.add_subplot(gs1[2, :]), fig.add_subplot(gs2[2, :])]
 
     # Plot maps
+    cmap = "OrRd"
     map.show(
         image=median_map_moll_in,
         ax=ax_map_in,
         projection="Mollweide",
         norm=cmap_norm,
         colorbar=False,
+        cmap=cmap,
     )
     map.show(
         image=median_map_moll_eg,
@@ -217,6 +219,7 @@ def make_plots(
         projection="Mollweide",
         norm=cmap_norm,
         colorbar=True,
+        cmap=cmap,
     )
     ax_map_in.set_title(f"Ingress map\n {lc_in.time[0].isot[:19]}")
     ax_map_eg.set_title(f"Egress map\n {lc_eg.time[0].isot[:19]}")
@@ -235,12 +238,20 @@ def make_plots(
             # Show the image
             if j == 0:
                 map.show(
-                    image=median_map_in, ax=a[n], grid=False, norm=cmap_norm
+                    image=median_map_in,
+                    ax=a[n],
+                    grid=False,
+                    norm=cmap_norm,
+                    cmap=cmap,
                 )
                 ro = ro_in
             else:
                 map.show(
-                    image=median_map_eg, ax=a[n], grid=False, norm=cmap_norm
+                    image=median_map_eg,
+                    ax=a[n],
+                    grid=False,
+                    norm=cmap_norm,
+                    cmap=cmap,
                 )
                 ro = ro_eg
 
@@ -269,10 +280,13 @@ def make_plots(
             a[n].set_rasterization_zorder(0)
 
     # Plot ingress
+    f_err_in_mod_median = np.median(samples["f_err_in_mod"], axis=0)
+    f_err_eg_mod_median = np.median(samples["f_err_eg_mod"], axis=0)
+
     ax_lc[0].errorbar(  # Data
         t_in,
         f_obs_in,
-        K[0] * f_err_in,
+        f_err_in_mod_median,
         color="black",
         fmt=".",
         ecolor="black",
@@ -285,12 +299,10 @@ def make_plots(
         )  # Model
 
     # Residuals
-    res_norm = np.median(np.std(np.concatenate([res_in, res_eg])))
-
     ax_res[0].errorbar(
         t_in,
-        res_in / res_norm,
-        K[0] * f_err_in / res_norm,
+        res_in / f_err_in_mod_median,
+        np.ones_like(t_in),
         color="black",
         fmt=".",
         ecolor="black",
@@ -304,7 +316,7 @@ def make_plots(
     ax_lc[1].errorbar(
         t_eg,
         f_obs_eg,
-        K[1] * f_err_eg,
+        f_err_eg_mod_median,
         color="black",
         fmt=".",
         ecolor="black",
@@ -319,8 +331,8 @@ def make_plots(
     # Residuals
     ax_res[1].errorbar(
         t_eg,
-        res_eg / res_norm,
-        K[1] * f_err_eg / res_norm,
+        res_eg / f_err_eg_mod_median,
+        np.ones_like(t_eg),
         color="black",
         fmt=".",
         ecolor="black",
@@ -382,6 +394,7 @@ def make_plots(
         projection="rectangular",
         ax=ax,
         colorbar=False,
+        cmap="Oranges",
     )
     ax.imshow(galileo_map, extent=(-180, 180, -90, 90), alpha=0.7, cmap="gray")
     ax.set_yticks(np.arange(-15, 60, 15))
