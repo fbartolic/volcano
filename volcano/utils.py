@@ -204,16 +204,20 @@ def get_body_ephemeris(
         occulted = np.any([occ_umbra, occ_sunlight], axis=0)
 
         data["ecl_par"] = np.array(
-            np.interp(times.mjd, times_jpl.mjd, partial), dtype=bool,
+            np.interp(times.mjd, times_jpl.mjd, partial),
+            dtype=bool,
         )
         data["ecl_tot"] = np.array(
-            np.interp(times.mjd, times_jpl.mjd, umbra), dtype=bool,
+            np.interp(times.mjd, times_jpl.mjd, umbra),
+            dtype=bool,
         )
         data["occ_umbra"] = np.array(
-            np.interp(times.mjd, times_jpl.mjd, occ_umbra), dtype=bool,
+            np.interp(times.mjd, times_jpl.mjd, occ_umbra),
+            dtype=bool,
         )
         data["occ_sun"] = np.array(
-            np.interp(times.mjd, times_jpl.mjd, occ_sunlight), dtype=bool,
+            np.interp(times.mjd, times_jpl.mjd, occ_sunlight),
+            dtype=bool,
         )
 
         # Helper functions for dealing with angles and discontinuities
@@ -251,7 +255,9 @@ def get_body_ephemeris(
         # Obliquity of the starry map is the CCW angle from the celestial
         # NP to the NP of the target body
         data["obl"] = interpolate_angle(
-            times.mjd, times_jpl.mjd, eph["NPole_ang"].to(u.rad),
+            times.mjd,
+            times_jpl.mjd,
+            eph["NPole_ang"].to(u.rad),
         ).to(u.deg)
 
         # Compute the location of the subsolar point relative to the central
@@ -525,8 +531,8 @@ def rotate_vectors(x, y, theta_rot):
 
 def get_smoothing_filter(ydeg, sigma=0.1):
     """
-    Returns a smoothing matrix which applies an isotropic Gaussian beam filter 
-    to a spherical harmonic coefficient vector. This helps suppress ringing 
+    Returns a smoothing matrix which applies an isotropic Gaussian beam filter
+    to a spherical harmonic coefficient vector. This helps suppress ringing
     artefacts around spot like features. The standard deviation of the Gaussian
     filter controls the strength of the smoothing. Features on angular scales
     smaller than ~ 1/sigma are strongly suppressed.
@@ -565,7 +571,7 @@ def get_median_map(
         projection (str, optional): Map projection. Defaults to "Mollweide".
         inc (int, optional): Map inclination. Defaults to 90.
         theta (float, optional): Map phase. Defaults to 0.0.
-        nsamples (int, optional): Number of samples to use to compute the 
+        nsamples (int, optional): Number of samples to use to compute the
             median. Defaults to 15.
         resol (int, optional): Map resolution. Defaults to 300.
         return_std(bool, optional): If true, the function returns both the
@@ -587,7 +593,7 @@ def get_median_map(
         map.amp = x[0]
         map[1:, :] = x[1:] / map.amp
 
-        if projection == "Mollweide" or projection == "Rectangular":
+        if projection == "Mollweide" or projection == "rect":
             im = map.render(projection=projection, res=resol)
         else:
             im = map.render(theta=theta, res=resol)
