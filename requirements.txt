@@ -4,5 +4,6 @@ pymc3>=3.9
 theano>=1.0.5
 exoplanet>=0.4.0
 astropy>=3.0
+astroquery>=0.4
 celerite2
 numpyro
