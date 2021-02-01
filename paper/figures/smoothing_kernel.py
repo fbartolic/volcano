@@ -3,6 +3,8 @@ import starry
 from matplotlib import pyplot as plt
 from matplotlib.ticker import AutoMinorLocator
 
+from volcano.utils import get_smoothing_filter
+
 np.random.seed(42)
 starry.config.lazy = False
 
