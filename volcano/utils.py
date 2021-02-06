@@ -431,7 +431,12 @@ def get_occultation_latitude(x_io, y_io, re):
 
 
 def get_occultor_position_and_radius(
-    eph_occulted, eph_occultor, occultor_is_jupiter=False, **kwargs
+    eph_occulted,
+    eph_occultor,
+    occultor_is_jupiter=False,
+    rotate=True,
+    return_occ_lat=False,
+    **kwargs
 ):
     """
     Given the ephemeris of an occulted object and an occultor, the function
@@ -445,20 +450,26 @@ def get_occultor_position_and_radius(
         eph_occulted (astropy.timeseries.TimeSeries): ephemeris of the occulted
             body.
         eph_occultor (astropy.timeseries.TimeSeries): ephemeris of the occultor.
+        occultor_is_jupiter (bool): Set to true if occultor is Jupiter because
+            Jupiter is non-spherical and its radius needs to be estimated in a
+            different way. Defaults to False.
+        rotate (bool): Rotate the position vectors to a frame in which the
+            obliquity of the occultor is zero. Defaults to True.
+        return_occ_lat (bool): Optionally return the occultation latitude if
+            the occultor is Jupiter. Defaults to False.
 
     Returns:
-        list: (xo, yo, zo, ro)
+        list: (xo, yo, ro)
     """
     delta_ra = (eph_occultor["RA"] - eph_occulted["RA"]).to(u.arcsec)
     delta_dec = (eph_occultor["DEC"] - eph_occulted["DEC"]).to(u.arcsec)
 
-    xo_ = (
+    xo = (
         -delta_ra
         * np.cos(eph_occultor["DEC"].to(u.rad))
         / (0.5 * eph_occulted["ang_width"].to(u.arcsec))
-    )
-    yo = delta_dec / (0.5 * eph_occulted["ang_width"].to(u.arcsec))
-    zo = np.ones(len(yo))
+    ).value
+    yo = delta_dec / (0.5 * eph_occulted["ang_width"].to(u.arcsec)).value
 
     if occultor_is_jupiter is False:
         # Convert everything to units where the radius of Io = 1
@@ -473,18 +484,17 @@ def get_occultor_position_and_radius(
         r_io = 1821.3 * u.km  # radius of Io (km)
         jup_dist = eph_occultor["dist"].to(u.km)
 
-        xo_ = (
+        xo = (
             ((-delta_ra * np.cos(eph_occultor["DEC"].to(u.rad)))).to(u.rad)
             * jup_dist
             / r_io
         )
         yo = delta_dec.to(u.rad) * jup_dist / r_io
-        zo = np.ones(len(yo))
 
         obl = eph_occulted["obl"]
         inc = np.mean(eph_occultor["inc"])
 
-        xo_unrot = xo_.value
+        xo_unrot = xo.value
         yo_unrot = yo.value
 
         # Rotate to coordinate system where the obliquity of Io is 0
@@ -502,7 +512,23 @@ def get_occultor_position_and_radius(
         reff = get_effective_jupiter_radius(lat, **kwargs)
         ro = reff / r_io.value
 
-    return xo_.value, yo.value, zo, ro
+    # Rotate position vefctors such that obliquity of the occultor is 0
+    if rotate:
+        theta_rot = -eph_occulted["obl"].to(u.rad)
+        xo, yo = rotate_vectors(xo.value, yo.value, theta_rot)
+    else:
+        xo = xo
+        yo = yo
+
+    if return_occ_lat:
+        if not occultor_is_jupiter:
+            raise ValueError(
+                "Occultation latitude is only defined if",
+                " the occultor is Jupiter.",
+            )
+        return xo, yo, ro, lat
+    else:
+        return xo, yo, ro
 
 
 def rotate_vectors(x, y, theta_rot):
