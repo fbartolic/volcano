@@ -6,9 +6,7 @@
 
 % Bibliography stuff
 \bibliographystyle{aasjournal}
-
-% Begin!
-
+\setlength\LTcapwidth{\textwidth}
 \begin{document}
 
 % Title
@@ -29,9 +27,8 @@ Jupiter's moon Io is the most volcanically active body in the Solar System with 
 Existing photometric observations in the near infrared taken during occultations by Jupiter and other Galilean moons encode a wealth of information about its surface.
 These data are ideal for testing methods for inferring surface features of occulted bodies from time series observations.
 We built a generative model of Io's surface using the code starry \href{https://rodluger.github.io/starry/}{\color{linkcolor}\faGithub} which enables fast analytic and differentiable computation of occultation light curves in emitted and reflected light.
-    Our (fully Bayesian) model is able to recover known bright features on the surface of Io with only two light curves and without any assumptions on where the features are located or how many there are.
-    This work is a first step towards constructing a model for time-variable surface features. 
-    Although we do not present new findings about Io in this work, the methods we have developed are directly applicable to the problem of mapping stars and exoplanets.\href{https://github.com/fbartolic/volcano}{\color{linkcolor}\faGithub}
+    Our fully Bayesian model is able to recover known bright features on the surface of Io with only two light curves and without any assumptions on where the features are located or how many there are.
+    The methods we have developed are also directly applicable to the problem of mapping stars and exoplanets.\href{https://github.com/fbartolic/volcano}{\color{linkcolor}\faGithub}
 \end{abstract}
 
 %
@@ -91,7 +88,7 @@ Finally, in \S\ref{sec:exoplanets} we discuss applications of the model to futur
 
 \begin{figure}[h!]
     \begin{centering}
-    \includegraphics[width=0.5\linewidth]{figures/irtf_max_flux.pdf}
+    \includegraphics[width=\linewidth]{figures/irtf_max_flux.pdf}
     \oscaption{irtf_dataset}{%
         Maximum flux for each IRTF light curve of Io observed during an occultation of Io by Jupiter.
        \label{fig:irtf_max_flux}
@@ -109,7 +106,7 @@ The baseline brightness is varying stochastically by a large amount and there ar
 
 \begin{figure}[h!]
     \begin{centering}
-    \includegraphics[width=0.5\linewidth]{figures/irtf_sample_lightcurves.pdf}
+        \includegraphics[width=0.7\linewidth]{figures/irtf_sample_lightcurves.pdf}
     \oscaption{irtf_dataset}{%
         A selection of sample light curves taken during occultations of Io by Jupiter in our dataset.
         The step-like morphology of the light curves is due to bright volcanoes on Io's surface coming in or out of view during an occultation.
@@ -215,6 +212,7 @@ Importantly, conditional on the parameters specifying the geometry of the occult
 Since a sequence of linear mappings is also linear, the predicted flux can be written as
 \begin{equation}
     \mathbf{f}=\mathbf{A}\,\mathbf{y}
+    \quad,
     \label{eq:linear_model}
 \end{equation}
 where the column vector $\mathbf{f}$ of shape $(T, 1)$ is the predicted flux for different values of the occultor position and optionally the direction of the illumination source and $\mathbf{A}$ is the design
@@ -248,6 +246,7 @@ Because $\mathbf{P}$ is not a square matrix, we cannot compute its inverse to ob
 The solution is given by
 \begin{equation}
 \mathbf{P}^\dagger=\left(\mathbf{P}^{\top} \mathbf{P}+\lambda \mathbf{I}\right)^{-1} \mathbf{P}^{\top}
+    \quad,
 \end{equation}
 where $\lambda$ is a small regularization parameter and $\mathbf{I}$ is the identity matrix.
 We then have 
@@ -289,28 +288,33 @@ Assuming we have a single light curve with $N$ data points and a map specified w
 \begin{equation}
     \ln\mathcal{L}=-\frac{1}{2}\left[\mathbf{f}_\mathrm{obs}-\mathbf{f} \right]^{\top}
     \boldsymbol{\Sigma}_l^{-1}\left[\mathbf{f}_\mathrm{obs}-\mathbf{f} \right]
+    \quad,
     \label{eq:likelihood}
 \end{equation}
 where $\mathbf{f}_\mathrm{obs}$ is the observed light curve, $\boldsymbol{\Sigma}$ is the data covariance matrix and $\mathbf{f}$ is predicted flux given by
 \begin{equation}
     \mathbf{f}=\mathbf{A}'\,\mathbf{p}' +b\,\mathbf{1}_N
+    \quad,
     \label{eq:flux_model}
 \end{equation}
 where we have added a fixed flux offset parameter for each light curve in order to account for stray flux which cannot be attributed to Io.
-This flux is mostly due to light emitted from Jupiter.
+This flux is mostly due to light emitted from Jupiter (TODO: is this right?).
 
 To model the data covariance $\boldsymbol{\Sigma}$ we use use a Gaussian Process and we compute the likelihood using the fast Celerite method \citep{foreman-mackey2017} as implemented in the \textsf{celerite2} package (CITE).
 We use the simple (approximate) Matern 3/2 function which is parametrized by two parameters, a standard deviation parameter $\sigma_\mathrm{GP}$ and a characteristic timescale parameter $\rho_\mathrm{GP}$.
 The kernel is given by 
 \begin{equation}
     k(\tau)=\sigma_\mathrm{GP}^{2}\left[(1+1 / \epsilon) e^{-(1-\epsilon) \sqrt{3} \tau / \rho_\mathrm{GP}}(1-1 / \epsilon) e^{-(1+\epsilon) \sqrt{3} \tau / \rho_\mathrm{GP}}\right]
+    \quad,
 \end{equation}
 where $\tau=|t_n-t_m|$ and $\epsilon$ controls the quality of the approximation.
 A single element of the data covariance matrix $\boldsymbol{\Sigma}$ is then 
 \begin{equation}
-    \boldsymbol{\Sigma}_{nm}=(K\sigma_n)^2\delta_{nm} + k(\tau\sigma_\mathrm{GP},\rho_\mathrm{GP})
+    \boldsymbol{\Sigma}_{nm}=\sigma_n^2\delta_{nm} + k(\tau\sigma_\mathrm{GP},\rho_\mathrm{GP})
+    \quad,
+    \label{eq:data_covariance_element}
 \end{equation}
-where $\sigma_n$ is the errorbar for the n-th data point and $K$ is a rescaling factor for the errorbar common to all data points in a single light curve.
+where $\sigma_n$ is the errorbar for the n-th data point.
 In cases where we fit multiple light curves assume independence and the total log likelihood is the product of individual likelihoods defined in Eq.~\ref{eq:likelihood}.
 
 \section{The inverse problem}
@@ -329,51 +333,47 @@ Observing phase curves and occultations in reflected light improves the model ev
 In some cases for reflected light observations (phase curves of an inclined planet for example) there is no nullspace at all at low degrees of the map.
 
 We can reformulate these statements more precisely by computing a measure of information content of the different kinds of observations.
-Given that our model is linear, assuming Gaussian priors on the spherical harmonic coefficients with covariance $\boldsymbol{\Lambda}$ and a Gaussian likelihood, the posterior can be computed analytically and its mean is given by
+Given that our model is linear, assuming Gaussian priors on the spherical harmonic coefficients with covariance $\boldsymbol{\Lambda}_\mathbf{y}$ and a Gaussian likelihood, the posterior can be computed analytically and its mean is given by
 \begin{equation}
     \widehat{\mathbf{y}}=\boldsymbol{\Sigma}_{\hat{\mathbf{y}}}\left(\mathbf{A}^{\top} \boldsymbol{\Sigma}_{\mathbf{f}}^{-1} \mathbf{f}+\boldsymbol{\Lambda}_{\mathbf{y}}^{-1} \boldsymbol{\mu}_{\mathbf{y}}\right)
+    \quad,
 \end{equation}
 where the posterior covariance matrix $\boldsymbol{\Sigma}_{\hat{\mathbf{y}}}$ is 
 \begin{equation}
 \boldsymbol{\Sigma}_{\hat{\mathbf{y}}}=\left( \mathbf{A}^{\top} \boldsymbol{\Sigma}_{\mathbf{f}}^{-1} \mathbf{A} +\boldsymbol{\Lambda}_{\mathbf{y}}^{-1}\right)^{-1}
 \end{equation}
-The posterior covariance matrix depends on the design matrix $\mathbf{A}$, the prior covariance  $\boldsymbol{\Lambda}$ and the data covariance $\boldsymbol{\Sigma}_{\mathbf{f}}$.
 We define the information content as the variance reduction of the posterior relative to the prior which is called \emph{posterior shrinkage}.
-It is defined as
+The posterior shrinkage $S$ is defined as
 \begin{equation}
-    1-\frac{\sigma^2_\mathrm{post}}{\sigma^2_\mathrm{prior}}
+S \equiv 1-\lim _{\sigma_{0}^{2} \rightarrow \infty} \frac{\sigma^{2}}{\sigma_{0}^{2}}
+    \quad,
 \end{equation}
-where $\sigma^2_\mathrm{prior}$ is the prior and $\sigma^2_\mathrm{post}$ is the posterior variance for a given parameter.
-For each spherical harmonic coefficient in $\mathbf{y}$ the posterior shrinkage is then the ratio of the diagonal elements of matrices $\boldsymbol{\Sigma}_{\hat{\mathbf{y}}}$ and $\boldsymbol{\Lambda}$.
+where $\sigma^2_0$ is the prior variance and $\sigma^2$ is the posterior variance for a given spherical harmonic coefficient.
+It tells us how well we can constrain a particular coefficient in the limit of infinite SNR observations, posterior shrinkage of 1 means that the data provides perfect information and a posterior shrinkage of 0 means that we didn't learn anything.
 In order to compute the posterior shrinkage we first compute the design matrices using \textsf{starry} for different kinds of events a over the course of a single year: occultations by Jupiter, occultations by Europa, Ganymede and Callisto and phase curves.
 We take the ephemeris data from \textsf{JPL HORIZONS} and assume that it is known exactly and we also assume all observations are of the emitted light component independent of whether Io is in sunlight or in eclipse because we are interested in constraining the volcanic emission rather than the albedo.
-We need to assume some variance for the Gaussian prior on the $Y_{l,m}$ coefficients so we choose a broad prior $\boldsymbol{\Lambda}=\mathrm{diag}(1^2,0.1^2,\dots,0.1^2)$.
-Although the posterior shrinkage depends on this prior the main results do not change for a different choice of the prior.
 
 \begin{figure}[h!]
     \begin{centering}
-    \includegraphics[width=0.5\linewidth]{figures/information_content.pdf}
+    \includegraphics[width=\linewidth]{figures/information_content.pdf}
     \oscaption{InformationContent}{
-        The posterior shrinkage of different kinds of observations of Io as a function of spherical harmonic degree (angular scale), averaged across all $m$ modes.
+        The posterior shrinkage for different kinds of observations of Io as a function of spherical harmonic degree (angular scale), averaged across all $m$ modes.
     Posterior shrinkage of 1 represent maximum information gain in updating from the prior to the posterior while 0 represents no information gain. 
     The posterior variance has been computed for different kinds of simulated observations of Io over the course of a single year: phase curves (blue), occultations by Jupiter (orange), combined phase curves and occultations by Jupiter (green) and occulltations of Io by other Galilean moons (red lines). 
-        Solid lines are for observations at SNR=100 and dashed are for observations at SNR=10.
         \label{fig:information_content}
     }
     \end{centering}
 \end{figure}
 
 Fig.~\ref{fig:information_content} shows the posterior shrinkage as a function of $l$ (averaged over all $m$ modes) for phase curve observations (blue lines), occultations by Jupiter (orange), the former two combined (green) and mutual occultations by other Galilean moons (red).
-Solid lines correspond to SNR=100 while dashed lines correspond to SNR=10 where the signal is defined as the min-max difference of the predicted flux.
-As expected, the mutual occultations of Io by other moons are by far the most informative with posterior shrinkage near unity at all angular scales up to $l=18$. 
+As expected, the mutual occultations of Io by other Galilean moons are by far the most informative with posterior shrinkage of unity at all angular scales. 
 Occultations by Jupiter are far less informative because we only see one side of Io during an occultation.
-This is also why there is a kink in the curve at $l=1$.
-We also see that the shrinkage is exactly zero for phase curves at all odd degrees above $l=2$ because phase curves for objects rotating about an axis perpendicular to the line of sight encode zero information on these coefficients because they are in the nullspace.
-Although observations of mutual occultations most easily break the degeneracies, they only occur every 6 years and more importantly they almost never occur while Io is in eclipse which means that only the brightest volcanoes will be visible above the reflected light background emission due to the Sun.
-Figure~\ref{fig:information_content} does not reflect this fact.
+Shrinkage for phase curve at odd degrees above $l=2$ is exactly zero because these coefficents are in the nullspace for objects rotating about an axis perpendicular to the line of sight these coefficients and therefore they cannot be constrained using only phase curves. 
+Observations of mutual occultations most easily break the degeneracies but we have to keep in mind that they only happen every 6 years and they almost never happen while Io is in eclipse which means that only the brightest volcanoes are visible above the reflected light sunlight.
+This is not captured in \ref{fig:information_content}. 
 
 Although Figure~\ref{fig:information_content} gives us some idea about which kinds of observations are most informative, it doesn't really tell us how well we can constrain very bright spot like features we expect to see on Io.
-To answer this question we have to simulate some data and the inference process.
+To answer this question we have to simulate data and the inference process.
 
 \subsection{Sphixels vs. spherical harmonics}
 \label{ssec:sphixels_vs_harmonics}
@@ -442,11 +442,13 @@ Assuming both the map and the kernel function are expanded in terms of spherical
 We choose a simple azimuthally symmetric Gaussian kernel function given by
 \begin{equation}
     B(\theta)=\frac{1}{\sqrt{2 \pi \sigma_s^{2}}}\exp \left(-\theta^{2} / 2 \sigma_s^{2}\right)
+    \quad,
 \end{equation}
 where $\sigma_s$ sets the characteristic scale of the smoothing.
 This function can be expanded in terms of spherical harmonics as
 \begin{equation}
     B(\theta)=\sum_{l=0}^{\infty}\left(\frac{2 l+1}{4 \pi}\right) B_{l} \,\mathcal{P}_{l}(\cos \theta)
+    \quad,
 \end{equation}
 where $B_l$ are the spherical harmonic coefficients and $\mathcal{P}_l$ are the associated Legendre polynomials.
 They depend only on $l$ because all nonzero $m$ modes vanish due to azimuthal symmetry.
@@ -513,6 +515,7 @@ It is defined hierarchically as
     &\lambda_{m}  \sim \mathrm{Half}-\mathcal{C} (0,1) \\
     &p_{m}  \sim \mathcal{N}\left(0, \tau \lambda_{m}\right) 
 \end{aligned}
+    \quad,
     \label{eq:horseshoe}
 \end{equation}
 where $p_m$ are the sphixels.
@@ -540,6 +543,7 @@ When sphixels are far from zero ($\tau^2\overline{\lambda}_m^2\gg c^2$) then $\l
 For setting the scale parameter $\tau_0$ for the prior on the global scale $\tau$, \cite{piironen2017} suggest the following expression
 \begin{equation}
     \tau_0=\frac{p_0}{D-p_0}\frac{\sigma}{\sqrt{n}}
+    \quad,
     \label{eq:horseshoe_tau0}
 \end{equation}
 where $p_0$ is our prior guess for the number of significant (sphixels) which are sufficiently far above zero, $D$ is the total number of sphixels, $n$ is the number of data points and $\sigma$ is the standard deviation of the data points (the errobars).
@@ -615,134 +619,417 @@ Even though the spot model has only 5 parameters per spot and the sphixel model 
 \section{Results for IRTF data}
 \label{sec:results}
 \subsection{1998 pair of occultations by Jupiter}
-Having demonstrated that our model works well on simulated data, int this section we use it to fit IRTF light curves of actual occultations of Io.
-Out of all the IRTF occultation light curves of Io by Jupiter, we choose two pairs of high quality ingress/egress light curves closely spaced in time so that that we can assume that the surface emission does not change substantially between the ingress and the egress occultation.
+Having demonstrated that our model works well on simulated data, we turn to fitting observations of actual occultation of Io observed with the IRTF telescope.
+We selected two pairs of high quality ingress/egress light curves closely spaced in time so that the assumption that the surface map is identical for both the ingress and the egress light curve is approximately correct; although we allow for a difference in the overall amplitude of the maps for the two occultations.
 We fit a pair of events from 1998, an ingress occultation observed on the 27th of August and an egress occultation observed on the 29th of November.
-For comparison, we also fit a pair of events from 2017, an ingress occultation observed on the 31st of March and an egress occultation observed on the 11th of May.
-
-We assume the same map for both the ingress and the egress light curve except for  a difference in the overall amplitude.
-The predicted fluxes are then:
+For comparison, we also fit a pair of events observed nearly two decades later in 2017.
+The predicted fluxes are given by 
 \begin{align}
     \mathbf{f}_I&=\mathbf{A}_I'\,\mathbf{p}_I' +b_I\,\mathbf{1}_{N_I}\\
     \mathbf{f}_E&=\mathbf{A}_E'\,\mathbf{p}_E' +b_E\,\mathbf{1}_{N_E}
 \end{align}
-where $\mathbf{f}_I$ is the predicted flux for the ingress light curve and $\mathbf{f}_E$ is the predicted flux for the egress light curve.
+where $\mathbf{f}_I$ is the predicted flux for the ingress light curve with $N_I$ data points, $\mathbf{f}_E$ is the predicted flux for the egress light curve with $N_E$ data points, and $b_I$ and $b_E$ are constant flux offset parameters.
 Since we assume that the map is the same for both light curves up to an overall amplitude difference, we have
 \begin{equation}
     \mathbf{p}'_E=a\,\mathbf{p}'_I
+    \quad,
 \end{equation}
-where $a$ is the relative difference in amplitude.
-The log likelihood is the sum of the log likelihoods for individual light curves (Eq.~\ref{eq:likelihood}).
-We list all model parameters and their associated priors in Table~\ref{tab:priors}.
-\begin{table}
-\centering
-\begin{tabular}{l l l}
-    \hline
-Parameter & Description & Prior\\
- \hline
-    $\tau$ & Global sphixel scale &  \begin{minipage}{0.5\textwidth}  \shortstack[l]{$\mathrm{Half}-\mathcal{C}(0,\tau_0)$, $\tau_0$ defined by Eq.~\ref{eq:horseshoe_tau0} \\with $p_0=0.8D$}\end{minipage}\\
- $c^2$ & Slab scale squared & $\mathrm{Inv}-\mathcal{G}(2,2s^2)$, $s=10$\\
-    $\overline{\lambda}_m$  & Local sphixel scale & $\mathrm{Half}-\mathcal{C}(0,1)$\\
-    $p_m$ & Sphixels & $\mathcal{N}^+(0, \tau\lambda_m)$, $\lambda_{m} =c \overline{\lambda}_{m}/\sqrt{c^{2}+\tau^{2} \overline{\lambda}_{m}^{2}}$\\
-    $a$ & \begin{minipage}{0.2\textwidth}\shortstack[l]{Relative change in \\map amplitude}\end{minipage}& $\mathcal{N}(1, 0.1)$\\
-    $b_I$, $b_E$& Flux offset &$\mathcal{N}(0, 4)$\\
-    $K_I$, $K_E$& Errorbar rescaling factor&$\mathcal{N}(1,0.05)$\\
-    $\sigma_{\mathrm{GP},I}$, $\sigma_{\mathrm{GP},E}$ & GP standard deviation&$\mathcal{N}^+(0,0.1\sigma)$\\
-    $\rho_{\mathrm{GP},I}$, $\rho_{\mathrm{GP},E}$ & GP timescale  &  \begin{minipage}{0.5\textwidth}  \ \shortstack[l]{ \\$\mathrm{Inv}-\mathcal{G}(\alpha,\beta)$  with $\alpha$ and $\beta$ defined such that \\ $P(\rho_\mathrm{GP}<\Delta t_\mathrm{min})=P(\rho_\mathrm{GP}>(t_\mathrm{max}-t_\mathrm{min}))=0.01$}\end{minipage}
-\end{tabular}
-\caption{Parameters and priors for the final model. 
-    The subscript $I$ denotes parameters associated with the ingress light curve while the subscript $E$ denotes parameters associated with the egress light curve.
-    $\Delta t_\mathrm{min}$ is the minimum time between two consecutive data points in the ingress (egress) light curve and $(t_\mathrm{max}-t_\mathrm{min})$ is the duration of the ingress (egress) occultation.}
-    \label{tab:priors}
+where $a$ is a dimensionless parameter.
+
+The log likelihood is the sum of the log likelihoods for individual light curves (Eq.~\ref{eq:likelihood}), to compute it we also need to specify the data covariance matrix defined in Eq.~\ref{eq:data_covariance_element}.
+Each element of the covariance matrix consists of a white noise component (errobars) and a correlated noise component (Gaussian Process).
+Since the IRTF light curves are not provided with estimated errobars, we choose to fit for all errobars simultaneously using a hierarhical approach in which we assign a global scale $l$ for all errorbars in a given light curve and we draw each individual errobar from a Half Normal distribution with standard deviation equal to that scale.
+That is, we have 
+\begin{align}
+    \sigma_{i,I}&\sim \mathcal{N}^+(0, l_E),\quad i=1,\dots,N_I\\
+    \sigma_{i,E}&\sim \mathcal{N}^+(0,l_I),\quad i=1,\dots, N_E
+\end{align}
+where $\sigma_{i,I}$ are the errobars for the ingress light curve and $\sigma_{i,E}$ are the errobars for the egress light curve.
+Treating errobars as free parameters means that we are introducing hundreds of more parameters (as many as there are data points) which is not an issue as long as these parameters are constrained by the data.
+
+Our noise model as defined above is extremely flexible, it can account for a given feature in the light curve by inflating individual errobars (white noise) or by varying the characteristic timescale $\rho_\mathrm{GP}$ in the Matern 3/2 kernel.
+All model parameters and their associated priors are listed in Table~\ref{tab:priors}. 
+
+\renewcommand*{\arraystretch}{1.4}
+\begin{table}[t!]
+    \begin{center}
+        \begin{longtable}{W{l}{4cm} W{l}{4cm} W{l}{6cm}}
+            \label{tab:priors}
+            \\
+            %
+            \toprule
+            \multicolumn{1}{c}{\textbf{Parameter(s)}}
+             &
+            \multicolumn{1}{c}{\textbf{Description}}
+             &
+            \multicolumn{1}{c}{\textbf{Prior}}
+            \\
+            \midrule
+            \endhead
+            \bottomrule                                 
+            \\
+            %
+            \caption{%
+Parameters and priors for the final model. 
+            The subscript $I$ denotes parameters associated with the ingress light curve while the subscript $E$ denotes parameters associated with the egress light curve. $t_{\mathrm{max},I}$ and  $t_{\mathrm{max},E}$ are the durations of the ingress and egress occultations respectively.
+            }
+            \endfoot
+            %
+            %
+$\tau$ & global sphixel scale &  \begin{minipage}{0.5\textwidth}  \shortstack[l]{$\mathrm{Half}-\mathcal{C}(0,\tau_0)$, $\tau_0$ defined in Eq.~\ref{eq:horseshoe_tau0} \\with $p_0=0.8D$}\end{minipage}
+           %
+            \\
+            %
+            $c^2$ & slab scale squared & $\mathrm{Inv}-\mathcal{G}(\frac{\nu}{2},\frac{
+                nu}{2}s^2)$, $s=1000$ and $\nu=4$
+            %
+            \\
+            %
+    $\overline{\lambda}_m , \quad m=1,\dots,D$  & local sphixel scale & $\mathrm{Half}-\mathcal{C}(0,1)$
+            %
+            \\
+            $p_m, \quad m=1,\dots,D$& sphixels & $\mathcal{N}^+(0, \tau\lambda_m)$, $\lambda_{m} =c \overline{\lambda}_{m}/\sqrt{c^{2}+\tau^{2} \overline{\lambda}_{m}^{2}}$
+            %
+            \\
+            %
+                $a$ & \begin{minipage}{0.2\textwidth}\shortstack[l]{relative change in \\map amplitude}\end{minipage}& $\mathcal{N}(1, 0.1)$
+             %
+            \\
+            %
+    $b_I$, $b_E$& flux offset &$\mathcal{N}(0, 4)$
+            %
+            \\
+            %
+            $l_I$, $l_E$& errorbar global scale&$\mathcal{N}^+(0,0.1)$
+            %
+            \\
+            %
+            $\sigma_{i,I}$, $\sigma_{i,E},\quad i=1,\dots,N$& individual errobars&
+            $\mathcal{N}^+(0,l_I),\quad \mathcal{N}^+(0,l_E)$
+            %
+            \\
+            %
+            $\sigma_{\mathrm{GP}, I}$, $\sigma_{\mathrm{GP}, I}$ & GP standard deviation&$\mathcal{N}^+(0,0.1),\quad \mathcal{N}^+(0,0.1)$
+             %
+            \\
+            %
+            $\rho_{\mathrm{GP},I}$, $\rho_{\mathrm{GP},E}$ & GP timescale  & $\mathcal{N}^+(0, t_{max, I}),\quad  \mathcal{N}^+(0, t_{max, E})$
+        \\
+            %
+        \end{longtable}
+    \end{center}
 \end{table}
-One of the more important priors is the prior on the characteristic timescale of the Matern 3/2 kernel for the Gaussian Process. 
-We choose an Inverse Gamma prior for this parameter with the parameters $\alpha$ and $\beta$ chosen such that 1\% of the probability is assigned to timescales smaller than the median spacing between the data points in the light curve  on the left tail of the distribution and 1\% of probability on the right tail is assigned for timescales longer than the duration of the occultation. 
-The purpose of this prior is to suppress the timescales for which the data provide much information\footnote{ \url{https://betanalpha.github.io/assets/case_studies/gaussian_processes.html}}.
 
-We run the MCMC for 500 warm-up steps and 2000 final steps, monitoring divergences and R-hat.
-The inferred map for the 1998 pair of events is shown in Figure~\ref{fig:irtf_ingress_egress_1998}.
-Selected inferred parameters parameters are shown in Table~\ref{tab:1998_parameters}. 
-The inferred map has two distinct hot spots, a bright hotspot and a faint hotspot.
-The orange lines in the second subplot from the bottom are posterior samples for the physical model in data space (not including the effects of the GP).
-The bottom panel shows the residuals with respect to the physical model and the posterior GP predictions.
-
-Most of the wiggles in the residuals are either due to surface emission features which were not accounted for by the model or due to atmospheric variability.
-The most notable feature in the residuals is visible at around 3.3 minutes in the ingress light curve and 3.6 minutes in the egress light curve when the bright spot comes in and out of view. 
-This feature is present because our model is limited in resolution so the inferred spot size is not small enough to explain the rapid change in flux seen in the data.
-The GP accounts for all three types of features - the model atmospheric variability, the emission due to surface features which are too faint to be well constrained by the physical model and the limitation of the physical model to capture the true size of the spot. 
-Although the GP could easily account for the small dip in both light curves due to the faint hot spot, it does not too that because the physical model provides a better explanation for the data (TODO: formalize this argument).
-Thus there is a trade-off between the explanatory power of the noise model and the physical model.
-
-To obtain the inferred location of the hot spots we optimize for the location of maximum intensity in the spot for each posterior map. 
-The location of the bright hotspot is $16.295_{-0.009}^{0.009}$$^\circ$ N latitude and $53.098_{-0.004}^{0.006}$$^\circ$ E longitude which corresponds to the location of Loki Patera.
-Figure~\ref{fig:irtf_ingress_egress_loki} shows the hotspot overlaid on top overlaid on top of the U.S. Geological Survey's map of the surface of Io (CITE) which was constructed from Galileo observations.
-The faint hot spot is at $-11{-0.0}^{0.0}$$^\circ$ N latitude and $323_{-0.0}^{0.0}$$^\circ$ E longitude (TODO: input exact location) which is most likely Kanehekili (TODO: CITE, check if this is true).
+To fit the model we sample the posterior using the NUTS sampler for 500 warm-up steps and 3000 final steps.
+We monitor divergences and the R-hat statistic to ensure convergence.
+The inferred map for the 1998 pair of events is shown in Figure~\ref{fig:irtf_ingress_egress_1998} and the median, 16th and 84th percentile estimates from the samples are shown in Table~\ref{tab:irtf_1998}. 
+The inferred map has two distinct hot spots, a bright hotspot in the Eastern hemisphere and a faint hotspot in the Western hemisphere.
+The orange lines in the second panels from the bottom are posterior samples for the physical (map) model in data space. 
+The bottom panel shows the residuals with respect to the (median) physical model prediction and the posterior predictions from the Gaussian Process (purple).
+We plot the model in this way so that we are able to distinguish between the features due to the physical model and those from the noise model.
+Each data point is shown with the median prediction of its errorbar.
 
 \begin{figure}[ht!]
     \begin{centering}
     \includegraphics[width=1.\linewidth]{figures/irtf_ingress_egress_1998.pdf}
     \oscaption{irtf_ingress_egress_1998}{%
     Median estimates of two $l=20$ maps (top panel) inferred by fitting a pair of observations of occultations of Io by Jupiter from 1998.  
-        The map and light curve correspond to the ingress event and the ones on the right are the egress event. 
+        The map and light curve on the left correspond to the ingress event and the ones on the right are the egress event. 
         The two maps are (by construction) the same except for a difference in the overall amplitude. 
-        The observations were taken using the IRTF telescope in the NIR filter (TODO: which filter).
 The small circles beneath the inferred map show the progression of the occultation. 
-        Orange lines show posterior samples from the physical model (excluding the Gaussian Process).
-        The residuals (bottom) are computed with respect the median prediction from the physical model and the Gaussian Process predictions are shown on the same plot.
-The inferred map shows two hotspots, the bright hot spot is emission due to Loki and the faint hot spot is Kanehekili.
+        Orange lines show posterior samples from the physical model.
+        The residuals (bottom) are computed with respect the median prediction from the physical model and the Gaussian Process posterior predictions are shown on the same plot in purple.
+        The inferred map shows two hotspots, the bright hot spot is emission due to Loki and the faint hot spot is Kanehekili (TODO: check).
      \label{fig:irtf_ingress_egress_1998}
     }
     \end{centering}
 \end{figure}
 
-\begin{table}
-    \centering
-\begin{tabular}{l l l}
-    \hline
-    Parameter & Value & Unit\\
- \hline
- $\tau$ &  & \\
-    $c^2$ & &\\
-    $p_m$ & &\\
-    $a$ & &\\
-    $b_I$ & &\\
-    $b_E$ & &\\
-    $K_I$ & & \\
-    $K_E$ & &\\
-    $\sigma_{\mathrm{GP},I}$ && \\
-    $\sigma_{\mathrm{GP},E}$ & &\\
-    $\rho_{\mathrm{GP},I}$ & &\\
-    $\rho_{\mathrm{GP},E}$ &&  
-\end{tabular}
-    \caption{Inferred model parameters for the pair of occultations from 1998.}
-    \label{tab:1998_parameters}
-\end{table}
+Despite the fact that our noise model is very flexible, it does not seem to overfit the data. 
+The physical model accounts for the prominent steps in the light curves while the noise model takes care  of the residual variability. 
+Most of the wiggles in the residuals are either due to surface emission features which were not accounted for by the model or due to atmospheric variability.
+The most notable feature in the residuals is visible at around 3.3 minutes in the ingress light curve and 3.6 minutes in the egress light curve when the bright hot spot comes in and out of view. 
+This feature is visible because our model is limited in resolution so the inferred spot size is not small enough to explain the rapid change in flux seen in the data.
+The Gaussian Process accounts for the  variation due to atmospheric variability, the emission due to surface features which are too faint to be well constrained by the physical model and the limitation of the physical model to capture the true size of the spot. 
 
+There is a trade-off between the explanatory power of the noise model and the physical model. 
+In general, we expect that a given feature in the light curve will be accounted for by the physical model if the physical model provides a better explanation for the data relative to the noise model.
+This seems to be true for the most obvious features in Figure~\ref{fig:irtf_ingress_egress_1998} except (to an extent) for the first step in the ingress light curve at around 0.6 minutes which is only partially accounted for by the physical model because the model predictions are a bit too smooth compared to the data. 
+Based on the ingress light curve alone, we would expect that the faint spot should be slightly brighter than the model predicted.
+Since the model had no trouble accounting for a similar a step for simulated data shown in Figure~\ref{fig:ingress_egress_sim_snr_50} the reason why it didn't do so in this case is probably because doing so would result in a poorer fit for the egress light curve.
+The two occultations were observed months apart so we expect our assumption that the map has not changed except for an overall amplitude to be wrong in detail.  
+
+The posterior distribution for the errobars is shown in Figure~\ref{fig:irtf_ingress_egress_errorbars}.
+Both the global scale for the errobars and the individual errobars are well constrained by the data. 
+Looking at the plot one can see that outlier points are naturally accounted for in the model because those points end up having higher variance.
 
 \begin{figure}[ht!]
     \begin{centering}
-    \includegraphics[width=.5\linewidth]{figures/irtf_spot_overlay_1998.pdf}
-    \oscaption{irtf_ingress_egress_loki}{%
-        Zoom in on the bright hot spot from Figure~\ref{fig:irtf_ingress_egress_1998} overlaid on top of the U.S. Geological Survey's map of the surface of Io (CITE) which was        constructed from Galileo observations.
-        The location of the hot spots matches the location of Loki Patera, the largest active volcano on the surface of Io. 
-        \label{fig:irtf_ingress_egress_loki}
+    \includegraphics[width=\linewidth]{figures/irtf_ingress_egress_1998_errobars.pdf}
+    \oscaption{irtf_ingress_egress_errobars}{%
+       \label{fig:irtf_ingress_egress_errorbars}
     }
     \end{centering}
 \end{figure}
 
+\renewcommand*{\arraystretch}{1.4}
+\begin{table}[t!]
+    \begin{center}
+        \begin{longtable}{W{l}{2cm} W{l}{3cm} W{l}{3cm}}
+            \label{tab:irtf_1998}
+            \\
+            %
+            \toprule
+            \multicolumn{1}{c}{\textbf{Parameter}}
+             &
+            \multicolumn{1}{c}{\textbf{Value}}
+             &
+            \multicolumn{1}{c}{\textbf{Unit}}
+            \\
+            \midrule
+            \endhead
+            \bottomrule                                 
+            \\
+            \caption{%
+                Inferred parameters for the pair of occultations observed in 1998 using the IRTF telescope.
+                }
+            \endfoot
+            $\tau$ &   $0.870_{-0.221}^{+0.246}$ &  intensity
+            \\
+             $c$ & $4304.302_{-1162.250}^{+2123.962}$ & intensity 
+            \\
+                $a$ &  $1.154_{-0.013}^{+0.014}$ & dimensionless
+            \\
+            $b_I$ & $0.014_{-0.013}^{+0.077}$ & GW/um/sr
+            \\
+            $b_E$& $0.362_{-0.335}^{+0.438}$ & GW/um/sr
+            \\
+            $l_I$ & $0.253_{-0.030}^{+0.036}$ & GW/um/sr
+            \\
+            $l_E$& $0.461_{-0.042}^{+0.042}$ & GW/um/sr
+            \\
+            $\sigma_{\mathrm{GP}, I}$ & $0.633_{-0.042}^{+0.047}$ & GW/um/sr 
+            \\
+            $\sigma_{\mathrm{GP}, E}$ & $0.453_{-0.052}^{+0.054}$ & GW/um/sr
+            \\
+            $\rho_{\mathrm{GP},I}$ & $0.078_{-0.010}^{+0.011}$ & minutes
+            \\
+            $\rho_{\mathrm{GP},E}$ & $0.099_{-0.021}^{+0.027}$ & minutes
+            \\
+        \end{longtable}
+    \end{center}
+\end{table}
+
+To obtain the inferred location of both hot spots, we compute the centroid of pixels in the 90th percentile of intensity (meaning the brightest pixels) in a specific region (in latitude and longitude) around the hot spot. 
+We repeat this for each posterior map to obtain uncertainty on the position. 
+In addition to the locations of the spots, we also compute the total power emitted within a 15 degree range in latitude and longitude around the (inferred) center of the spots.
+Both of these quantities are listed in Table~\ref{tab:irtf_1998_derived}. 
+The location of the bright hotspot is $16.414_{-0.011}^{+0.027}\quad^\circ$ N latitude and $53.107_{-0.033}^{+0.041}\quad^\circ$ E longitude which corresponds to the location of Loki Patera.
+The faint hot spot is at $-15.756_{-11.382}^{+3.812}\quad ^\circ$ N latitude and $321.568_{-4.208}^{2.803}\quad^\circ$ E longitude which is most likely Kanehekili (TODO: check if this is true).
+Figure~\ref{fig:irtf_ingress_egress_spots} shows  a contour map of both hot spots overlaid on top of the U.S. Geological Survey's map of the surface of Io \cite{williams2011} which was constructed from Galileo observations.
+Also shown is the inferred error in position (white lines).
+The error on the inferred position of Loki is only a fraction of a degree and thus much smaller than the minimum resolution of the map features which is set by the degree of the map.
+TODO: Mention the uncertainty due to Jupiter's radius.
+
+\renewcommand*{\arraystretch}{1.4}
+\begin{table}[t!]
+    \begin{center}
+        \begin{longtable}{W{l}{4cm} W{l}{3cm} W{l}{3cm}}
+            \label{tab:irtf_1998_derived}
+            \\
+            %
+            \toprule
+            \multicolumn{1}{c}{\textbf{Parameter}}
+             &
+            \multicolumn{1}{c}{\textbf{Value}}
+             &
+            \multicolumn{1}{c}{\textbf{Unit}}
+            \\
+            \midrule
+            \endhead
+            \bottomrule                                 
+            \\
+            \caption{%
+                Derived parameters of the two hot spots visible in Figure~\ref{fig:irtf_ingress_egress_1998}.
+                The latitude and longitude of the spots are derived by computing the centroid of points around the spots which are in the 90th percentile of intensity.
+            The power is defined as the total emission from within a 15 degree circle around the (inferred) location of the spot.
+        }
+            \endfoot
+            Spot 1 latitude  & $16.414_{-0.011}^{+0.027}$& degrees 
+            \\
+             Spot 1 (East) longitude & $53.107_{-0.033}^{+0.041}$& degrees 
+            \\
+                Spot 1 power  ingress & $52.755_{-0.316}^{+1.090}$ & GW/um 
+            \\
+                Spot 1 power  egress & $61.055_{-1.000}^{+1.081}$ & GW/um 
+                \\
+            Spot 2 latitude  & $-15.756_{-11.382}^{+3.812}$& degrees 
+            \\
+             Spot 2 (East) longitude & $-38.432_{-4.208}^{+2.803}$ & degrees 
+            \\
+                Spot 2 power  ingress & $5.192_{-15.95}^{+0.484}$ & GW/um 
+                \\
+                Spot 2 power  egress & $6.026{-1.993}^{+0.534}$ & GW/um 
+            \\
+        \end{longtable}
+    \end{center}
+\end{table}
+
+\begin{figure}[ht!]
+    \begin{centering}
+    \includegraphics[width=\linewidth]{figures/irtf_ingress_egress_1998_spots.pdf}
+    \oscaption{irtf_ingress_egress_1998_spots}{%
+        Contour plot of the hot spots shown in Figure~\ref{fig:irtf_ingress_egress_1998} overlaid on top of the U.S. Geological Survey's map of the surface of Io which has been constructed from observations by the Galileo spacecraft.
+        \label{fig:irtf_ingress_egress_spots}
+    }
+    \end{centering}
+\end{figure}
+
+To see how the results change if we don't include a Gaussian Process in the noise model we fit the same pair of occultations from 1998 using the same priors.
+The results are shown in Figure~\ref{fig:irtf_ingress_egress_1998_no_GP}.
+The model tries to account for the systematic variations in the data by inflating the individual errorbars.
+Compared to the map shown in Figure~\ref{fig:irtf_ingress_egress_1998} the map has two spurious extra spots. 
+We find that in general including a GP results in a simpler map with fewer features because the GP prevents the physical model from overfitting the data.
+
+\begin{figure}[ht!]
+    \begin{centering}
+    \includegraphics[width=1.\linewidth]{figures/irtf_ingress_egress_1998_no_GP.pdf}
+    \oscaption{irtf_ingress_egress_1998_no_GP}{%
+        Same as Figure~\ref{fig:irtf_ingress_egress_1998} except this figure shows the output of a model which does not include a Gaussian Process to account for correlated structure in the data.
+    As a result, the model tries to account for the correlations by inflating individual errorbars. 
+    There are two additional hot spots which are almost certainly spurious.
+     \label{fig:irtf_ingress_egress_1998_no_GP}
+    }
+    \end{centering}
+\end{figure}
 
 \subsection{2017 pair of occultations by Jupiter}
+To see what happens if we use the same model as the one used to generate the map shown in Figure~\ref{fig:irtf_ingress_egress_1998} to fit a pair of observations from 2017, an ingress occultation observed on the 31st of March and an egress occultation observed on the 11th of May.
+The results are shown in Figure~\ref{fig:irtf_ingress_egress_2017} and the inferred parameters are listed in Table~\ref{tab:irtf_2017}.
+The inferred map is very similar to the one shown in Figure~\ref{fig:irtf_ingress_egress_1998} because we again see two hot spots although the fainter one is located a higher latitude.
+A contour plots of the two spots overlaid on top of a surface map of Io from Galileo observations is shown in Figure~\ref{fig:irtf_ingress_egress_spots_2017} and the derived spot parameters are listed in Table~\ref{tab:irtf_2017_derived}.
 
 \begin{figure}[ht!]
     \begin{centering}
     \includegraphics[width=1.\linewidth]{figures/irtf_ingress_egress_2017.pdf}
     \oscaption{irtf_ingress_egress_2017}{%
+    Median estimates of two $l=20$ maps (top panel) inferred by fitting a pair of observations of occultations of Io by Jupiter from 2017.  
+        The map and light curve on the left correspond to the ingress event and the ones on the right are the egress event. 
+        The two maps are (by construction) the same except for a difference in the overall amplitude. 
+The small circles beneath the inferred map show the progression of the occultation. 
+        Orange lines show posterior samples from the physical model.
+        The residuals (bottom) are computed with respect the median prediction from the physical model and the Gaussian Process posterior predictions are shown on the same plot in purple.
+        The inferred map shows two hotspots, the bright hot spot is emission due to Loki and the faint hot spot is Kanehekili (TODO: check).
                 \label{fig:irtf_ingress_egress_2017}
     }
     \end{centering}
 \end{figure}
 
-\subsection{What happens if we don't include the Gaussian Process?}
+
+\renewcommand*{\arraystretch}{1.4}
+\begin{table}[t!]
+    \begin{center}
+        \begin{longtable}{W{l}{2cm} W{l}{3cm} W{l}{3cm}}
+            \label{tab:irtf_2017}
+            \\
+            %
+            \toprule
+            \multicolumn{1}{c}{\textbf{Parameter}}
+             &
+            \multicolumn{1}{c}{\textbf{Value}}
+             &
+            \multicolumn{1}{c}{\textbf{Unit}}
+            \\
+            \midrule
+            \endhead
+            \bottomrule                                 
+            \\
+            \caption{%
+                Inferred parameters for the pair of occultations observed in 1998 using the IRTF telescope.
+                }
+            \endfoot
+            $\tau$ &   $0.973_{-0.247}^{+0.255}$ &  intensity
+            \\
+             $c$ & $5866.860_{-1580.812}^{+2527.995}$ & intensity 
+            \\
+                $a$ &  $1.434_{-0.010}^{+0.011}$ & dimensionless
+            \\
+            $b_I$ & $0.025_{-0.024}^{+0.140}$ & GW/um/sr
+            \\
+            $b_E$& $1.026_{-0.263}^{+0.238}$ & GW/um/sr
+            \\
+            $l_I$ & $0.971_{-0.056}^{+0.056}$ & GW/um/sr
+            \\
+            $l_E$& $0.520_{-0.093}^{+0.079}$ & GW/um/sr
+            \\
+            $\sigma_{\mathrm{GP}, I}$ & $0.126_{-0.055}^{+0.129}$ & GW/um/sr 
+            \\
+            $\sigma_{\mathrm{GP}, E}$ & $0.601_{-0.093}^{+0.083}$ & GW/um/sr
+            \\
+            $\rho_{\mathrm{GP},I}$ & $2.160_{-2.030}^{+3.333}$ & minutes
+            \\
+            $\rho_{\mathrm{GP},E}$ & $0.020_{-0.013}^{+0.011}$ & minutes
+            \\
+        \end{longtable}
+    \end{center}
+\end{table}
+
+
+\begin{figure}[ht!]
+    \begin{centering}
+    \includegraphics[width=\linewidth]{figures/irtf_ingress_egress_2017_spots.pdf}
+    \oscaption{irtf_ingress_egress_2017_spots}{%
+        Contour plot of the hot spots shown in Figure~\ref{fig:irtf_ingress_egress_2017} overlaid on top of the U.S. Geological Survey's map of the surface of Io which has been constructed from observations by the Galileo spacecraft.
+        \label{fig:irtf_ingress_egress_spots_2017}
+    }
+    \end{centering}
+\end{figure}
+
+
+\renewcommand*{\arraystretch}{1.4}
+\begin{table}[t!]
+    \begin{center}
+        \begin{longtable}{W{l}{4cm} W{l}{3cm} W{l}{3cm}}
+            \label{tab:irtf_2017_derived}
+            \\
+            %
+            \toprule
+            \multicolumn{1}{c}{\textbf{Parameter}}
+             &
+            \multicolumn{1}{c}{\textbf{Value}}
+             &
+            \multicolumn{1}{c}{\textbf{Unit}}
+            \\
+            \midrule
+            \endhead
+            \bottomrule                                 
+            \\
+            \caption{%
+                Derived parameters of the two hot spots visible in Figure~\ref{fig:irtf_ingress_egress_2017}.
+                The latitude and longitude of the spots are derived by computing the centroid of points around the spots which are in the 90th percentile of intensity.
+            The power is defined as the total emission from within a 15 degree circle around the (inferred) location of the spot.
+        }
+            \endfoot
+            Spot 1 latitude  & $12.319_{-0.388}^{+0.391}$& degrees 
+            \\
+             Spot 1 (East) longitude & $52.743_{-0.095}^{+0.046}$& degrees 
+            \\
+                Spot 1 power  ingress & $70.719_{-0.275}^{+1.396}$ & GW/um 
+            \\
+                Spot 1 power  egress & $102.026_{-1.459}^{+1.737}$ & GW/um 
+                \\
+            Spot 2 latitude  & $-8.076_{-0.084}^{+0.715}$& degrees 
+            \\
+             Spot 2 (East) longitude & $-42.096_{-0.161}^{+0.417}$ & degrees 
+            \\
+                Spot 2 power  ingress & $4.513_{-0.742}^{+0.689}$ & GW/um 
+                \\
+                Spot 2 power  egress & $6.483{-1.059}^{+0.944}$ & GW/um 
+            \\
+        \end{longtable}
+    \end{center}
+\end{table}
+
 
 
 \section{Conclusions}
