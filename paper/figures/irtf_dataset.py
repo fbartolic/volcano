@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 import os
 import pickle as pkl
 
@@ -6,7 +5,6 @@ import numpy as np
 from astropy.table import vstack
 from matplotlib import pyplot as plt
 from matplotlib.ticker import MaxNLocator
-from volcano.utils import get_body_ephemeris
 
 np.random.seed(42)
 
@@ -32,12 +30,13 @@ max_f = np.array([np.sort(lcs[i]["flux"].value)[-2] for i in range(len(lcs))])
 yr = np.array([lc.time.decimalyear[0] for lc in lcs])
 idx_sorted = np.argsort(yr)
 
-fig, ax = plt.subplots(figsize=(6, 2))
+fig, ax = plt.subplots(figsize=(6, 3))
 ax.plot(yr[idx_sorted], max_f[idx_sorted], "k.", alpha=0.6)
 ax.set_ylabel("Maximum flux\n [GW/um/sr]")
 ax.set_xlabel("Time [years]")
 ax.set_xticks(np.arange(1996, 2024, 4))
 ax.set_yticks(np.arange(0, 250, 50))
+ax.grid()
 plt.savefig("irtf_max_flux.pdf", bbox_inches="tight", dpi=500)
 
 # Plot a few example light curves
@@ -58,5 +57,5 @@ for a, idx in zip(ax.flatten(), idcs):
     a.set_ylim(bottom=0)
 
 fig.text(0.5, 0.01, "Duration [minutes]", ha="center")
-fig.text(0.0, 0.5, "Flux [GW/um/sr]", va="center", rotation="vertical")
+fig.text(-0.03, 0.5, "Flux [GW/um/sr]", va="center", rotation="vertical")
 plt.savefig("irtf_sample_lightcurves.pdf", bbox_inches="tight", dpi=500)
