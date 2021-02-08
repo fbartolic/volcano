@@ -110,6 +110,7 @@ fig.subplots_adjust(wspace=0.1, top=0.5)
 
 vmax = np.max(p_sample)
 order = np.argsort(p_sample)
+cmap = "plasma"
 im1 = ax[0, 0].scatter(
     x_mol[order],
     y_mol[order],
@@ -117,7 +118,7 @@ im1 = ax[0, 0].scatter(
     c=p_sample[order],
     alpha=0.7,
     ec="none",
-    cmap="plasma",
+    cmap=cmap,
     marker="o",
     norm=colors.Normalize(vmin=0, vmax=vmax),
 )
@@ -132,6 +133,7 @@ map.show(
     projection="molleweide",
     norm=colors.Normalize(vmin=0, vmax=vmax),
     res=resol,
+    cmap=cmap,
 )
 
 
@@ -143,7 +145,7 @@ im2 = ax[0, 2].scatter(
     c=p_back_sample[order],
     alpha=0.8,
     ec="none",
-    cmap="plasma",
+    cmap=cmap,
     marker="o",
     norm=colors.Normalize(vmin=0, vmax=10),
 )

@@ -3,20 +3,15 @@ import pickle as pkl
 
 import starry
 import jax.numpy as jnp
-from jax import random, jit, vmap, lax
+from jax import random
 import numpyro
 import numpyro.distributions as dist
-from numpyro.diagnostics import print_summary
 from numpyro.infer import *
 
 import celerite2.jax
 from celerite2.jax import terms as jax_terms
 from celerite2 import terms, GaussianProcess
 from exoplanet.distributions import estimate_inverse_gamma_parameters
-
-from astropy import units as u
-from astropy.table import Table
-from astropy.timeseries import TimeSeries
 
 from volcano.utils import *
 
@@ -59,28 +54,25 @@ def fit_model(ydeg_inf, lc_in, lc_eg):
     f_obs = np.concatenate([f_obs_in, f_obs_eg])
     f_err = np.concatenate([f_err_in, f_err_eg])
 
-    def get_pos_rot(eph_io, eph_jup, method=""):
-        """
-        Get sky position of Io relative to Jupiter rotated such that the
-        obliquity of Jupiter is zero.
-        """
-        # Get occultor position
-        obl = eph_io["obl"]
-        inc = np.mean(eph_jup["inc"])
-        theta = np.array(eph_io["theta"])
+    (xo_in, yo_in, ro_in, occ_lat_in,) = get_occultor_position_and_radius(
+        eph_io_in,
+        eph_jup_in,
+        occultor_is_jupiter=True,
+        rotate=True,
+        return_occ_lat=True,
+    )
+    (xo_eg, yo_eg, ro_eg, occ_lat_eg,) = get_occultor_position_and_radius(
+        eph_io_eg,
+        eph_jup_eg,
+        occultor_is_jupiter=True,
+        rotate=True,
+        return_occ_lat=True,
+    )
 
-        xo_unrot, yo_unrot, zo, ro = get_occultor_position_and_radius(
-            eph_io, eph_jup, occultor_is_jupiter=True, method=method
-        )
-
-        # Rotate to coordinate system where the obliquity of Io is 0
-        theta_rot = -obl.to(u.rad)
-        xo_rot, yo_rot = rotate_vectors(xo_unrot, yo_unrot, theta_rot)
-
-        return xo_rot, yo_rot, ro
-
-    xo_in, yo_in, ro_in = get_pos_rot(eph_io_in, eph_jup_in)
-    xo_eg, yo_eg, ro_eg = get_pos_rot(eph_io_eg, eph_jup_eg)
+    print("Ingress occultation latitude: ", occ_lat_in)
+    print("Egress occultation latitude: ", occ_lat_eg)
+    print("Ingress effective radius: ", ro_in)
+    print("Egress effective radius: ", ro_eg)
 
     # Phase
     theta_in = eph_io_in["theta"].value
@@ -135,8 +127,8 @@ def fit_model(ydeg_inf, lc_in, lc_eg):
     print("tau0", tau0)
 
     # Other constants for the model
-    slab_scale = 100.0
-    slab_df = 10
+    slab_scale = 1000.0
+    slab_df = 4
 
     def model():
         #  Specify Finish Horseshoe prior
@@ -194,21 +186,36 @@ def fit_model(ydeg_inf, lc_in, lc_eg):
         flux = jnp.concatenate([flux_in, flux_eg])
 
         # Dense grid
-        flux_in_dense = jnp.dot(A_in_dense, x_s[:, None]).reshape(-1)
-        flux_eg_dense = jnp.dot(A_eg_dense, amp_eg * x_s[:, None]).reshape(-1)
+        flux_in_dense = jnp.dot(A_in_dense, x_s[:, None]).reshape(
+            -1
+        ) + jnp.exp(ln_flux_offset[0])
+
+        flux_eg_dense = jnp.dot(A_eg_dense, amp_eg * x_s[:, None]).reshape(
+            -1
+        ) + jnp.exp(ln_flux_offset[1])
         numpyro.deterministic("flux_in_dense", flux_in_dense)
         numpyro.deterministic("flux_eg_dense", flux_eg_dense)
 
         # GP likelihood
-        params = estimate_inverse_gamma_parameters(
-            np.min(np.diff(t_eg)), t_eg[-1] - t_eg[0]
-        )
         sigma = numpyro.sample(
-            "sigma_gp", dist.HalfNormal(0.1 * f_err_in[0]).expand([2])
+            "sigma_gp",
+            dist.HalfNormal(0.1).expand([2]),
         )
+        #        params_in = estimate_inverse_gamma_parameters(
+        #            np.min(np.diff(t_in)), t_in[-1] - t_in[0]
+        #        )
+        #        params_eg = estimate_inverse_gamma_parameters(
+        #            np.min(np.diff(t_eg)), t_eg[-1] - t_eg[0]
+        #        )
+
+        #        rho = numpyro.sample(
+        #            "rho_gp",
+        #            dist.InverseGamma(
+        #                np.array([params_in["alpha"], params_eg["alpha"]]),
+        #                np.array([params_in["beta"], params_eg["beta"]])),
+        #        )
         rho = numpyro.sample(
-            "rho_gp",
-            dist.InverseGamma(params["alpha"], params["beta"]).expand([2]),
+            "rho_gp", dist.HalfNormal(np.array([t_in[-1], t_eg[-1]]))
         )
 
         kernel_in = jax_terms.Matern32Term(sigma=sigma[0], rho=rho[0])
@@ -217,21 +224,33 @@ def fit_model(ydeg_inf, lc_in, lc_eg):
         flux_in_fun = lambda _: flux_in
         flux_eg_fun = lambda _: flux_eg
 
-        # Flux dependent noise term in quadrature to the errorbars quadrature
-        bounded_normal = dist.Normal(1, 0.1)
-        bounded_normal.support = dist.constraints.greater_than(1.0)
-        alpha = numpyro.sample("alpha", bounded_normal.expand([2]))
-        beta = numpyro.sample("beta", dist.HalfNormal(1.0).expand([2]))
+        # Hierarchical model for the errobars
+        err_in_scale = numpyro.sample("err_in_scale", dist.HalfNormal(0.1))
+        err_eg_scale = numpyro.sample("err_eg_scale", dist.HalfNormal(0.1))
+        f_err_in_mod = numpyro.sample(
+            "f_err_in_mod",
+            dist.HalfNormal(err_in_scale).expand([len(f_obs_in)]),
+        )
+        f_err_eg_mod = numpyro.sample(
+            "f_err_eg_mod",
+            dist.HalfNormal(err_eg_scale).expand([len(f_obs_eg)]),
+        )
+
+        #        # Flux dependent noise term in quadrature to the errorbars quadrature
+        #        bounded_normal = dist.Normal(1, 0.1)
+        #        bounded_normal.support = dist.constraints.greater_than(1.0)
+        #        alpha = numpyro.sample("alpha", bounded_normal.expand([2]))
+        #        beta = numpyro.sample("beta", dist.HalfNormal(1.0).expand([2]))
 
         # White noise term
-        f_err_in_mod = numpyro.deterministic(
-            "f_err_in_mod",
-            jnp.sqrt((alpha[0] * f_err_in) ** 2 + beta[0] ** 2 * flux_in),
-        )
-        f_err_eg_mod = numpyro.deterministic(
-            "f_err_eg_mod",
-            jnp.sqrt((alpha[1] * f_err_eg) ** 2 + beta[1] ** 2 * flux_eg),
-        )
+        #        f_err_in_mod = numpyro.deterministic(
+        #            "f_err_in_mod",
+        #            jnp.sqrt((alpha[0] * f_err_in) ** 2 + beta[0] ** 2 * flux_in),
+        #        )
+        #        f_err_eg_mod = numpyro.deterministic(
+        #            "f_err_eg_mod",
+        #            jnp.sqrt((alpha[1] * f_err_eg) ** 2 + beta[1] ** 2 * flux_eg),
+        #        )
 
         # Ingress GP
         gp_in = celerite2.jax.GaussianProcess(kernel_in, mean=flux_in_fun)
@@ -249,8 +268,7 @@ def fit_model(ydeg_inf, lc_in, lc_eg):
         "tau_raw": 0.1,
         "c2_raw": 5 ** 2,
         "ln_flux_offset": -2 * np.ones(2),
-        "K": 0.8 * np.ones(2),
-        "sigma_gp": 0.001 * np.ones(2) * f_err_in[0],
+        "sigma_gp": 0.1 * np.ones(2) * f_err_in[0],
         "rho_gp": 0.15 * np.ones(2),
     }
 
@@ -258,21 +276,22 @@ def fit_model(ydeg_inf, lc_in, lc_eg):
         model,
         dense_mass=False,
         init_strategy=init_to_value(values=init_vals),
-        target_accept_prob=0.95,
+        target_accept_prob=0.9,
     )
 
-    mcmc = MCMC(nuts_kernel, num_warmup=500, num_samples=2000)
+    mcmc = MCMC(nuts_kernel, num_warmup=500, num_samples=3000)
     rng_key = random.PRNGKey(0)
     mcmc.run(rng_key)
+    print("Total nr. of parameters: ", rng_key.ndim)
     samples = mcmc.get_samples()
     return samples
 
 
 # Fit the 1998 pair of light curves
-with open("../../data/irtf_processed/lc_1998-08-27.pkl", "rb") as handle:
+with open("../../../data/irtf_processed/lc_1998-08-27.pkl", "rb") as handle:
     lc_in = pkl.load(handle)
 
-with open("../../data/irtf_processed/lc_1998-11-29.pkl", "rb") as handle:
+with open("../../../data/irtf_processed/lc_1998-11-29.pkl", "rb") as handle:
     lc_eg = pkl.load(handle)
 
 samples = fit_model(20, lc_in, lc_eg)
@@ -281,10 +300,10 @@ with open("irtf_1998_samples.pkl", "wb") as handle:
     pkl.dump(samples, handle)
 
 # Fit the 2017 pair of light curves
-with open("../../data/irtf_processed/lc_2017-03-31.pkl", "rb") as handle:
+with open("../../../data/irtf_processed/lc_2017-03-31.pkl", "rb") as handle:
     lc_in = pkl.load(handle)
 
-with open("../../data/irtf_processed/lc_2017-05-11.pkl", "rb") as handle:
+with open("../../../data/irtf_processed/lc_2017-05-11.pkl", "rb") as handle:
     lc_eg = pkl.load(handle)
 
 samples2 = fit_model(20, lc_in, lc_eg)

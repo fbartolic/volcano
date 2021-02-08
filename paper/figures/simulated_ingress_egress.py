@@ -115,13 +115,11 @@ def model(f_obs_in, f_obs_eg, f_err_in, f_err_eg):
     beta_raw = numpyro.sample("beta_raw", dist.HalfNormal(1.0).expand([D]))
     lamda_raw = numpyro.sample("lamda_raw", dist.HalfCauchy(1.0).expand([D]))
     tau_raw = numpyro.sample("tau_raw", dist.HalfCauchy(1.0))
-    c2_raw = numpyro.sample(
-        "c2_raw", dist.InverseGamma(0.5 * slab_df, 1.)
-    )
+    c2_raw = numpyro.sample("c2_raw", dist.InverseGamma(0.5 * slab_df, 1.0))
 
     # Do the shifting/stretching
     tau = numpyro.deterministic("tau", tau_raw * tau0)
-    c2 = numpyro.deterministic("c2", 0.5 * slab_df*slab_scale ** 2 * c2_raw)
+    c2 = numpyro.deterministic("c2", 0.5 * slab_df * slab_scale ** 2 * c2_raw)
     lamda_tilde = numpyro.deterministic(
         "lamda_tilde",
         jnp.sqrt(c2) * lamda_raw / jnp.sqrt(c2 + tau ** 2 * lamda_raw ** 2),
@@ -260,7 +258,8 @@ def plot(
 
     # Set up the plot
     nim = 7
-    cmap_norm = colors.Normalize(vmin=-0.5, vmax=800)
+    cmap_norm = colors.Normalize(vmin=-0.5, vmax=300)
+    cmap = "Oranges"
     resol = 300
 
     # True and inferred maps
@@ -321,6 +320,7 @@ def plot(
         norm=cmap_norm,
         colorbar=True,
         res=resol,
+        cmap=cmap,
     )
     ax_true_map.set_title("True map")
 
@@ -331,6 +331,7 @@ def plot(
         projection="Mollweide",
         norm=cmap_norm,
         colorbar=True,
+        cmap=cmap,
     )
     ax_inf_map.set_title("Inferred map")
 
@@ -357,11 +358,19 @@ def plot(
             # Show the image
             if j == 0:
                 map.show(
-                    image=median_map_in, ax=a[n], grid=False, norm=cmap_norm
+                    image=median_map_in,
+                    ax=a[n],
+                    grid=False,
+                    norm=cmap_norm,
+                    cmap=cmap,
                 )
             else:
                 map.show(
-                    image=median_map_eg, ax=a[n], grid=False, norm=cmap_norm
+                    image=median_map_eg,
+                    ax=a[n],
+                    grid=False,
+                    norm=cmap_norm,
+                    cmap=cmap,
                 )
 
             # Outline
@@ -394,9 +403,10 @@ def plot(
         f_obs_in,
         f_err_in,
         color="black",
-        fmt=".",
-        ecolor="grey",
-        alpha=0.6,
+        marker=".",
+        linestyle="",
+        ecolor="black",
+        alpha=0.4,
     )
 
     for s in np.random.randint(0, len(samples["flux_in_dense"]), 10):
@@ -413,9 +423,10 @@ def plot(
         res_in / np.std(res_in),
         f_err_in / np.std(res_in),
         color="black",
-        fmt=".",
-        ecolor="grey",
-        alpha=0.6,
+        marker=".",
+        linestyle="",
+        ecolor="black",
+        alpha=0.4,
     )
 
     # Plot egress
@@ -424,9 +435,10 @@ def plot(
         f_obs_eg,
         f_err_eg,
         color="black",
-        fmt=".",
-        ecolor="grey",
-        alpha=0.6,
+        marker=".",
+        linestyle="",
+        ecolor="black",
+        alpha=0.4,
     )
 
     for s in np.random.randint(0, len(samples["flux_eg_dense"]), 10):
@@ -442,9 +454,10 @@ def plot(
         res_eg / np.std(res_eg),
         f_err_eg / np.std(res_eg),
         color="black",
-        fmt=".",
-        ecolor="grey",
-        alpha=0.6,
+        marker=".",
+        linestyle="",
+        ecolor="black",
+        alpha=0.4,
     )
 
     # Make broken axis
@@ -523,4 +536,3 @@ plot(
     1.25,
     "ingress_egress_sim_snr_10.pdf",
 )
-

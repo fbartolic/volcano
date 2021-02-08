@@ -1,24 +1,11 @@
 import numpy as np
+import os
+import sys
+
 from matplotlib import pyplot as plt
-
-import theano
-import theano.tensor as tt
-import pymc3 as pm
-import starry
-import exoplanet as xo
-
 from matplotlib import colors
 import matplotlib.gridspec as gridspec
 from matplotlib.ticker import FormatStrFormatter, AutoMinorLocator
-
-from volcano.utils import *
-
-np.random.seed(42)
-starry.config.lazy = True
-
-import numpy as np
-import os
-import sys
 
 import starry
 import jax.numpy as jnp
@@ -27,16 +14,39 @@ import numpyro
 import numpyro.distributions as dist
 from numpyro.infer import *
 
+from volcano.utils import get_smoothing_filter
+
 numpyro.enable_x64()
-
-from matplotlib import colors
-import matplotlib.gridspec as gridspec
-from matplotlib.ticker import FormatStrFormatter, AutoMinorLocator
-
-from volcano.utils import *
 
 np.random.seed(42)
 starry.config.lazy = True
+
+
+def get_median_map(
+    ydeg_inf,
+    samples,
+    projection="Mollweide",
+    inc=90,
+    theta=0.0,
+    nsamples=20,
+    resol=300,
+):
+    imgs = []
+    map = starry.Map(ydeg=ydeg_inf)
+    map.inc = inc
+
+    for n in np.random.randint(0, len(samples), 10):
+        x = samples[n]
+        map.amp = x[0]
+        map[1:, :] = x[1:] / map.amp
+
+        if projection == "Mollweide":
+            im = map.render(projection="Mollweide", res=resol).eval()
+        else:
+            im = map.render(theta=theta, res=resol).eval()
+        imgs.append(im)
+
+    return np.median(imgs, axis=0)
 
 
 # Set up mock map
@@ -92,7 +102,8 @@ A_dense = jnp.array(map.design_matrix(xo=xo_dense, yo=yo_dense, ro=ro).eval())
 
 def model_ylm():
     y1 = numpyro.sample(
-        "y1", dist.Normal(jnp.zeros(ncoeff - 1), 1e-01 * jnp.ones(ncoeff - 1))
+        "y1",
+        dist.Normal(jnp.zeros(ncoeff - 1), 1e-01 * jnp.ones(ncoeff - 1)),
     )
     amp = numpyro.sample("amp", dist.LogNormal(0.0, 1.0))
 
@@ -120,20 +131,28 @@ nuts_kernel = NUTS(
     target_accept_prob=0.95,
 )
 
-mcmc = MCMC(nuts_kernel, num_warmup=500, num_samples=1500)
+mcmc = MCMC(nuts_kernel, num_warmup=500, num_samples=2000)
 rng_key = random.PRNGKey(0)
 mcmc.run(rng_key)
 samples_ylm = mcmc.get_samples()
 
-# Compute the standard deviation of pixels in the Ylm model  
+# Compute the standard deviation of pixels in the Ylm model
 def model_ylm_prior():
-    y1 = numpyro.sample("y1", dist.Normal(jnp.zeros(ncoeff -1), 1e-01*jnp.ones(ncoeff - 1)))
-    amp = numpyro.sample("amp", dist.LogNormal(0., 1.))
-    x = numpyro.deterministic("x", amp*jnp.concatenate([jnp.array([1.]), y1]))
+    y1 = numpyro.sample(
+        "y1",
+        dist.Normal(jnp.zeros(ncoeff - 1), 0.5 * 1e-01 * jnp.ones(ncoeff - 1)),
+    )
+    amp = numpyro.sample("amp", dist.LogNormal(0.0, 1.0))
+    x = numpyro.deterministic(
+        "x", amp * jnp.concatenate([jnp.array([1.0]), y1])
+    )
     numpyro.deterministic("pix", jnp.dot(Y2P, x[:, None]).reshape(-1))
-    
-prior_samples = Predictive(model_ylm_prior, {}, num_samples=10000)(random.PRNGKey(1))
-std_p = np.std(np.concatenate(prior_samples['pix']))
+
+
+prior_samples = Predictive(model_ylm_prior, {}, num_samples=10000)(
+    random.PRNGKey(1)
+)
+std_p = np.std(np.concatenate(prior_samples["pix"]))
 
 # Pixel model gaussian prior
 def model_sphix_gauss():
@@ -149,7 +168,9 @@ def model_sphix_gauss():
     flux_dense = jnp.dot(A_dense, x[:, None]).reshape(-1)
     numpyro.deterministic("flux_dense", flux)
 
-    numpyro.sample("obs", dist.Normal(flux, f_err*jnp.ones(len(f_obs))), obs=f_obs)
+    numpyro.sample(
+        "obs", dist.Normal(flux, f_err * jnp.ones(len(f_obs))), obs=f_obs
+    )
 
 
 nuts_kernel = NUTS(
@@ -158,14 +179,14 @@ nuts_kernel = NUTS(
     target_accept_prob=0.95,
 )
 
-mcmc = MCMC(nuts_kernel, num_warmup=500, num_samples=1500)
+mcmc = MCMC(nuts_kernel, num_warmup=500, num_samples=2000)
 rng_key = random.PRNGKey(2)
 mcmc.run(rng_key)
 samples_sphix_gauss = mcmc.get_samples()
 
 # Pixel model exponential prior
 def model_sphix_exp():
-    p = numpyro.sample("p", dist.Exponential(1/std_p).expand([npix]))
+    p = numpyro.sample("p", dist.Exponential(1 / std_p).expand([npix]))
     x = jnp.dot(P2Y, p)
     numpyro.deterministic("x", x)
 
@@ -177,7 +198,9 @@ def model_sphix_exp():
     flux_dense = jnp.dot(A_dense, x[:, None]).reshape(-1)
     numpyro.deterministic("flux_dense", flux)
 
-    numpyro.sample("obs", dist.Normal(flux, f_err*jnp.ones(len(f_obs))), obs=f_obs)
+    numpyro.sample(
+        "obs", dist.Normal(flux, f_err * jnp.ones(len(f_obs))), obs=f_obs
+    )
 
 
 nuts_kernel = NUTS(
@@ -186,42 +209,34 @@ nuts_kernel = NUTS(
     target_accept_prob=0.95,
 )
 
-mcmc = MCMC(nuts_kernel, num_warmup=500, num_samples=1500)
+mcmc = MCMC(nuts_kernel, num_warmup=500, num_samples=2000)
 rng_key = random.PRNGKey(3)
 mcmc.run(rng_key)
 samples_sphix_exp = mcmc.get_samples()
 
-
 # Compute median maps
-resol = 300
-def get_median_map(ydeg_inf, samples, projection="Mollweide", inc=90, theta=0., nsamples=20, resol=300):
-    imgs = []
-    map = starry.Map(ydeg=ydeg_inf)
-    map.inc = inc
-    
-    for n in np.random.randint(0, len(samples), 10):
-        x = samples[n]
-        map.amp = x[0]
-        map[1:, :] = x[1:] / map.amp
-        
-        if projection=="Mollweide":
-            im = map.render(projection='Mollweide', res=resol).eval()
-        else:
-            im = map.render(theta=theta, res=resol).eval()
-        imgs.append(im)
+median_map_moll_ylm = get_median_map(ydeg_inf, samples_ylm["x"], nsamples=30)
+median_map_ylm = get_median_map(
+    ydeg_inf, samples_ylm["x"], projection=None, nsamples=30
+)
 
-    return np.median(imgs, axis=0)
+median_map_moll_sphix_gauss = get_median_map(
+    ydeg_inf, samples_sphix_gauss["x"], nsamples=30
+)
+median_map_sphix_gauss = get_median_map(
+    ydeg_inf, samples_sphix_gauss["x"], projection=None, nsamples=30
+)
 
-median_map_moll_ylm = get_median_map(ydeg_inf, samples_ylm['x'], resol=resol)
-median_map_ylm = get_median_map(ydeg_inf, samples_ylm['x'], projection=None, resol=resol)
+median_map_moll_sphix_exp = get_median_map(
+    ydeg_inf, samples_sphix_exp["x"], nsamples=30
+)
+median_map_sphix_exp = get_median_map(
+    ydeg_inf, samples_sphix_exp["x"], projection=None, nsamples=30
+)
 
-median_map_moll_sphix_gauss = get_median_map(ydeg_inf, samples_sphix_gauss['x'], resol=resol)
-median_map_sphix_gauss = get_median_map(ydeg_inf, samples_sphix_gauss['x'], projection=None, resol=resol)
+norm = np.max(np.median(samples_ylm["flux_dense"], axis=0))
+cmap = "Oranges"
 
-median_map_moll_sphix_exp = get_median_map(ydeg_inf, samples_sphix_exp['x'], resol=resol)
-median_map_sphix_exp = get_median_map(ydeg_inf, samples_sphix_exp['x'], projection=None, resol=resol)
-
-norm = np.max(np.median(samples_ylm['flux_dense'], axis=0))
 
 def plot_everything(
     median_map_moll,
@@ -233,20 +248,32 @@ def plot_everything(
     samples,
     residuals,
     show_cbar=True,
-    cmap_norm=colors.Normalize(vmin=-0.5)
+    cmap_norm=colors.Normalize(vmin=-0.5),
 ):
     t_dense = np.linspace(xo_im[0], xo_im[-1], len(samples["flux_dense"][-1]))
     nim = len(ax_im)
-    
+
     # Plot map
-    im = map.show(image=median_map_moll, ax=ax_map, projection="Mollweide", 
-                  norm=cmap_norm, colorbar=show_cbar)
+    im = map.show(
+        image=median_map_moll,
+        ax=ax_map,
+        projection="Mollweide",
+        norm=cmap_norm,
+        colorbar=show_cbar,
+        cmap=cmap,
+    )
     ax_map.axis("off")
 
     # Plot mini maps
     for n in range(nim):
         # Show the image
-        map.show(image=median_map, ax=ax_im[n], grid=False, norm=cmap_norm)
+        map.show(
+            image=median_map,
+            ax=ax_im[n],
+            grid=False,
+            norm=cmap_norm,
+            cmap=cmap,
+        )
 
         # Outline
         x = np.linspace(-1, 1, 1000)
@@ -275,17 +302,19 @@ def plot_everything(
     # Plot light curve and fit
     ax_lc.errorbar(
         xo_sim,
-        f_obs/norm,
-        f_err/norm,
+        f_obs / norm,
+        f_err / norm,
         color="black",
-        marker="o",
-        linestyle='',
+        marker=".",
+        linestyle="",
         ecolor="black",
         alpha=0.4,
     )
-    
-    for s in np.random.randint(0, len(samples['flux_dense']), 10):
-        ax_lc.plot(t_dense, samples['flux_dense'][s, :]/norm, "C1-", alpha=0.3)  # Model
+
+    for s in np.random.randint(0, len(samples["flux_dense"]), 10):
+        ax_lc.plot(
+            t_dense, samples["flux_dense"][s, :] / norm, "C1-", alpha=0.3
+        )  # Model
 
     ax_lc.set_ylim(bottom=0.0)
     ax_lc.set_ylabel("Flux")
@@ -294,49 +323,81 @@ def plot_everything(
     # Residuals
     ax_res.errorbar(
         xo_sim,
-        residuals / np.std(residuals),
-        (f_err/norm) / np.std(residuals),
+        residuals,
+        (f_err / norm),
         color="black",
-        marker="o",
-        linestyle='',
+        marker=".",
+        linestyle="",
         ecolor="black",
         alpha=0.4,
     )
-    ax_res.set(ylabel="Residuals\n (norm.)")
+    ax_res.set(ylabel="Residuals")
     ax_res.xaxis.set_major_formatter(plt.FormatStrFormatter("%0.1f"))
-    ax_res.set_ylim(-3, 3)
-    ax_res.set_yticks([-3,0,3])
-    
+    #    ax_res.set_ylim(-3, 3)
+    #    ax_res.set_yticks([-3, 0, 3])
+
     # Appearance
     ax_im[-1].set_zorder(-100)
 
 
 # Compute  residuals
-res_ylm = (f_obs - np.median(samples_ylm["flux_dense"], axis=0))/norm
-res_pix_gauss = (f_obs - np.median(samples_sphix_gauss["flux_dense"], axis=0))/norm
-res_pix_exp = (f_obs - np.median(samples_sphix_exp["flux_dense"], axis=0))/norm
+res_ylm = (f_obs - np.median(samples_ylm["flux_dense"], axis=0)) / norm
+res_pix_gauss = (
+    f_obs - np.median(samples_sphix_gauss["flux_dense"], axis=0)
+) / norm
+res_pix_exp = (
+    f_obs - np.median(samples_sphix_exp["flux_dense"], axis=0)
+) / norm
 
 # Set up the plot
 nim = 8
+resol = 300
 
 # Occultation params for mini subplots
 xo_im = np.linspace(xo_sim[0], xo_sim[-1], nim)
 yo_im = np.linspace(yo_sim[0], yo_sim[-1], nim)
 
-fig = plt.figure(figsize=(24, 18))
+fig = plt.figure(figsize=(14, 14))
 
-heights = [3, 2, 3, 1]
+heights = [3, 2, 4, 2]
 gs0 = fig.add_gridspec(
-    nrows=1, ncols=3 * nim, bottom=0.713, left=0.05, right=0.98, hspace=0., wspace=0.1
+    nrows=1,
+    ncols=3 * nim,
+    bottom=0.74,
+    left=0.05,
+    right=0.98,
+    hspace=0.0,
+    wspace=0.1,
 )
 gs1 = fig.add_gridspec(
-    nrows=4, ncols=nim, height_ratios=heights, top=0.65, left=0.03, right=0.33, hspace=0.1, wspace=0.1
+    nrows=4,
+    ncols=nim,
+    height_ratios=heights,
+    top=0.68,
+    left=0.03,
+    right=0.33,
+    hspace=0.1,
+    wspace=0.1,
 )
 gs2 = fig.add_gridspec(
-    nrows=4, ncols=nim, height_ratios=heights, top=0.65, left=0.35, right=0.66, hspace=0.1, wspace=0.1
+    nrows=4,
+    ncols=nim,
+    height_ratios=heights,
+    top=0.68,
+    left=0.35,
+    right=0.66,
+    hspace=0.1,
+    wspace=0.1,
 )
 gs3 = fig.add_gridspec(
-    nrows=4, ncols=nim, height_ratios=heights, top=0.65, left=0.68, right=0.98, hspace=0.1, wspace=0.1
+    nrows=4,
+    ncols=nim,
+    height_ratios=heights,
+    top=0.68,
+    left=0.68,
+    right=0.98,
+    hspace=0.1,
+    wspace=0.1,
 )
 
 # True map subplot
@@ -345,7 +406,8 @@ map_true.show(
     ax=ax_true_map,
     projection="molleweide",
     colorbar=True,
-    res=resol
+    res=resol,
+    cmap=cmap,
     #    norm=colors.Normalize(vmin=-0.5),
 )
 ax_true_map.axis("off")
@@ -389,7 +451,7 @@ plot_everything(
     samples_ylm,
     res_ylm,
     show_cbar=False,
-    cmap_norm=colors.Normalize(vmin=-0.5, vmax=20)
+    cmap_norm=colors.Normalize(vmin=-0.5, vmax=20),
 )
 plot_everything(
     median_map_moll_sphix_gauss,
@@ -401,7 +463,7 @@ plot_everything(
     samples_sphix_gauss,
     res_pix_gauss,
     show_cbar=False,
-    cmap_norm=colors.Normalize(vmin=-0.5, vmax=20)
+    cmap_norm=colors.Normalize(vmin=-0.5, vmax=20),
 )
 plot_everything(
     median_map_moll_sphix_exp,
@@ -413,7 +475,7 @@ plot_everything(
     samples_sphix_exp,
     res_pix_exp,
     show_cbar=True,
-    cmap_norm=colors.Normalize(vmin=-0.5, vmax=20)
+    cmap_norm=colors.Normalize(vmin=-0.5, vmax=20),
 )
 
 for a in ax_lc[1:] + ax_res[1:]:
@@ -439,7 +501,7 @@ for a in ax_lc:
 for a in ax_lc + ax_res:
     a.xaxis.set_minor_locator(AutoMinorLocator())
     a.yaxis.set_minor_locator(AutoMinorLocator())
-    a.set_xticks(np.arange(37.0, 40.0, 0.5))
+    #    a.set_xticks(np.arange(37.0, 40.0, 0.5))
     a.grid()
 
 # Save

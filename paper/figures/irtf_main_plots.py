@@ -1,6 +1,5 @@
 import numpy as np
 from matplotlib import pyplot as plt
-from PIL import Image
 import pickle as pkl
 
 import starry
@@ -9,36 +8,16 @@ from celerite2.jax import terms as jax_terms
 from celerite2 import terms, GaussianProcess
 from exoplanet.distributions import estimate_inverse_gamma_parameters
 
-from astropy import units as u
-from astropy.table import Table
-from astropy.time import Time
-from astropy.timeseries import TimeSeries
-
 from matplotlib import colors
 import matplotlib.gridspec as gridspec
 from matplotlib.ticker import FormatStrFormatter, AutoMinorLocator
+from matplotlib.lines import Line2D
+import seaborn as sns
 
 from volcano.utils import *
 
 np.random.seed(42)
 starry.config.lazy = False
-
-
-def get_pos_rot(eph_io, eph_jup, method=""):
-    # Get occultor position
-    obl = eph_io["obl"]
-    inc = np.mean(eph_jup["inc"])
-    theta = np.array(eph_io["theta"])
-
-    xo_unrot, yo_unrot, zo, ro = get_occultor_position_and_radius(
-        eph_io, eph_jup, occultor_is_jupiter=True, method=method
-    )
-
-    # Rotate to coordinate system where the obliquity of Io is 0
-    theta_rot = -obl.to(u.rad)
-    xo_rot, yo_rot = rotate_vectors(xo_unrot, yo_unrot, theta_rot)
-
-    return xo_rot, yo_rot, ro
 
 
 def make_plots(
@@ -50,6 +29,8 @@ def make_plots(
     xticks_in,
     xticks_eg,
     res_yticks,
+    res_ylim,
+    gp=True,
     cmap_norm=colors.Normalize(vmin=0.0, vmax=1500),
 ):
     #  Compute epheremis
@@ -85,8 +66,12 @@ def make_plots(
     f_obs = np.concatenate([f_obs_in, f_obs_eg])
     f_err = np.concatenate([f_err_in, f_err_eg])
 
-    xo_in, yo_in, ro_in = get_pos_rot(eph_io_in, eph_jup_in)
-    xo_eg, yo_eg, ro_eg = get_pos_rot(eph_io_eg, eph_jup_eg)
+    xo_in, yo_in, ro_in = get_occultor_position_and_radius(
+        eph_io_in, eph_jup_in, occultor_is_jupiter=True
+    )
+    xo_eg, yo_eg, ro_eg = get_occultor_position_and_radius(
+        eph_io_eg, eph_jup_eg, occultor_is_jupiter=True
+    )
 
     # Phase
     theta_in = eph_io_in["theta"].value
@@ -108,47 +93,56 @@ def make_plots(
     t_in_dense = np.linspace(t_in[0], t_in[-1], 200)
     t_eg_dense = np.linspace(t_eg[0], t_eg[-1], 200)
 
-    median_map_moll_in = get_median_map(ydeg_inf, samples["x_in"])
-    median_map_moll_eg = get_median_map(ydeg_inf, samples["x_eg"])
+    median_map_moll_in = get_median_map(ydeg_inf, samples["x_in"], nsamples=50)
+    median_map_moll_eg = get_median_map(ydeg_inf, samples["x_eg"], nsamples=50)
     median_map_in = get_median_map(
-        ydeg_inf, samples["x_in"], projection=None, theta=np.mean(theta_in)
+        ydeg_inf,
+        samples["x_in"],
+        projection=None,
+        theta=np.mean(theta_in),
+        nsamples=50,
     )
     median_map_eg = get_median_map(
-        ydeg_inf, samples["x_eg"], projection=None, theta=np.mean(theta_eg)
+        ydeg_inf,
+        samples["x_eg"],
+        projection=None,
+        theta=np.mean(theta_eg),
+        nsamples=50,
     )
 
     # Make plot
-    gp_pred_in = []
-    gp_pred_eg = []
-    gp_pred_in_dense = []
-    gp_pred_eg_dense = []
+    if gp:
+        gp_pred_in = []
+        gp_pred_eg = []
+        gp_pred_in_dense = []
+        gp_pred_eg_dense = []
 
-    # Compute GP predictions
-    for i in np.random.randint(0, len(samples), 100):
-        # Ingress
-        kernel_in = terms.Matern32Term(
-            sigma=np.array(samples["sigma_gp"])[i][0],
-            rho=np.array(samples["rho_gp"])[i][0],
-        )
-        gp = celerite2.GaussianProcess(
-            kernel_in, t=t_in, mean=np.array(samples["flux_in"])[i]
-        )
-        gp.compute(t_in, yerr=(samples["f_err_in_mod"][i]))
-        gp_pred_in_dense.append(
-            gp.predict(f_obs_in, t=t_in_dense, include_mean=False)
-        )
-        # Egress
-        kernel_eg = terms.Matern32Term(
-            sigma=np.array(samples["sigma_gp"])[i][1],
-            rho=np.array(samples["rho_gp"])[i][1],
-        )
-        gp = celerite2.GaussianProcess(
-            kernel_eg, t=t_eg, mean=np.array(samples["flux_eg"])[i]
-        )
-        gp.compute(t_eg, yerr=(samples["f_err_eg_mod"][i]))
-        gp_pred_eg_dense.append(
-            gp.predict(f_obs_eg, t=t_eg_dense, include_mean=False)
-        )
+        # Compute GP predictions
+        for i in np.random.randint(0, len(samples), 100):
+            # Ingress
+            kernel_in = terms.Matern32Term(
+                sigma=np.array(samples["sigma_gp"])[i][0],
+                rho=np.array(samples["rho_gp"])[i][0],
+            )
+            gp = celerite2.GaussianProcess(
+                kernel_in, t=t_in, mean=np.array(samples["flux_in"])[i]
+            )
+            gp.compute(t_in, yerr=(samples["f_err_in_mod"][i]))
+            gp_pred_in_dense.append(
+                gp.predict(f_obs_in, t=t_in_dense, include_mean=False)
+            )
+            # Egress
+            kernel_eg = terms.Matern32Term(
+                sigma=np.array(samples["sigma_gp"])[i][1],
+                rho=np.array(samples["rho_gp"])[i][1],
+            )
+            gp = celerite2.GaussianProcess(
+                kernel_eg, t=t_eg, mean=np.array(samples["flux_eg"])[i]
+            )
+            gp.compute(t_eg, yerr=(samples["f_err_eg_mod"][i]))
+            gp_pred_eg_dense.append(
+                gp.predict(f_obs_eg, t=t_eg_dense, include_mean=False)
+            )
 
     # Compute residuals
     f_in_median = np.median(samples["flux_in"], axis=0)
@@ -161,30 +155,30 @@ def make_plots(
     resol = 300
     nim = 8
 
-    fig = plt.figure(figsize=(9, 7))
+    fig = plt.figure(figsize=(10, 10))
     fig.subplots_adjust(wspace=0.0)
 
-    heights = [2, 3, 1]
+    heights = [2, 4, 2]
     gs0 = fig.add_gridspec(
-        nrows=1, ncols=2 * nim, bottom=0.65, left=0.05, right=0.98, hspace=0.4
+        nrows=1, ncols=2 * nim, bottom=0.71, left=0.05, right=0.98, hspace=0.4
     )
     gs1 = fig.add_gridspec(
         nrows=3,
         ncols=nim,
         height_ratios=heights,
-        top=0.67,
+        top=0.72,
         left=0.05,
         right=0.50,
-        hspace=0.08,
+        hspace=0.05,
     )
     gs2 = fig.add_gridspec(
         nrows=3,
         ncols=nim,
         height_ratios=heights,
-        top=0.67,
+        top=0.72,
         left=0.53,
         right=0.98,
-        hspace=0.08,
+        hspace=0.05,
     )
 
     # Maps
@@ -288,7 +282,8 @@ def make_plots(
         f_obs_in,
         f_err_in_mod_median,
         color="black",
-        fmt=".",
+        marker=".",
+        linestyle="",
         ecolor="black",
         alpha=0.4,
     )
@@ -301,16 +296,20 @@ def make_plots(
     # Residuals
     ax_res[0].errorbar(
         t_in,
-        res_in / f_err_in_mod_median,
-        np.ones_like(t_in),
+        res_in,
+        f_err_in_mod_median,
         color="black",
-        fmt=".",
+        marker=".",
+        linestyle="",
         ecolor="black",
         alpha=0.4,
     )
 
-    for i in np.random.randint(0, len(gp_pred_in_dense), 10):
-        ax_res[0].plot(t_in_dense, gp_pred_in_dense[i], "C1-", alpha=0.2)
+    if gp:
+        for i in np.random.randint(0, len(gp_pred_in_dense), 10):
+            ax_res[0].plot(
+                t_in_dense, gp_pred_in_dense[i], "tab:purple", alpha=0.2
+            )
 
     # Plot egress
     ax_lc[1].errorbar(
@@ -318,7 +317,8 @@ def make_plots(
         f_obs_eg,
         f_err_eg_mod_median,
         color="black",
-        fmt=".",
+        marker=".",
+        linestyle="",
         ecolor="black",
         alpha=0.4,
     )
@@ -331,16 +331,31 @@ def make_plots(
     # Residuals
     ax_res[1].errorbar(
         t_eg,
-        res_eg / f_err_eg_mod_median,
-        np.ones_like(t_eg),
+        res_eg,
+        f_err_eg_mod_median,
         color="black",
-        fmt=".",
+        marker=".",
+        linestyle="",
         ecolor="black",
         alpha=0.4,
     )
 
-    for i in np.random.randint(0, len(gp_pred_in_dense), 10):
-        ax_res[1].plot(t_eg_dense, gp_pred_eg_dense[i], "C1-", alpha=0.2)
+    if gp:
+        for i in np.random.randint(0, len(gp_pred_in_dense), 10):
+            ax_res[1].plot(
+                t_eg_dense, gp_pred_eg_dense[i], "tab:purple", alpha=0.2
+            )
+        # Legends
+        ax_lc[0].legend(
+            handles=[Line2D([0], [0], color="C1", label="Physical model")],
+            loc="lower left",
+        )
+        ax_res[0].legend(
+            handles=[
+                Line2D([0], [0], color="tab:purple", label="Noise model")
+            ],
+            loc="lower left",
+        )
 
     #  Ticks
     for a in ax_lc:
@@ -363,7 +378,7 @@ def make_plots(
 
     for a in ax_res:
         a.grid()
-        #     a.set_ylim(-3.1, 3.1)
+        a.set_ylim(res_ylim)
         a.set_yticks(res_yticks)
 
     for j in range(2):
@@ -372,40 +387,19 @@ def make_plots(
     # Set common labels
     fig.text(0.5, 0.04, "Duration [minutes]", ha="center", va="center")
     ax_lc[0].set_ylabel("Flux [GW/sr/um]")
-    ax_res[0].set_ylabel("Residuals\n (norm.)")
+    ax_res[0].set_ylabel("Residuals")
 
     year = lc_in.time[0].isot[:4]
-    fig.savefig(
-        f"irtf_ingress_egress_{year}.pdf", bbox_inches="tight", dpi=500
-    )
-
-    # Plot inferred hot spot on top of Galileo maps
-    combined_mosaic = Image.open("Io_SSI_VGR_bw_Equi_Clon180_8bit.tif")
-
-    # The loaded map is [0,360] while Starry expects [-180, 180]
-    galileo_map = np.roll(combined_mosaic, int(11445 / 2), axis=1)
-
-    median_map_rect_in = get_median_map(
-        ydeg_inf, samples["x_in"], projection="Rectangular"
-    )
-    fig, ax = plt.subplots(figsize=(8, 4))
-    map.show(
-        image=median_map_rect_in,
-        projection="rectangular",
-        ax=ax,
-        colorbar=False,
-        cmap="Oranges",
-    )
-    ax.imshow(galileo_map, extent=(-180, 180, -90, 90), alpha=0.7, cmap="gray")
-    ax.set_yticks(np.arange(-15, 60, 15))
-    ax.set_xticks(np.arange(15, 105, 15))
-    ax.set_xlabel("Longitude [deg]")
-    ax.set_ylabel("Latitude [deg]")
-    ax.set(xlim=(15, 90), ylim=(-15, 45))
-    ax.xaxis.set_minor_locator(AutoMinorLocator())
-    ax.yaxis.set_minor_locator(AutoMinorLocator())
-
-    fig.savefig(f"irtf_spot_overlay_{year}.pdf", bbox_inches="tight", dpi=500)
+    if gp:
+        fig.savefig(
+            f"irtf_ingress_egress_{year}.pdf", bbox_inches="tight", dpi=500
+        )
+    else:
+        fig.savefig(
+            f"irtf_ingress_egress_{year}_no_GP.pdf",
+            bbox_inches="tight",
+            dpi=500,
+        )
 
 
 # Plots for the the 1998 pair of light curves
@@ -419,11 +413,36 @@ yticks = np.arange(0, 60, 10)
 ylim = (-2, 52)
 xticks_in = np.arange(0, 5, 1)
 xticks_eg = np.arange(0, 6, 1)
-res_yticks = [-3.0, 0.0, 3.0]
+res_yticks = np.arange(-3, 4, 1)
+res_ylim = (-3.5, 3.5)
 
-with open("irtf_1998_samples.pkl", "rb") as handle:
+with open("scripts/irtf_1998_samples.pkl", "rb") as handle:
     samples = pkl.load(handle)
+with open("scripts/irtf_1998_samples_no_GP.pkl", "rb") as handle:
+    samples2 = pkl.load(handle)
 
+
+def print_percentiles(samples, varname):
+    mcmc = np.percentile(samples, [16, 50, 84])
+    q = np.diff(mcmc)
+    print(f"{varname}: {mcmc[1]:.3f} {q[0]:.3f} {q[1]:.3f}")
+
+
+print("1998 event parameters:")
+print_percentiles(samples["tau"], "tau")
+print_percentiles(np.sqrt(samples["c2"]), "c")
+print_percentiles(samples["amp_eg"], "a")
+print_percentiles(samples["sigma_gp"][:, 0], "sigma_GP_I")
+print_percentiles(samples["sigma_gp"][:, 1], "sigma_GP_E")
+print_percentiles(samples["rho_gp"][:, 0], "rho_GP_I")
+print_percentiles(samples["rho_gp"][:, 1], "rho_GP_E")
+print_percentiles(samples["err_in_scale"], "err_scale_in")
+print_percentiles(samples["err_eg_scale"], "err_scale_eg")
+print_percentiles(np.exp(samples["ln_flux_offset"][:, 0]), "b_I")
+print_percentiles(np.exp(samples["ln_flux_offset"][:, 1]), "b_E")
+
+
+# Plot inferred maps and fit
 make_plots(
     lc_in,
     lc_eg,
@@ -433,26 +452,11 @@ make_plots(
     xticks_in,
     xticks_eg,
     res_yticks,
-    cmap_norm=colors.Normalize(vmin=0, vmax=800),
+    res_ylim,
+    cmap_norm=colors.Normalize(vmin=0, vmax=500),
 )
 
-# Plots for the 2017 pair of light curves
-with open("../../data/irtf_processed/lc_2017-03-31.pkl", "rb") as handle:
-    lc_in = pkl.load(handle)
-
-with open("../../data/irtf_processed/lc_2017-05-11.pkl", "rb") as handle:
-    lc_eg = pkl.load(handle)
-
-
-with open("irtf_2017_samples.pkl", "rb") as handle:
-    samples2 = pkl.load(handle)
-
-yticks = np.arange(0, 100, 20)
-ylim = (-2, 82)
-xticks_in = np.arange(0, 5, 1)
-xticks_eg = np.arange(0, 6, 1)
-res_yticks = [-3.0, 0.0, 3.0]
-
+# Model without GP
 make_plots(
     lc_in,
     lc_eg,
@@ -462,5 +466,70 @@ make_plots(
     xticks_in,
     xticks_eg,
     res_yticks,
-    cmap_norm=colors.Normalize(vmin=0, vmax=1800),
+    res_ylim,
+    gp=False,
+    cmap_norm=colors.Normalize(vmin=0, vmax=1000),
+)
+
+
+# Plots for the 2017 pair of light curves
+with open("../../data/irtf_processed/lc_2017-03-31.pkl", "rb") as handle:
+    lc_in = pkl.load(handle)
+
+with open("../../data/irtf_processed/lc_2017-05-11.pkl", "rb") as handle:
+    lc_eg = pkl.load(handle)
+
+with open("scripts/irtf_2017_samples_no_GP.pkl", "rb") as handle:
+    samples = pkl.load(handle)
+
+with open("scripts/irtf_2017_samples_no_GP.pkl", "rb") as handle:
+    samples2 = pkl.load(handle)
+
+print("2017 event parameters:")
+print_percentiles(samples["tau"], "tau")
+print_percentiles(np.sqrt(samples["c2"]), "c")
+print_percentiles(samples["amp_eg"], "a")
+print_percentiles(samples["sigma_gp"][:, 0], "sigma_GP_I")
+print_percentiles(samples["sigma_gp"][:, 1], "sigma_GP_E")
+print_percentiles(samples["rho_gp"][:, 0], "rho_GP_I")
+print_percentiles(samples["rho_gp"][:, 1], "rho_GP_E")
+print_percentiles(samples["err_in_scale"], "err_scale_in")
+print_percentiles(samples["err_eg_scale"], "err_scale_eg")
+print_percentiles(np.exp(samples["ln_flux_offset"][:, 0]), "b_I")
+print_percentiles(np.exp(samples["ln_flux_offset"][:, 1]), "b_E")
+
+yticks = np.arange(0, 100, 20)
+ylim = (-2, 82)
+xticks_in = np.arange(0, 5, 1)
+xticks_eg = np.arange(0, 6, 1)
+res_yticks = np.arange(-5, 5, 2.5)
+res_ylim = (-5.5, 5.5)
+
+# Model including a GP
+make_plots(
+    lc_in,
+    lc_eg,
+    samples,
+    yticks,
+    ylim,
+    xticks_in,
+    xticks_eg,
+    res_yticks,
+    res_ylim,
+    cmap_norm=colors.Normalize(vmin=0, vmax=1000),
+)
+
+# Model without GP
+make_plots(
+    lc_in,
+    lc_eg,
+    samples2,
+    yticks,
+    ylim,
+    xticks_in,
+    xticks_eg,
+    res_yticks,
+    res_ylim,
+    gp=False,
+    cmap_norm=colors.Normalize(vmin=0, vmax=1000),
 )
