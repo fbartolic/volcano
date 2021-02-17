@@ -29,6 +29,10 @@ clean:
 	$(RM_TMP)
 	rm -rf $(FIGURES)
 
+figures/scripts/%.pkl: figures/scripts/%.py
+	# Run scripts 
+	cd $(<D); python $(<F) 2>&1
+
 figures/%.pdf: figures/%.py
 	# Generate all figures
 	cd $(<D); python $(<F) 2>&1
