@@ -6,12 +6,13 @@ LATEX       = pdflatex -interaction=nonstopmode -halt-on-error
 SUFF        = pdf
 RM_TMP      = $(foreach d, ${TEX_FILES}, rm -rf $(foreach suff, ${TMP_SUFFS}, ${d}.${suff})) paperNotes.bib
 CHECK_RERUN = grep Rerun paper.log
+SCRIPTS = $(patsubst %.py,%.pkl,$(wildcard figures/scripts/*.py))
 FIGURES     = $(patsubst %.py,%.pdf,$(wildcard figures/*.py))
 TECTONIC    = $(shell command -v tectonic >/dev/null && echo true || echo false )
 
 default: paper.pdf
 
-paper.pdf: paper.tex bib.bib $(FIGURES)
+paper.pdf: paper.tex bib.bib $(SCRIPTS) $(FIGURES)
 	# Generate links to current git commit
 	python gen_links.py
 	# Compile the paper with either tectonic or pdflatex
