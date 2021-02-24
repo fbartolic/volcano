@@ -59,8 +59,6 @@ def plot_grid_lines(ax, alpha=0.6):
     Code from https://github.com/rodluger/starry/blob/0546b4e445f6570b9a1cf6e33068e01a96ecf20f/starry/maps.py.
     """
     ax.axis("off")
-    ax.set_xlim(-2 * np.sqrt(2) - 0.2, 2 * np.sqrt(2) + 0.2)
-    ax.set_ylim(-np.sqrt(2) - 0.2, np.sqrt(2) + 0.2)
 
     borders = []
     x = np.linspace(-2 * np.sqrt(2), 2 * np.sqrt(2), 10000)
@@ -97,31 +95,56 @@ def plot_grid_lines(ax, alpha=0.6):
     ax.fill_between(x, -(y + 10), -y, color="white")
 
 
-idx = 0
+idx = -1
 p_sample = trace_pp["p"][idx]
 x_sample = trace_pp["x"][idx]
 p_back_sample = trace_pp["p_back"][idx]
 
+map = starry.Map(ydeg)
+map.amp = x_sample[0]
+map[1:, :] = x_sample[1:] / map.amp
+
+px_sample = map.render(
+    res=300,
+    projection="Mollweide",
+).eval()
+
+# Normalize all pixels to same scale
+norm = np.max(p_sample)
+p_sample /= norm
+px_sample /= norm
+p_back_sample /= norm
+
 fig, ax = plt.subplots(
-    2, 3, figsize=(12, 6), gridspec_kw={"height_ratios": [3, 1]}
+    2, 2, figsize=(10, 6), gridspec_kw={"height_ratios": [4, 1]}
 )
-fig.subplots_adjust(wspace=0.1, top=0.5)
+fig.subplots_adjust(wspace=0.15, top=0.5)
 
-
+cmap = "OrRd"
 vmax = np.max(p_sample)
 order = np.argsort(p_sample)
-cmap = "plasma"
 im1 = ax[0, 0].scatter(
     x_mol[order],
     y_mol[order],
     s=15,
     c=p_sample[order],
-    alpha=0.7,
     ec="none",
     cmap=cmap,
     marker="o",
-    norm=colors.Normalize(vmin=0, vmax=vmax),
+    norm=colors.Normalize(vmin=0, vmax=1.0),
 )
+
+for a in ax[0, :].flatten():
+    dx = 2.0 / 300
+    extent = (
+        -(1 + dx) * 2 * np.sqrt(2),
+        2 * np.sqrt(2),
+        -(1 + dx) * np.sqrt(2),
+        np.sqrt(2),
+    )
+    a.axis("off")
+    a.set_xlim(-2 * np.sqrt(2) - 0.05, 2 * np.sqrt(2) + 0.05)
+    a.set_ylim(-np.sqrt(2) - 0.05, np.sqrt(2) + 0.05)
 
 #  Plot Ylm map
 resol = 300
@@ -129,44 +152,21 @@ map = starry.Map(ydeg)
 map.amp = x_sample[0]
 map[1:, :] = x_sample[1:] / map.amp
 map.show(
+    image=px_sample,
     ax=ax[0, 1],
-    projection="molleweide",
-    norm=colors.Normalize(vmin=0, vmax=vmax),
-    res=resol,
+    projection="Mollweide",
+    norm=colors.Normalize(vmin=0.0, vmax=1.0),
     cmap=cmap,
-)
-
-
-order = np.argsort(p_back_sample)
-im2 = ax[0, 2].scatter(
-    x_mol[order],
-    y_mol[order],
-    s=15,
-    c=p_back_sample[order],
-    alpha=0.8,
-    ec="none",
-    cmap=cmap,
-    marker="o",
-    norm=colors.Normalize(vmin=0, vmax=10),
 )
 
 for a in ax[0, :].flatten():
     a.set_aspect("equal")
 
-cbaxes = fig.add_axes([0.453, 0.15, 0.12, 0.02])
-fig.colorbar(
-    im1,
-    cax=cbaxes,
-    orientation="horizontal",
-    shrink=0.3,
-    pad=0.07,
-    aspect=20,
-    ticks=np.array([0.0, 5.0, 10.0]),
-)
+cbar_ax = fig.add_axes([0.9, 0.25, 0.01, 0.21])
+fig.colorbar(im1, cax=cbar_ax)
 
 # Plot grid lines
-for a in (ax[0, 0], ax[0, 2]):
-    plot_grid_lines(a, alpha=0.5)
+plot_grid_lines(ax[0, 0], alpha=0.3)
 
 # Histograms of pixel values
 ax[1, 0].hist(
@@ -178,7 +178,8 @@ ax[1, 0].hist(
     lw=2.0,
     density=True,
 )
-ax[1, 2].hist(
+
+ax[1, 1].hist(
     p_back_sample,
     bins="auto",
     alpha=0.8,
@@ -188,18 +189,22 @@ ax[1, 2].hist(
     density=True,
 )
 
-for a in (ax[1, 0], ax[1, 2]):
+for a in (ax[1, 0], ax[1, 1]):
     a.spines["right"].set_visible(False)
     a.spines["top"].set_visible(False)
-    a.set_xlim(-1, 8)
-    a.set_xticks(np.arange(0, 10, 2))
-    a.set_xlabel("Pixel intensity")
+    a.set_xlim(-0.05, 0.8)
+    a.set_xticks(np.arange(0, 1.0, 0.2))
+    a.set_yticks([])
+    a.set_xlabel("Intensity distribution")
+    a.spines["left"].set_visible(False)
 
-ax[1, 1].axis("off")
 
 ax[0, 0].set_title("Sphixels\n(draw from prior)")
-ax[0, 1].set_title("Spherical\nharmonics")
-ax[0, 2].set_title("Pixels")
+ax[0, 1].set_title("Spherical harmonics\n ($l=20$)")
+
+fig.text(
+    0.485, 0.345, "$\;\;\,\mathbf{P}^\dagger$\n$\\longrightarrow$", fontsize=20
+)
 
 # Save
 fig.savefig("sphixels_to_pixels.pdf", bbox_inches="tight", dpi=500)
