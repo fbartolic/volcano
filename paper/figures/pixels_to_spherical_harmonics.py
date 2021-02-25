@@ -199,7 +199,7 @@ for a in (ax[1, 0], ax[1, 1]):
     a.spines["left"].set_visible(False)
 
 
-ax[0, 0].set_title("Sphixels\n(draw from prior)")
+ax[0, 0].set_title("Pixels\n(draw from prior)")
 ax[0, 1].set_title("Spherical harmonics\n ($l=20$)")
 
 fig.text(
@@ -207,4 +207,4 @@ fig.text(
 )
 
 # Save
-fig.savefig("sphixels_to_pixels.pdf", bbox_inches="tight", dpi=500)
+fig.savefig("pixels_to_spherical_harmonics.pdf", bbox_inches="tight", dpi=500)
