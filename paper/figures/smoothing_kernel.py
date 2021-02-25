@@ -71,11 +71,12 @@ for i in range(len(smoothing_sigmas)):
 for a in ax.flatten():
     a.set_xticks(np.arange(-60, 90, 30))
     a.set_xlim(-60, 60)
+    a.grid(alpha=0.5)
     a.xaxis.set_minor_locator(AutoMinorLocator())
     a.yaxis.set_minor_locator(AutoMinorLocator())
 #     a.grid()
 
-ax[-1].legend(loc=4, prop={"size": 12})
+ax[-1].legend(loc=1, prop={"size": 12})
 fig.text(0.5, -0.08, "Longitude [deg]", ha="center")
 fig.text(0.04, 0.5, "Normalized intensity", va="center", rotation="vertical")
 
