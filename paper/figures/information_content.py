@@ -354,7 +354,7 @@ s_occ_phase = compute_posterior_shrinkage(A_occ_phase[::2, :])
 s_mut = compute_posterior_shrinkage(A_mut[:, :])
 
 
-fig, ax = plt.subplots(figsize=(11, 3))
+fig, ax = plt.subplots(figsize=(11, 4))
 
 lcut = 16
 
@@ -364,7 +364,7 @@ lcut = 16
     s_occ_phase[:lcut], "C2.-", label="Occultations by Jupiter + phase curves"
 )
 (p7,) = ax.plot(s_mut[:lcut], "C3.-", label="Mutual occultations")
-ax.legend(prop={"size": 10}, loc="upper right", bbox_to_anchor=(1.0, 0.95))
+ax.legend(prop={"size": 12}, loc="upper right", bbox_to_anchor=(1.0, 0.95))
 
 ax.set_xlabel(r"Spherical harmonic degree")
 ax.set_ylabel("Posterior shrinkage")
