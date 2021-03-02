@@ -19,6 +19,7 @@ from volcano.utils import *
 np.random.seed(42)
 starry.config.lazy = False
 numpyro.enable_x64()
+numpyro.set_host_device_count(4)
 
 xo_eg = np.linspace(37.15, 39.43, 150)
 yo_eg = np.linspace(-8.284, -8.27, 150)
@@ -41,7 +42,7 @@ map_true.add_spot(
     amp=1.0, sigma=spot_sigma, lat=13.0, lon=51.0, relative=False
 )
 map_true.add_spot(
-    amp=0.2, sigma=spot_sigma, lat=-15.0, lon=-40.0, relative=False
+    amp=0.25, sigma=spot_sigma, lat=-15.0, lon=-40.0, relative=False
 )
 map_true.amp = 20
 
@@ -153,13 +154,19 @@ def model(f_obs_in, f_obs_eg, f_err_in, f_err_eg):
 
     numpyro.sample(
         "obs_in",
-        dist.Normal(flux_in, f_err_in * np.ones_like(f_obs_in),),
+        dist.Normal(
+            flux_in,
+            f_err_in * np.ones_like(f_obs_in),
+        ),
         obs=f_obs_in,
     )
 
     numpyro.sample(
         "obs_eg",
-        dist.Normal(flux_eg, f_err_eg * np.ones_like(f_obs_eg),),
+        dist.Normal(
+            flux_eg,
+            f_err_eg * np.ones_like(f_obs_eg),
+        ),
         obs=f_obs_eg,
     )
 
@@ -179,12 +186,12 @@ nuts_kernel = NUTS(
 )
 
 # Run MCMC
-mcmc = MCMC(nuts_kernel, num_warmup=500, num_samples=1500)
+mcmc = MCMC(nuts_kernel, num_warmup=1000, num_samples=2000, num_chains=2)
 rng_key = random.PRNGKey(0)
 mcmc.run(rng_key, f_obs_in_50, f_obs_eg_50, f_err_in_50, f_err_eg_50)
 samples_50 = mcmc.get_samples()
 
-mcmc = MCMC(nuts_kernel, num_warmup=500, num_samples=1500)
+mcmc = MCMC(nuts_kernel, num_warmup=1000, num_samples=2000, num_chains=2)
 rng_key = random.PRNGKey(1)
 mcmc.run(rng_key, f_obs_in_10, f_obs_eg_10, f_err_in_10, f_err_eg_10)
 samples_10 = mcmc.get_samples()
@@ -192,18 +199,18 @@ samples_10 = mcmc.get_samples()
 # Compute median maps
 median_map_moll_50 = get_median_map(ydeg_inf, samples_50["x"])
 median_map_in_50 = get_median_map(
-    ydeg_inf, samples_50["x"], projection=None, theta=theta_in, nsamples=15
+    ydeg_inf, samples_50["x"], projection=None, theta=theta_in, nsamples=50
 )
 median_map_eg_50 = get_median_map(
-    ydeg_inf, samples_50["x"], projection=None, theta=theta_eg, nsamples=15
+    ydeg_inf, samples_50["x"], projection=None, theta=theta_eg, nsamples=50
 )
 
 median_map_moll_10 = get_median_map(ydeg_inf, samples_10["x"])
 median_map_in_10 = get_median_map(
-    ydeg_inf, samples_10["x"], projection=None, theta=theta_in, nsamples=15
+    ydeg_inf, samples_10["x"], projection=None, theta=theta_in, nsamples=50
 )
 median_map_eg_10 = get_median_map(
-    ydeg_inf, samples_10["x"], projection=None, theta=theta_eg, nsamples=15
+    ydeg_inf, samples_10["x"], projection=None, theta=theta_eg, nsamples=50
 )
 
 
@@ -258,7 +265,7 @@ def plot(
 
     # Set up the plot
     nim = 7
-    cmap_norm = colors.Normalize(vmin=-0.5, vmax=300)
+    cmap_norm = colors.Normalize(vmin=0.0, vmax=250)
     cmap = "Oranges"
     resol = 300
 
@@ -276,7 +283,7 @@ def plot(
     gs2 = fig.add_gridspec(
         nrows=3,
         ncols=nim,
-        height_ratios=[1, 3, 1],
+        height_ratios=[2, 4, 2],
         top=0.5,
         left=0.05,
         right=0.50,
@@ -286,7 +293,7 @@ def plot(
     gs3 = fig.add_gridspec(
         nrows=3,
         ncols=nim,
-        height_ratios=[1, 3, 1],
+        height_ratios=[2, 4, 2],
         top=0.5,
         left=0.53,
         right=0.98,
@@ -337,11 +344,21 @@ def plot(
 
     x_spot, y_spot = lon_lat_to_mollweide(51.0, 13.0)
     ax_inf_map.scatter(
-        x_spot, y_spot, marker="x", color="black", s=10.0, alpha=0.3,
+        x_spot,
+        y_spot,
+        marker="x",
+        color="black",
+        s=28.0,
+        alpha=0.4,
     )
     x_spot2, y_spot2 = lon_lat_to_mollweide(-40.0, -15.0)
     ax_inf_map.scatter(
-        x_spot2, y_spot2, marker="x", color="black", s=10.0, alpha=0.3,
+        x_spot2,
+        y_spot2,
+        marker="x",
+        color="black",
+        s=28.0,
+        alpha=0.4,
     )
 
     # Plot minimaps
@@ -398,14 +415,11 @@ def plot(
             a[n].set_rasterization_zorder(0)
 
     # Plot ingress
-    ax_lc[0].errorbar(  # Data
+    ax_lc[0].scatter(  # Data
         xo_in,
         f_obs_in,
-        f_err_in,
         color="black",
-        marker=".",
-        linestyle="",
-        ecolor="black",
+        marker="o",
         alpha=0.4,
     )
 
@@ -423,21 +437,18 @@ def plot(
         res_in / np.std(res_in),
         f_err_in / np.std(res_in),
         color="black",
-        marker=".",
+        marker="o",
         linestyle="",
         ecolor="black",
         alpha=0.4,
     )
 
     # Plot egress
-    ax_lc[1].errorbar(
+    ax_lc[1].scatter(
         xo_eg,
         f_obs_eg,
-        f_err_eg,
         color="black",
-        marker=".",
-        linestyle="",
-        ecolor="black",
+        marker="o",
         alpha=0.4,
     )
 
@@ -454,7 +465,7 @@ def plot(
         res_eg / np.std(res_eg),
         f_err_eg / np.std(res_eg),
         color="black",
-        marker=".",
+        marker="o",
         linestyle="",
         ecolor="black",
         alpha=0.4,
@@ -497,7 +508,7 @@ def plot(
         a.set_yticks(np.arange(0, 1.2, 0.2))
 
     for a in ax_lc + ax_res:
-        a.grid()
+        a.grid(alpha=0.5)
 
     # Set common labels
     fig.text(
