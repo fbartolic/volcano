@@ -17,11 +17,13 @@
 % Author list
 \author{Fran Bartoli\'c}
 \email{fb90@st-andrews.ac.uk}
-\affil{Centre for Exoplanet Science, SUPA, School of Physics and Astronomy, University of St. Andrews, St. Andrews, UK}
+\affil{Centre~for~Exoplanet~Science, SUPA, School~of~Physics~and~Astronomy, University~of~St.~Andrews, St.~Andrews, UK}
 \affil{Center~for~Computational~Astrophysics, Flatiron~Institute, New~York, NY}
 \author{Rodrigo Luger}
 \author{Daniel Foreman-Mackey}
 \affil{Center~for~Computational~Astrophysics, Flatiron~Institute, New~York, NY}
+\author{Robert R. Howell}
+\affil{Department~of~Geology~\&~Geophysics, University~of~Wyoming, Laramie, WY}
 %
 
 \begin{abstract}
@@ -60,14 +62,12 @@ Only the brightest volcanoes are visible over the reflected light background whe
 
 Both kinds of occultations have been used to study volcanic activity on the surface.
 \cite{spencer1994} observed several occultations of Io by Europa and detected a major brightening of the most powerful of Io's volcanoes, Loki, relative to previous Voyager observations.
-\cite{rathbun2002},\citet{rathbun2006} and \citet{rathbun2010} used observations from NASA's IRTF telescope to study the long term variability of different volcanic spots, finding evidence of periodicity in Loki's eruptions and establishing the transient nature of the volcanoes (only Loki is persistently active).
+\cite{rathbun2002},\citet{rathbun2006} and \citet{rathbun2010} used observations from NASA's IRTF telescope to study the long term variability of different volcanic spots, finding evidence of periodicity in Loki's eruptions and establishing the transient nature of observed emission from most volcanoes. 
 By studying a (spatially resolved) occultation of Io by Europa, \cite{dekleer2017} mapped the Loki region to a precision of about 2 kilometers.
 In addition to observations of occultations in the near infrared, several groups have been observing mutual occultations in the optical \citep[][and references therein]{arlot1974,saquet2018,morgado2016a} for decades with the purpose of inferring the optical albedo of Io and improving ephemeris precision for Galilean satellites.
 Understanding the detailed albedo distribution is crucial to constraining the ephemeris to a very high precision.
 
-None of the studies of occultations in the infrared attempted to infer a two-dimensional map of Io's surface.
-The light curves are usually fit independently with the goal of inferring one-dimensional longitudinal variations in brightness on its surface, with
-strong priors on the locations of individual volcanoes based on maps from space mission observations.
+Most studies of occultations of Io fit multiple light curves independently with the goal of inferring one-dimensional longitudinal variations in brightness on its surface (notable exceptions are \cite{spencer1994} and \cite{dekleer2017}), assuming strong priors on the locations of individual volcanoes based on maps from space mission observations.
 In this work, we build a fully probabilistic model in order to infer a two-dimensional \emph{map} of Io's volcanic surface from archival IRTF observations in the near infrared.
 We assume that the map corresponding to a given set of light curves is static (up to an overall amplitude) so we are restricted to modeling the surface during a timespan when the surface emission hasn't changed drastically.
 In a subsequent paper we build on the model we have developed here and generalize to a case where the surface is time-variable.
@@ -120,7 +120,8 @@ All of the observations were taken while Io was \emph{in eclipse}, meaning that 
 Observations of Io \emph{in sunlight} on the other hand probe both the thermal (volcanic) emission and the surface albedo variations in the near infrared.
 Figure~\ref{fig:irtf_max_flux} shows the maximum flux for each occultation light curve in units of $\mathrm{GW}/\mu \mathrm{m}/\mathrm{sr}$ as a function of time.
 This value is approximately equal to the total flux emitted from the Jupiter-facing side of Io.
-The baseline brightness is varying stochastically by a large amount and there are several notable events of intense volcanic activity.
+The major variation in the baseline brightness is driven by Loki.
+Most hotspots can be divided into those who are persistently active for a year or longer at moderate intensity, and those which have bursts of activity and reach very high intensities for short periods of time \cite{dekleer2016}.
 
 \begin{figure}[h!]
     \begin{centering}
@@ -154,11 +155,12 @@ We deal with this by treating all errobars as free parameters with a common char
 \subsection{Orbital parameters}
 \label{ssec:orbital_parameters}
 To model the occultations we need to know the projected relative position of Jupiter with respect to Io and the orientation of Io at any given time.
-To compute the geometry, we use the \href{https://ssd.jpl.nasa.gov/horizons.cgi}{JPL Horizons database} and the latest planetary ephemeris DE430 \citep{folkner2014} which is accurate to a few kilometers on Io's surface.
+To compute the geometry, we use the \href{https://ssd.jpl.nasa.gov/horizons.cgi}{JPL Horizons database} which uses the latest JUPxxx satellite ephemeris \citep{jacobson2015}.
+The JUPxxx ephemeris is usually accurate to a few kilometers on Io's surface.
 For both Jupiter and Io we need the right ascension and declination and the angular (equatorial) diameter (\textsf{Ang-diam}).
 In addition, we need to fix the orientation of Io we need the longitude and the latitude at the center of Io's disc as seen from Earth (\textsf{Ob-lon}, \textsf{Ob-lat}) and the counterclockwise angle between the celestial north pole unit vector projected onto the plane of the sky and the Io's north pole (\textsf{NP.ang}).
 All longitudes are positive  in the direction of west.
-\textsf{HORIZONS} provides all ephemeris with a minimum cadence of 1 second so we interpolate all values so that we can evaluate them for arbitrary times.
+\textsf{HORIZONS} provides all ephemeris with a minimum cadence of 1 minute, we interpolate these values so that we can evaluate them for arbitrary times.
 
 The coordinate system in \textsf{starry} is defined to be right handed such that the $\hat{z}$
 axis points towards the observer and the $\hat{x}$ axis points to the right on the plane of the sky.
@@ -229,7 +231,7 @@ Since a sequence of linear mappings is also linear, the predicted flux can be wr
     \quad,
     \label{eq:linear_model}
 \end{equation}
-where the column vector $\mathbf{f}$ of shape $(T, 1)$ is the predicted flux for different values of the occultor position and optionally the direction of the illumination source and $\mathbf{A}$ is the design matrix \citep[see appendix B.1. in ][]{luger2021a} of shape $(T, N)$ (with $N=(l+1)^2$) which encodes the operations needed to compute the integrated flux.
+where the column vector $\mathbf{f}$ of shape $(T, 1)$ is the predicted flux for different values of the occultor position and $\mathbf{A}$ is the design matrix \citep[see appendix B.1. in ][]{luger2021a} of shape $(T, N)$ (with $N=(l+1)^2$) which encodes the operations needed to compute the integrated flux at different viewing angles of the occulted sphere.
 If the geometry isn't known precisely the matrix $\mathbf{A}$ is not fixed and the model is in principle no longer linear although one can still use the fact that it is linear when conditioned on a particular values of the nonlinear parameters to speed up inference.
 
 The characteristic angular scale of features that can be represented with a given map is set by the degree of the map and it is approximately equal to $180^\circ/l$.
@@ -313,7 +315,8 @@ where $\mathbf{f}_\mathrm{obs}$ is the observed light curve, $\boldsymbol{\Sigma
     \quad,
     \label{eq:flux_model}
 \end{equation}
-where $\mathbf{A}'\equiv\mathbf{A}\mathbf{P}^\dagger$ and $b$ is a constant flux offset parameter which we have added to account for stray flux which cannot be attributed to Io (it is mostly due to emission from Jupiter).
+where $\mathbf{A}'\equiv\mathbf{A}\mathbf{P}^\dagger$ and $b$ is a constant flux offset parameter which we have added to account for stray flux which cannot be attributed to Io and is likely due to residual light from Jupiter.
+
 
 To model the data covariance $\boldsymbol{\Sigma}$ we use use a Gaussian Process and we compute the likelihood using the fast Celerite method \citep{foreman-mackey2017} as implemented in the \textsf{celerite2} package \citep{foreman-mackey2017a,foreman-mackey2018}.
 We use the simple (approximate) Matern 3/2 function which is parametrized by two values, a standard deviation parameter $\sigma_\mathrm{GP}$ and a characteristic timescale parameter $\rho_\mathrm{GP}$.
@@ -368,8 +371,11 @@ where $\sigma^2_0$ is the prior variance and $\sigma^2$ is the posterior varianc
 It tells us how well we can constrain a particular coefficient in the limit of infinite SNR observations.
 Posterior shrinkage of 1 indicates that the data provides perfect information on the parameters while 0 indicates no gain in information relative to the prior.
 
-In order to compute the posterior shrinkage we first compute the design matrices $\mathbf{A}$ using \textsf{starry} for different kinds of events a over the course of a single year: occultations by Jupiter, occultations by Europa, Ganymede and Callisto and phase curves.
-We take the ephemeris data from \textsf{JPL HORIZONS} and assume that it is known exactly and we also assume all observations are of the emitted light component independent of whether Io is in sunlight or in eclipse because we are interested in constraining the volcanic emission rather than the albedo.
+In order to compute the posterior shrinkage we first compute the design matrices $\mathbf{A}$ using \textsf{starry} for different kinds of observations of Io in the period starting on the 1st of January 2009 and ending on the 1st of May 2010.
+We chose this period because it covers the full season of mutual occultations which occur every 6 years.
+We compute $\mathbf{A}$ for all observable Io by Galilean moons during that period, for occultations of Io by Jupiter and phase curves.
+We make sure that the number of observations and the cadence for each observation covers all possible geometries because the purpose of this exercise is do determine the upper bound on what we can learn about the surface. 
+We take the ephemeris from \textsf{JPL HORIZONS} and assume that it is known exactly; we also assume all observations are of the emitted light component independent of whether Io is in sunlight or in eclipse because we are interested in constraining the volcanic emission rather than the albedo.
 
 \begin{figure}[t!]
     \begin{centering}
@@ -387,8 +393,8 @@ Fig.~\ref{fig:information_content} shows the posterior shrinkage as a function o
 As expected, the mutual occultations of Io by other Galilean moons are by far the most informative with posterior shrinkage of unity at all angular scales considered. 
 Occultations by Jupiter are far less informative because we only see one side of Io during an occultation.
 Shrinkage for phase curve at odd degrees above $l=2$ is exactly zero because these coefficents are in the nullspace for objects rotating about an axis perpendicular to the line of sight these coefficients and therefore they cannot be constrained using only phase curves \citep{luger2021}. 
-Observations of mutual occultations most easily break the degeneracies but they only happen every 6 years and they almost never happen while Io is in eclipse, which means that only the brightest volcanoes are visible above the reflected sunlight.
-This is not captured in Figure~\ref{fig:information_content}. 
+Observations of mutual occultations most easily break the degeneracies but the drawback of these types of observations is that they only happen every 6 years and they almost never happen while Io is in eclipse, meaning that only the brightest volcanoes are visible above the reflected sunlight.
+This fact is not captured in Figure~\ref{fig:information_content}. 
 
 Although Figure~\ref{fig:information_content} gives us some idea about which kinds of observations are most informative, it doesn't really tell us how well we can constrain very bright spot-like features we expect to see on Io.
 To answer this question we have to simulate data and conduct the inference process.
@@ -401,7 +407,7 @@ The expansion is in the quantity $\cos(\Delta\theta)$ where $\Delta\theta$ is th
 We place the spot at $13^\circ$ N latitude and $51^\circ$ E longitude, we set the diameter of the spot ($2\Delta\theta$) to $5^\circ$ and the amplitude of the spot such that the total \emph{luminosity} of the map increases by 50\% with the addition of the spot.
 We generate two light curves with 150 data points, one for the duration of the ingress of the full occultation and the other for the egress.
 Because the limb of the occultor sweeps over the disc of Io at different angles during ingress and ingress, this makes it possible break most degeneracies in the map and recover the location of the true spot.
-We set the phase of the simulated map to $10^\circ$ W at the beginning of ingress and a phase of $10^\circ$ E at the end of egress.
+We set the phase of the simulated map to be $10^\circ$ E at the beginning of ingress and $10^\circ$ W at the end of egress.
 We assume that the geometry of the occultation is known exactly and set the errorbars such that SNR=50 where SNR is the signal is defined as the maximum flux of light curve.
     We use this dataset to test the difference between setting a prior in the spherical harmonic basis $\mathbf{y}$ and in the pixel basis $\mathbf{p}$ by fitting an $l=20$ map to the dataset.
 
@@ -417,7 +423,7 @@ The coefficients $\mathbf{y}$ can then be used to evaluate the map on a pixelate
 To ensure that the difference in the inferred maps is not in part due to a difference in the scale of the priors, we take 5000 samples from the prior on $y$ and evaluate $\mathbf{P}\mathbf{y}$ for each; we then compute the standard deviation of these pixels use that as the scale parameter in the exponential prior.
 We implement the pixel model in the probabilistic programming language \textsf{numpyro} \citep{phan2019a} which is built on top of the \textsf{JAX} \citep{jax2018github} library, and we fit it using Hamiltonian Monte Carlo with the No-U-Turn-Sampler (NUTS) \citep{hoffman2014}.
 \textsf{JAX} is a \textsf{numpy} like library which supports automatic differentiation, parallelization and GPUs.
-We run the chains until for 1000 tuning steps and 2000 final steps, monitoring divergences \citep{betancourt2013} and the R-hat  diagnostic  \citep{gelman1992a} to check for convergence.
+We run the chains for 1000 tuning steps and 2000 final steps, monitoring divergences \citep{betancourt2013} and the R-hat  diagnostic  \citep{gelman1992a} to check for convergence.
 Since all models in this paper have hundreds if not thousands of parameters, it would not be possible to sample the posterior  without the use of automatic differentiation and Hamiltonian Monte Carlo (at least for non-Gaussian priors).
 
 \begin{figure}[t!]
@@ -559,7 +565,7 @@ In this case the model still recovers both spots but the error in position of th
 \end{figure}
 
 \subsection{Comparison to a parametric model}
-It is instructive to compare the model developed in the previous section to a parametric model in which we assume that the map contains some fixed number of spot and we fit for the positions, amplitudes and the sizes of the spots.
+It is instructive to compare the model developed in the previous section to a parametric model in which we assume that the map contains some fixed number of spots and we fit for the positions, amplitudes and the sizes of the spots.
 A parametric spot model might be useful if we want to fit for a small number of spots and we know what the map should look like.
 To test how the parametrized spot model compares to the model defined in Section~\ref{ssec:fitting_sim_ingress_egress} we fit it to the light curves shown in Figure~\ref{fig:ingress_egress_sim_snr_50}. 
 The model consists of 4 parameters: the latitude, longitude, amplitude and size of the spot.
