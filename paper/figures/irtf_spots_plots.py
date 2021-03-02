@@ -129,7 +129,7 @@ def get_errobar(samples):
 
 
 # Load Galileo map
-combined_mosaic = Image.open("Io_color_merged_clon180.tif")
+combined_mosaic = Image.open("Io_color_merged_clon180.png")
 # Longitude is defined on [0,360] while Starry expects [-180, 180]
 shifted_map = np.roll(combined_mosaic, int(11445 / 2), axis=1)
 
