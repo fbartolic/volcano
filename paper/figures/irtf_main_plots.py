@@ -110,6 +110,11 @@ def make_plots(
         nsamples=50,
     )
 
+    median_map_moll_in = np.clip(median_map_moll_in, 0.1, 1e5)
+    median_map_moll_eg = np.clip(median_map_moll_eg, 0.1, 1e5)
+    median_map_in = np.clip(median_map_in, 0.1, 1e5)
+    median_map_eg = np.clip(median_map_eg, 0.1, 1e5)
+
     # Make plot
     if gp:
         gp_pred_in = []
@@ -128,8 +133,13 @@ def make_plots(
                 kernel_in, t=t_in, mean=np.array(samples["flux_in"])[i]
             )
             gp.compute(t_in, yerr=(samples["f_err_in_mod"][i]))
+            gp_pred_in.append(
+                gp.predict(f_obs_in, t=t_in, include_mean=False)
+                + samples["flux_in"][i]
+            )
             gp_pred_in_dense.append(
                 gp.predict(f_obs_in, t=t_in_dense, include_mean=False)
+                + samples["flux_in_dense"][i]
             )
             # Egress
             kernel_eg = terms.Matern32Term(
@@ -140,22 +150,34 @@ def make_plots(
                 kernel_eg, t=t_eg, mean=np.array(samples["flux_eg"])[i]
             )
             gp.compute(t_eg, yerr=(samples["f_err_eg_mod"][i]))
+            gp_pred_eg.append(
+                gp.predict(f_obs_eg, t=t_eg, include_mean=False)
+                + samples["flux_eg"][i]
+            )
             gp_pred_eg_dense.append(
                 gp.predict(f_obs_eg, t=t_eg_dense, include_mean=False)
+                + samples["flux_eg_dense"][i]
             )
 
     # Compute residuals
     f_in_median = np.median(samples["flux_in"], axis=0)
     f_eg_median = np.median(samples["flux_eg"], axis=0)
 
-    res_in = f_obs_in - f_in_median
-    res_eg = f_obs_eg - f_eg_median
+    if gp:
+        f_in_median_gp = np.median(gp_pred_in, axis=0)
+        f_eg_median_gp = np.median(gp_pred_eg, axis=0)
+
+        res_in = f_obs_in - f_in_median_gp
+        res_eg = f_obs_eg - f_eg_median_gp
+    else:
+        res_in = f_obs_in - f_in_median
+        res_eg = f_obs_eg - f_eg_median
 
     # Set up the plot
     resol = 300
-    nim = 8
+    nim = 7
 
-    fig = plt.figure(figsize=(10, 10))
+    fig = plt.figure(figsize=(10, 9))
     fig.subplots_adjust(wspace=0.0)
 
     heights = [2, 4, 2]
@@ -277,21 +299,30 @@ def make_plots(
     f_err_in_mod_median = np.median(samples["f_err_in_mod"], axis=0)
     f_err_eg_mod_median = np.median(samples["f_err_eg_mod"], axis=0)
 
-    ax_lc[0].errorbar(  # Data
+    ax_lc[0].scatter(  # Data
         t_in,
         f_obs_in,
-        f_err_in_mod_median,
         color="black",
-        marker=".",
-        linestyle="",
-        ecolor="black",
+        marker="o",
         alpha=0.4,
     )
 
-    for s in np.random.randint(0, len(samples["flux_in_dense"]), 10):
-        ax_lc[0].plot(
-            t_in_dense, samples["flux_in_dense"][s, :], "C1-", alpha=0.2
-        )  # Model
+    if gp:
+        #        for s in np.random.randint(0, len(samples["flux_in_dense"]), 10):
+        #            ax_lc[0].plot(
+        #                t_in_dense, samples["flux_in_dense"][s, :], "C0-", alpha=0.1
+        #            )  # Model
+
+        #  Plot full model
+        for s in range(10):
+            ax_lc[0].plot(
+                t_in_dense, gp_pred_in_dense[s], "C1-", alpha=0.1
+            )  # Model
+    else:
+        for s in np.random.randint(0, len(samples["flux_in_dense"]), 10):
+            ax_lc[0].plot(
+                t_in_dense, samples["flux_in_dense"][s, :], "C1-", alpha=0.1
+            )  # Model
 
     # Residuals
     ax_res[0].errorbar(
@@ -299,34 +330,37 @@ def make_plots(
         res_in,
         f_err_in_mod_median,
         color="black",
-        marker=".",
-        linestyle="",
+        marker="o",
         ecolor="black",
+        linestyle="",
+        alpha=0.4,
+    )
+
+    # Plot egress
+    ax_lc[1].scatter(
+        t_eg,
+        f_obs_eg,
+        color="black",
+        marker="o",
         alpha=0.4,
     )
 
     if gp:
-        for i in np.random.randint(0, len(gp_pred_in_dense), 10):
-            ax_res[0].plot(
-                t_in_dense, gp_pred_in_dense[i], "tab:purple", alpha=0.2
-            )
+        #        for s in np.random.randint(0, len(samples["flux_eg_dense"]), 10):
+        #            ax_lc[1].plot(
+        #                t_eg_dense, samples["flux_eg_dense"][s, :], "C0-", alpha=0.1
+        #            )  # Model
 
-    # Plot egress
-    ax_lc[1].errorbar(
-        t_eg,
-        f_obs_eg,
-        f_err_eg_mod_median,
-        color="black",
-        marker=".",
-        linestyle="",
-        ecolor="black",
-        alpha=0.4,
-    )
-
-    for s in np.random.randint(0, len(samples["flux_eg_dense"]), 10):
-        ax_lc[1].plot(
-            t_eg_dense, samples["flux_eg_dense"][s, :], "C1-", alpha=0.2
-        )  # Model
+        #  Plot full model
+        for s in range(10):
+            ax_lc[1].plot(
+                t_eg_dense, gp_pred_eg_dense[s], "C1-", alpha=0.1
+            )  # Model
+    else:
+        for s in np.random.randint(0, len(samples["flux_eg_dense"]), 10):
+            ax_lc[1].plot(
+                t_eg_dense, samples["flux_eg_dense"][s, :], "C1-", alpha=0.1
+            )  # Model
 
     # Residuals
     ax_res[1].errorbar(
@@ -334,50 +368,41 @@ def make_plots(
         res_eg,
         f_err_eg_mod_median,
         color="black",
-        marker=".",
-        linestyle="",
+        marker="o",
         ecolor="black",
+        linestyle="",
         alpha=0.4,
     )
 
-    if gp:
-        for i in np.random.randint(0, len(gp_pred_in_dense), 10):
-            ax_res[1].plot(
-                t_eg_dense, gp_pred_eg_dense[i], "tab:purple", alpha=0.2
-            )
-        # Legends
-        ax_lc[0].legend(
-            handles=[Line2D([0], [0], color="C1", label="Physical model")],
-            loc="lower left",
-        )
-        ax_res[0].legend(
-            handles=[
-                Line2D([0], [0], color="tab:purple", label="Noise model")
-            ],
-            loc="lower left",
-        )
+    # Legend
+    #    if gp:
+    #        custom_lines = [
+    #            Line2D([0], [0], color="C1", linestyle="-"),
+    #            Line2D([0], [0], color="C1", linestyle="dashed"),
+    #        ]
+    #        ax_lc[0].legend(custom_lines, ["Full model", "Excluding GP"])
 
     #  Ticks
     for a in ax_lc:
         a.set_xticklabels([])
-        a.grid()
+        a.grid(alpha=0.5)
         a.set_yticks(yticks)
         a.set_ylim(ylim[0], ylim[1])
 
     for a in (ax_lc[0], ax_res[0]):
         a.set_xticks(xticks_in)
-        a.set_xlim(left=-0.2)
+        a.set_xlim(left=-0.1)
         a.xaxis.set_minor_locator(AutoMinorLocator())
         a.yaxis.set_minor_locator(AutoMinorLocator())
 
     for a in (ax_lc[1], ax_res[1]):
         a.set_xticks(xticks_eg)
-        a.set_xlim(left=-0.2)
+        a.set_xlim(left=-0.1)
         a.xaxis.set_minor_locator(AutoMinorLocator())
         a.set_yticklabels([])
 
     for a in ax_res:
-        a.grid()
+        a.grid(alpha=0.5)
         a.set_ylim(res_ylim)
         a.set_yticks(res_yticks)
 
@@ -391,12 +416,10 @@ def make_plots(
 
     year = lc_in.time[0].isot[:4]
     if gp:
-        fig.savefig(
-            f"irtf_ingress_egress_{year}.pdf", bbox_inches="tight", dpi=500
-        )
+        fig.savefig(f"irtf_{year}.pdf", bbox_inches="tight", dpi=500)
     else:
         fig.savefig(
-            f"irtf_ingress_egress_{year}_no_GP.pdf",
+            f"irtf_{year}_no_GP.pdf",
             bbox_inches="tight",
             dpi=500,
         )
@@ -413,8 +436,8 @@ yticks = np.arange(0, 60, 10)
 ylim = (-2, 52)
 xticks_in = np.arange(0, 5, 1)
 xticks_eg = np.arange(0, 6, 1)
-res_yticks = np.arange(-3, 4, 1)
-res_ylim = (-3.5, 3.5)
+res_yticks = np.arange(-2, 3, 1)
+res_ylim = (-2.5, 2.5)
 
 with open("scripts/irtf_1998_samples.pkl", "rb") as handle:
     samples = pkl.load(handle)
@@ -453,7 +476,7 @@ make_plots(
     xticks_eg,
     res_yticks,
     res_ylim,
-    cmap_norm=colors.Normalize(vmin=0, vmax=500),
+    cmap_norm=colors.LogNorm(vmin=30, vmax=1000),
 )
 
 # Model without GP
@@ -468,7 +491,7 @@ make_plots(
     res_yticks,
     res_ylim,
     gp=False,
-    cmap_norm=colors.Normalize(vmin=0, vmax=1000),
+    cmap_norm=colors.LogNorm(vmin=30, vmax=1000),
 )
 
 
@@ -479,7 +502,7 @@ with open("../../data/irtf_processed/lc_2017-03-31.pkl", "rb") as handle:
 with open("../../data/irtf_processed/lc_2017-05-11.pkl", "rb") as handle:
     lc_eg = pkl.load(handle)
 
-with open("scripts/irtf_2017_samples_no_GP.pkl", "rb") as handle:
+with open("scripts/irtf_2017_samples.pkl", "rb") as handle:
     samples = pkl.load(handle)
 
 with open("scripts/irtf_2017_samples_no_GP.pkl", "rb") as handle:
@@ -516,7 +539,7 @@ make_plots(
     xticks_eg,
     res_yticks,
     res_ylim,
-    cmap_norm=colors.Normalize(vmin=0, vmax=1000),
+    cmap_norm=colors.LogNorm(vmin=30, vmax=1500),
 )
 
 # Model without GP
@@ -531,5 +554,5 @@ make_plots(
     res_yticks,
     res_ylim,
     gp=False,
-    cmap_norm=colors.Normalize(vmin=0, vmax=1000),
+    cmap_norm=colors.LogNorm(vmin=30, vmax=1500),
 )
