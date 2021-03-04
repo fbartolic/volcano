@@ -34,7 +34,7 @@ theta_in = 350.0
 theta_eg = 10.0
 ro = 39.1
 
-ydeg_true = 20
+ydeg_true = 30
 map_true = starry.Map(ydeg_true)
 spot_ang_dim = 10 * np.pi / 180
 spot_sigma = 1 - np.cos(spot_ang_dim / 2)
@@ -42,7 +42,7 @@ map_true.add_spot(
     amp=1.0, sigma=spot_sigma, lat=13.0, lon=51.0, relative=False
 )
 map_true.add_spot(
-    amp=0.25, sigma=spot_sigma, lat=-15.0, lon=-40.0, relative=False
+    amp=0.3, sigma=spot_sigma, lat=-15.0, lon=-40.0, relative=False
 )
 map_true.amp = 20
 
@@ -265,7 +265,7 @@ def plot(
 
     # Set up the plot
     nim = 7
-    cmap_norm = colors.Normalize(vmin=0.0, vmax=250)
+    cmap_norm = colors.Normalize(vmin=0.0, vmax=300)
     cmap = "Oranges"
     resol = 300
 
@@ -329,7 +329,7 @@ def plot(
         res=resol,
         cmap=cmap,
     )
-    ax_true_map.set_title("True map")
+    ax_true_map.set_title("Simulated map")
 
     # Inferred mean map
     im = map.show(
