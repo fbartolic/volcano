@@ -30,32 +30,38 @@
 
 \begin{abstract}
 Jupiter's moon Io is the most volcanically active body in the Solar System with hundreds of active volcanoes varying in intensity on different timescales.
-Existing photometric observations in the near infrared taken during occultations by Jupiter and other Galilean moons encode a wealth of information about its surface.
-These data are ideal for testing methods for inferring surface features of occulted bodies from time series observations.
-We built a generative model of Io's surface using the code starry \href{https://rodluger.github.io/starry/}{\color{linkcolor}\faGithub} which enables fast analytic and differentiable computation of occultation light curves in emitted and reflected light.
-    Our probabilistic Bayesian model is able to recover known bright features on the surface of Io using only two light curves and without any assumptions on the locations, shapes or the number of features.
-    The methods we have developed are also directly applicable to the problem of mapping stars and exoplanets. \href{https://github.com/fbartolic/volcano}{\color{linkcolor}\faGithub}
+Io has been observed during occultations by Jupiter and other Galilean moons using high-cadence near infrared photometry since the 1980s. 
+These observations encode a wealth of information about its surface.
+They are ideal for testing methods for inferring surface maps of occulted bodies from time series observations.
+    We built a generative model of Io's surface using the code \textsf{starry} \href{https://rodluger.github.io/starry/}{\color{linkcolor}\faGithub} which enables fast, analytic, and differentiable computation of occultation light curves in emitted and reflected light.
+    Our probabilistic Bayesian model is able to recover known bright features on the surface of Io using only two light curves and without any assumptions on the locations, shapes or the number of these features.
+    The methods we have developed are also easily applicable to the problem of mapping stars and exoplanets. \href{https://github.com/fbartolic/volcano}{\color{linkcolor}\faGithub}
 \end{abstract}
 
 %
 \section{Introduction}
 The surface of Io is covered with hundreds of volcanoes which appear as bright spots in the near infrared, their intensities varying on timescales ranging from days to decades.
 The global heat flow on its surface is about 40 times larger than Earth's \citep{breuer2007,davies2010} and about 50\% of the heat flow emanates from only 1.2\% of Io's surface \citep{veeder2012}.
-This intense volcanic activity cannot be explained by radioactive decay, the mechanism which drives Earth's volcanism; instead, the volcanism on Io is driven by tidal interactions with Jupiter and sustained by the Laplace resonance with Europa and Ganymede \citep{peale1979}.
+This intense volcanic activity cannot be explained by radioactive decay, the mechanism which drives Earth's volcanism.
+Instead, the volcanism on Io is driven by tidal interactions with Jupiter and sustained by the Laplace resonance with Europa and Ganymede \citep{peale1979}.
 Contrary to Earth, Io lacks plate tectonics.
-The heat transport mechanism likely operating on Io is volcanism through the lithosphere (the outermost shell of a terrestrial body), also known as \emph{heat-pipe volcanism}, a process in which magma is transported to the surface through localised vents \citep{oreilly1981}.
-Heat-pipe volcanism might have occurred in the early history of terrestrial planets in the Solar System \citep{moore2013,moore2017}, most notably on early Earth prior to the onset of plate tectonics.
+The heat transport mechanism most likely operating on Io is volcanism generated in the lithosphere (the outermost shell of a terrestrial body).
+This process is also known as \emph{heat-pipe volcanism}, whereby magma is transported to the surface through localised vents \citep{oreilly1981}.
+Heat-pipe volcanism likely occurred in the early history of terrestrial planets in the Solar System \citep{moore2013,moore2017}, most notably on early Earth prior to the onset of plate tectonics.
 
 Besides providing a window into early volcanic activity in the Solar System, Io is also in many ways an analogue of a volcanically active exoplanet.
-Volcanic exoplanets, sometimes dubbed \emph{super-Ios} or \emph{lava worlds}, have gathered a lot of interest in recent years because both photometric and spectral signatures of volcanic activity on such worlds will likely be detectable in the near future with telescopes such as JWST and LUVOIR \citep{kaltenegger2010,henning2018,oza2019,chao2020}.
-Existing exoplanet detections of planets with potential volcanic activity include CoRoT-7b \citep{barnes2010}, the first rocky exoplanet discovered and one which is likely heated by strong tidal forces; 55 Cancri e, whose inferred longitudinal offset in peak surface emission has been attributed to, among other things, lava flows on the surface \citep{demory2016,demory2016d,hammond2017a}; several planets in the TRAPPIST-1 system in a Laplace-like resonance with likely volcanic activity \citep{kislyakova2017,dobos2019}, and many others.
-Not all such exoplanets will have Io-like volcanism; some may have magma oceans due to their proximity to the star or volcanism caused by nuclear decay, similar to volcanism on present day Earth.
+Volcanic exoplanets, sometimes dubbed ``super-Ios" or ``lava worlds", have gathered a lot of interest in recent years.
+Photometric and spectral signatures of volcanic activity on such worlds will likely be detectable in the near future with telescopes such as JWST and LUVOIR \citep{kaltenegger2010,henning2018,oza2019,chao2020}.
+Existing exoplanet detections of planets with potential volcanic activity include CoRoT-7b \citep{barnes2010}, the first rocky exoplanet discovered and one which is likely heated by strong tidal forces; 55 Cancri e, whose inferred longitudinal offset in peak surface emission has been attributed to (among other things) lava flows on the surface \citep{demory2016,demory2016d,hammond2017a}; several planets in the TRAPPIST-1 system in a Laplace-like resonance likely exhibiting volcanic activity \citep{kislyakova2017,dobos2019}, and many others.
+Not all such exoplanets are expected to have Io-like volcanism.
+Some will have magma oceans because of their proximity to the star and others will have volcanism powered by nuclear decay, similar to volcanism on present day Earth.
 
 Io has been observed extensively using both space and ground observatories.
 High resolution images of Io's surface were taken by space missions such as Voyager \citep{smith1979}, Galileo \citep{belton1996} and Juno \citep{mura2020}.
 The surface has also been resolved from ground based observations in the near infrared using disk resolved imaging \citep{howell1985,simonelli1986,spencer1990} and adaptive optics observations \citep{marchis2000,marchis2005,dekleer2016}.
-Most importantly for this work, Io has been sporadically observed for decades using high cadence near infrared photometry taken during occultations by Jupiter, starting with \cite{spencer1990}.
-Occultations by Jupiter occur twice every orbit of ~1.7 days whereas occultations by Europa, Ganymede or Callisto (so-called \emph{mutual occultations}) happen every ~6 years when Earth passes through the orbital plane of the Galilean satellites, multiple occultations are then observable over a course of approximately one year.
+Most importantly for this work,  starting with \cite{spencer1990} Io has been sporadically observed over a timespan of decades using high cadence near infrared photometry taken during occultations by Jupiter.
+Occultations by Jupiter occur twice every orbit of ~1.7 days whereas occultations by Europa, Ganymede or Callisto (so-called \emph{mutual occultations}) happen every ~6 years when Earth passes through the orbital plane of the Galilean satellites.
+Multiple occultations are then observable over a course of approximately one year.
 The majority of occultations by Jupiter are observed when Io is in Jupiter's shadow (``in eclipse") while mutual occultations are almost always observed in sunlight.
 Only the brightest volcanoes are visible over the reflected light background when Io is illuminated by the Sun \citep{veeder1994,dekleer2016a}.
 
@@ -64,7 +70,7 @@ Both kinds of occultations have been used to study volcanic activity on the surf
 \cite{rathbun2002},\citet{rathbun2006} and \citet{rathbun2010} used observations from NASA's 
 Infrared Telescope Facility (IRTF) telescope to study the long term variability of different volcanic spots, finding evidence of periodicity in Loki's eruptions and establishing the transient nature of observed emission from most volcanoes. 
 By studying a (spatially resolved) occultation of Io by Europa, \cite{dekleer2017} mapped the Loki Patera (\emph{Patera} is a type of an irregular crater) region to a precision of about 2 kilometers.
-In addition to observations of occultations in the near infrared, several groups have been observing mutual occultations in the optical \citep[][and references therein]{arlot1974,saquet2018,morgado2016a} for decades with the purpose of inferring the optical albedo of Io and improving ephemeris precision for Galilean satellites.
+In addition to observations of occultations in the near infrared, several groups have been observing mutual occultations in the optical for decades with the purpose of inferring the optical albedo of Io and improving ephemeris precision for Galilean satellites \citep[][and references therein]{arlot1974,saquet2018,morgado2016a}.
 Understanding the detailed albedo distribution is crucial to constraining the ephemeris of Io to a very high precision.
 
 Most studies of (unresolved) occultations of Io fit multiple light curves independently with the goal of inferring one-dimensional longitudinal variations in brightness on its surface (notable exceptions are \cite{spencer1994} and \cite{dekleer2017}), assuming relatively strong priors on the locations of individual volcanoes.
@@ -588,8 +594,11 @@ Even though the spot model has only 5 parameters per spot and the pixel model ha
 \subsection{1998 pair of occultations by Jupiter}
 Having demonstrated that our model works well on simulated data, we turn to fitting observations of actual occultations of Io observed with the IRTF telescope.
 We selected two pairs of high quality ingress/egress light curves relatively closely spaced in time so that the assumption that the surface map is identical for both the ingress and the egress light curve is at least approximately correct, although we allow for a difference in the overall amplitude of the maps between the two occultations.
-We fit a pair of events from 1998, an ingress occultation observed on the 27th of August and an egress occultation observed on the 29th of November.
+We fit a pair of events from 1998, an ingress occultation observed on the 27th of August and an egress occultation observed  94 days later on the 29th of November.
+As a reminder, the period of Loki's variability is around 540 days \citep{rathbun2002}.
 For comparison, we also fit a pair of events observed nearly two decades later in 2017.
+
+
 The predicted fluxes are given by 
 \begin{align}
     \mathbf{f}_I&=\mathbf{A}_I'\,\mathbf{p}_I +b_I\,\mathbf{1}_{N_I}\\
@@ -887,7 +896,7 @@ The two occultations were observed months apart so we expect that our assumption
 
 
 \subsection{2017 pair of occultations by Jupiter}
-To test how our model generalizes to a different dataset we fit a pair of observations from 2017, an ingress occultation observed on the 31st of March and an egress occultation observed on the 11th of May.
+To test how our model generalizes to a different dataset we fit a pair of observations from 2017, an ingress occultation observed on the 31st of March and an egress occultation observed 41 days later on the 11th of May.
 We use the exact same model as the one we used to produce Figure~\ref{fig:irtf_1998}.
 The results are shown in Figure~\ref{fig:irtf_2017} and the inferred parameters are listed in Table~\ref{tab:irtf_2017}.
 A contour plots of the two spots overlaid on top of a surface map of Io from Galileo observations is shown in Figure~\ref{fig:irtf_2017_spots} and the derived spot parameters are listed in Table~\ref{tab:irtf_2017_derived}.
@@ -1026,22 +1035,22 @@ The contour lines show the 5th, 50th, and 95th percentiles of intensity above an
 \subsection{Occultation mapping of Io}
 We have presented a novel method for mapping the volcanic emission on Io from occultation light curves.
 The method relies on the \textsf{starry} algorithm which enables fast analytic computation of occultation light curves by expanding the surface emission map in spherical harmonics.
-Our method is substantially different from past work because we do not assume where the volcanic features are located on the surface of Io, how many there are or what they look like.
-Instead, we place weaker assumptions on the global structure of the map by requiring that the inferred map has positive intensity everywhere and most importantly, that it is \emph{sparse}.
-\cite{aizawa2020} also find the sparsity assumption useful in the context of exoplanet mapping.
+Our method is different from past work because we do not assume we know where the volcanic features are located on the surface of Io, how many there are or what they look like.
+Instead, we place weaker assumptions on the global structure of the map by requiring that the inferred map has positive intensity everywhere and most importantly, that it is \emph{sparse} \footnote{\cite{aizawa2020} also find the sparsity assumption useful in the context of exoplanet mapping.}.
 Besides the model for the surface map, our method also incorporates a sophisticated noise model which includes a Gaussian Process and a hierarchical model for the (unknown) errorbars.
 As a result of the sparsity and positivity constraints and the flexibility of the noise model,
 our model is parsimonious: it places features on the map only if the data provides strong evidence for the existence of those features.
-This property is not always desirable but it works very well for Io, whose surface is covered with small highly localized and bright volcanic hotspots.
-Our model is better than parametric methods which assume some fixed number of spots on the surface of Io and parametrize the spot properties because we do not need to make such strong assumptions about the surface and the computational cost of the parametric models is comparable to our approach.
+This property is not always desirable but it works very well for Io, a moon whose surface is covered with small, highly localized, and bright volcanic hotspots.
+Our model is substantially more flexible than parametric methods which assume some fixed number of spots on the surface of Io and parametrize the spot properties because we do not need to make such strong assumptions about the surface.
+The computational cost of the parametric models is comparable to our approach.
 
-We test the model first on simulated data and then on observations of real occultations of Io by Jupiter observed using NASA's Infrared Telescope Facility.
+To test our method we first fit a simulated dataset and then observations of real occultations of Io by Jupiter, observed using NASA's Infrared Telescope Facility.
 We choose two pairs of light curves to demonstrate that the model can recover known hotspots.
 Each pair consists of an ingress observation and an egress observation of an occultation. 
 The two observations are sufficient to break the degeneracy in the position of the spots because Jupiter's limb sweeps across the projected disc of Io at different angles at ingress and egress.
-By fitting a pair of observations from 1998 we infer a map consisting of two spots whose locations correspond to well known hotspots on the surface of Io, the major volcano Loki and the lava flow Kanehekili.
+From the 1998 observations we infer a map consisting of two spots whose locations correspond to well known hotspots on the surface of Io, the major volcano Loki and the lava flow Kanehekili.
 We also find circumstantial evidence for a third hot spot.
-Because our model is fully probabilistic, we can derive uncertainties on location of the inferred hot spots and the total power emitted from each spot.
+Because our model is fully probabilistic, we can derive uncertainties on the location of the inferred hot spots and the total flux emitted from each spot.
 In addition to the pair of observations from 1998, we test the model on another pair of observations from 2017.
 We again find two hotspots, one of which is Loki (although the peak of the intensity shifted relative to the 1998 map) and the other is Janus Patera.
 
@@ -1050,33 +1059,37 @@ Although we can still constrain the peak intensity of hotspots (or some other me
 It is quite possible that there is a way around this problem if we compute the various integrals in \textsf{starry} numerically using high precision arithmetic.
 Since all these operations are contained in the design matrix $\mathbf{A}$ (assuming that the ephemeris is fixed) we would only need to do the expensive computation once for each occultation.
 To be able to constrain the size of the Loki hotspot for example, we would need to fit maps on the order of $l\approx 50$.
-However, the kind of detailed mapping of Loki's magma lake with a precision of a few km done by \cite{dekleer2017} will not be possible with a spherical harmonic model because it would require maps of extremely large degrees ($l\gtrapprox 700$).
+However, the kind of detailed mapping of Loki's magma lake with a precision of a few kilometers done by \cite{dekleer2017} will not be possible with a spherical harmonic model because it would require maps of extremely large degrees ($l\gtrapprox 700$).
 
 \subsection{Relevance to mapping of exoplanets} 
 \label{ssec:discussion_exoplanets}
-Hot Super Earths with likely molten surfaces such as 55 Cancri e are prime targets for future observations with the James Webb Space Telescope (JWST) \citep{samuel2014,henning2018}.
-The model we have presented in this paper can easily be applied to observations of exoplanets.
-All one has to do is compute the design matrix $\mathbf{A}$ given a specification of the planet's orbit.
-This is very straightforward in \textsf{starry} because the code was designed primarily for modeling occultations of exoplanets.
-Given that the observations of the secondary eclipses (occultations) of exoplanets will never be as high quality as observations of Io, the limited resolution spherical harmonic maps are more than sufficient for modeling exoplanet observations.
+Hot Super Earths with (probably) molten surfaces such as 55 Cancri e are prime targets for future observations with the James Webb Space Telescope (JWST) \citep{samuel2014,henning2018}.
+The model we have presented in this paper can easily be applied to observations of exoplanets. 
+In fact, one of the motivations for this work was to test methods developed largely for the purpose of mapping exoplanets in a context where the ground truth is more easily accessible because Io is in the Solar System.
+To apply our model to exoplanet observations we just need to compute the design matrix $\mathbf{A}$ given a specification of the planet's orbit which is very straightforward in \textsf{starry}
+and since the observations of the secondary eclipses (occultations) of exoplanets will never be as high quality as observations of Io, the limited resolution of spherical harmonic maps is more than sufficient for modeling exoplanet observations.
 The question of what kind of features on the surfaces of volcanic exoplanets it will be possible to constrain with secondary eclipse observations using JWST and with what precision is one we aim to address in future work.
 
 Besides being useful for modeling secondary eclipses of volcanic Super-Earths, our model is also likely to be useful for modeling features on gaseous exoplanets with sparse surface features.
 These will be much easier to observe with JWST  than Super-Earths because of their larger size and higher surface temperatures.
-Even if the sparsity assumption is not valid for these types of planets the hybrid pixel/spherical harmonic model can be easily be used with a different set of priors more appropriate for observations.
-For example, a sensible prior for the surface of a fast rotating gaseous exoplanet might be requiring some degree of azimuthal symmetry.
+Even if the sparsity assumption is not valid for these types of planets the hybrid pixel/spherical harmonic model can be easily be used with a different set of priors more appropriate for these observations.
+For example, a sensible prior for the surface of a fast rotating gaseous exoplanet might be requiring some degree of azimuthal symmetry for the inferred map.
 
 \subsection{Future work}
 This paper is a first step in a series of papers dedicated to probabilistic modeling of Io's surface. 
 A major issue with the model presented in this work is that we cannot naturally account for the time variability of surface emission.
 In Paper II in this series, we aim to fit an ensemble of light curves (occultations by Jupiter, mutual occultations and phase curves) with a generalized model which will enable us to infer a time-dependent map of the entire surface and quantify the time variability over time scales of decades.
-A spatio-temporal map of volcanic emission spanning such a long timescale will help us better understand global evolution of volcanism on Io. 
+A spatio-temporal map of volcanic emission spanning such a long timescale will help us better understand the global evolution of volcanism on Io. 
+In addition to modeling global properties of volcanism of Io, it would also be interesting to constrain the time evolution of peak emission in Loki Patera with high accuracy in order to better understand the resurfacing process.
 
-Besides extending the model to time-dependent maps, it should be straightforward to extend it for use in fitting \emph{resolved} observations of Io (either occulted or not) such as the adaptive optics observations done by \cite{dekleer2016a} and \cite{dekleer2016}.
+Finally, it should be straightforward to extend our model for use in fitting \emph{resolved} observations of Io (either occulted or not) such as the adaptive optics observations done by \cite{dekleer2016a} and \cite{dekleer2016}.
 Since we would not need to compute integrated flux over complicated boundaries in that case, we could fit maps of much higher order.
 
+\vspace{+3em}
 
-% Bibliography
+We would like to thank Will Farr, Katherine de Kleer, David W. Hogg, and the Astronomical Data Group at the Center for Computational Astrophysics for their help and thought-provoking discussions. Fran Bartoli\'c acknowledges the support and funding from the 2020 Flatiron Institute Center for Computational Astrophysics Pre-Doctoral program which made this paper possible.
+
+% Bibliography 
 \bibliography{bib}
 
 \appendix
