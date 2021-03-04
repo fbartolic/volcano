@@ -60,6 +60,7 @@ def fit_model(ydeg_inf, lc_in, lc_eg):
         occultor_is_jupiter=True,
         rotate=True,
         return_occ_lat=True,
+        method="",
     )
     (xo_eg, yo_eg, ro_eg, occ_lat_eg,) = get_occultor_position_and_radius(
         eph_io_eg,
@@ -67,6 +68,7 @@ def fit_model(ydeg_inf, lc_in, lc_eg):
         occultor_is_jupiter=True,
         rotate=True,
         return_occ_lat=True,
+        method="",
     )
 
     print("Ingress occultation latitude: ", occ_lat_in)
@@ -296,7 +298,7 @@ with open("../../../data/irtf_processed/lc_1998-11-29.pkl", "rb") as handle:
 
 samples = fit_model(20, lc_in, lc_eg)
 
-with open("irtf_1998_samples.pkl", "wb") as handle:
+with open("irtf_1998_samples_cubic.pkl", "wb") as handle:
     pkl.dump(samples, handle)
 
 # Fit the 2017 pair of light curves
@@ -308,5 +310,5 @@ with open("../../../data/irtf_processed/lc_2017-05-11.pkl", "rb") as handle:
 
 samples2 = fit_model(20, lc_in, lc_eg)
 
-with open("irtf_2017_samples.pkl", "wb") as handle:
+with open("irtf_2017_samples_cubic.pkl", "wb") as handle:
     pkl.dump(samples2, handle)
