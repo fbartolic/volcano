@@ -40,8 +40,8 @@ ax.grid()
 plt.savefig("irtf_max_flux.pdf", bbox_inches="tight", dpi=500)
 
 # Plot a few example light curves
-fig, ax = plt.subplots(4, 3, figsize=(10, 6), sharex=True)
-fig.subplots_adjust(wspace=0.2)
+fig, ax = plt.subplots(4, 3, figsize=(10, 8), sharex=True)
+fig.subplots_adjust(wspace=0.2, hspace=0.3)
 
 idcs = np.random.randint(0, len(lcs) - 1, size=3 * 4)
 
@@ -55,7 +55,8 @@ for a, idx in zip(ax.flatten(), idcs):
     a.locator_params(nbins=8, axis="x")
     a.yaxis.set_major_locator(MaxNLocator(integer=True, nbins=5))
     a.set_ylim(bottom=-1)
+    a.set_title(f"{lcs[idx].time[0].isot[:19]}", fontdict={"fontsize": 12})
 
-fig.text(0.5, 0.01, "Duration [minutes]", ha="center")
+fig.text(0.5, 0.02, "Duration [minutes]", ha="center")
 fig.text(0.035, 0.5, "Flux [GW/um/sr]", va="center", rotation="vertical")
 plt.savefig("irtf_sample_lightcurves.pdf", bbox_inches="tight", dpi=500)
