@@ -11,7 +11,6 @@ from matplotlib.ticker import FormatStrFormatter, AutoMinorLocator
 from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
 import matplotlib.font_manager as fm
 
-
 from scipy.integrate import dblquad
 
 from volcano.utils import get_median_map
@@ -27,11 +26,15 @@ def integrand(theta, phi, map):
     return map.intensity(lat=lat, lon=lon) * np.sin(theta)
 
 
-def get_power_emitted(map, lat_range, lon_range):
-    phi_min = lon_range[0] * np.pi / 180
-    phi_max = lon_range[1] * np.pi / 180
-    theta_min = lat_range[0] * np.pi / 180 + np.pi / 2
-    theta_max = lat_range[1] * np.pi / 180 + np.pi / 2
+def get_emitted_power(map, lat_center, lon_center, delta):
+    # Rotate so the spot is at the North pole
+    map.rotate([0, 1, 0], -lon_center)
+    map.rotate([1, 0, 0], -(90 - lat_center))
+
+    phi_min = -180 * np.pi / 180
+    phi_max = 180 * np.pi / 180
+    theta_min = (90 - delta) * np.pi / 180 + np.pi / 2
+    theta_max = 90 * np.pi / 180 + np.pi / 2
 
     res, _ = dblquad(
         integrand,
@@ -43,6 +46,11 @@ def get_power_emitted(map, lat_range, lon_range):
         epsrel=1e-4,
         args=(map,),
     )
+
+    # Rotate back
+    map.rotate([1, 0, 0], (90 - lat_center))
+    map.rotate([0, 1, 0], lon_center)
+
     return res
 
 
@@ -102,9 +110,7 @@ def get_spot_position_and_power(samples, bounds=None, nsamples=300):
         lon_list.append(lon)
 
         # Get total emitted power in circle around inferred spot center
-        power = get_power_emitted(
-            map, (lat - 15, lat + 15), (lon - 15, lon + 15)
-        )
+        power = get_emitted_power(map, lat, lon, 20)
         power_list_in.append(power)
         power_list_eg.append(samples["amp_eg"] * power)
 
