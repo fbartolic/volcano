@@ -12,18 +12,20 @@
 % Title
 \title{
     \vspace{-3em}
-\textbf{    Occultation mapping of Io's surface in the near-infrared \\ I: Inferring static maps} 
+\textbf{Occultation mapping of Io's surface in the near-infrared \\ I: Inferring static maps} 
 }
 % Author list
 \author{Fran Bartoli\'c}
 \email{fb90@st-andrews.ac.uk}
 \affil{Centre~for~Exoplanet~Science, SUPA, School~of~Physics~and~Astronomy, University~of~St.~Andrews, St.~Andrews, UK}
-\affil{Center~for~Computational~Astrophysics, Flatiron~Institute, New~York, NY}
+\affil{Center~for~Computational~Astrophysics, Flatiron~Institute, New~York, NY, USA}
 \author{Rodrigo Luger}
 \author{Daniel Foreman-Mackey}
-\affil{Center~for~Computational~Astrophysics, Flatiron~Institute, New~York, NY}
+\affil{Center~for~Computational~Astrophysics, Flatiron~Institute, New~York, NY, USA}
 \author{Robert R. Howell}
-\affil{Department~of~Geology~\&~Geophysics, University~of~Wyoming, Laramie, WY}
+\affil{Department~of~Geology~\&~Geophysics, University~of~Wyoming, Laramie, WY, USA}
+\author{Julie A. Rathbun}
+\affil{Planetary~Science~Institute, Tuscon, AZ, USA}
 %
 
 \begin{abstract}
@@ -32,66 +34,60 @@ Existing photometric observations in the near infrared taken during occultations
 These data are ideal for testing methods for inferring surface features of occulted bodies from time series observations.
 We built a generative model of Io's surface using the code starry \href{https://rodluger.github.io/starry/}{\color{linkcolor}\faGithub} which enables fast analytic and differentiable computation of occultation light curves in emitted and reflected light.
     Our fully Bayesian model is able to recover known bright features on the surface of Io using only two light curves and without any assumptions on the locations, shapes or the number of features.
-    The methods we have developed are also directly applicable to the problem of mapping stars and exoplanets.\href{https://github.com/fbartolic/volcano}{\color{linkcolor}\faGithub}
+    The methods we have developed are also directly applicable to the problem of mapping stars and exoplanets. \href{https://github.com/fbartolic/volcano}{\color{linkcolor}\faGithub}
 \end{abstract}
 
 %
 \section{Introduction}
-The surface of Jupiter's moon Io is covered with hundreds of volcanoes which appear as bright spots in the near infrared, their intensities vary on timescales ranging from days to decades.
-The global heat flow on its surface is about 40 times larger than Earth's \citep{breuer2007,davies2010}
-and about 50\% of the heat flow emanates from only 1.2\% of Io's surface \citep{veeder2012}.
-This intense volcanic activity cannot be explained by radioactive decay which is what drives Earth's volcanism, instead it is driven by tidal interactions with Jupiter and sustained by the Laplace resonance with Europa and Ganymede \citep{peale1979}.
+The surface of Io is covered with hundreds of volcanoes which appear as bright spots in the near infrared, their intensities varying on timescales ranging from days to decades.
+The global heat flow on its surface is about 40 times larger than Earth's \citep{breuer2007,davies2010} and about 50\% of the heat flow emanates from only 1.2\% of Io's surface \citep{veeder2012}.
+This intense volcanic activity cannot be explained by radioactive decay, the mechanism which drives Earth's volcanism; instead, the volcanism on Io is driven by tidal interactions with Jupiter and sustained by the Laplace resonance with Europa and Ganymede \citep{peale1979}.
 Contrary to Earth, Io lacks plate tectonics.
-The heat transport mechanism which likely on Io is volcanism through the litosphere (the outermost shell of a terrestrial body), a process in which magma is transported to the surface by localised vents \cite{oreilly1981}.
-Heat-pipe volcanism might have occurred in the early history of terrestrial planets in the Solar System \cite{moore2013,moore2017}, most notably on early Earth prior to the onset of plate tectonics.
+The heat transport mechanism likely operating on Io is volcanism through the lithosphere (the outermost shell of a terrestrial body), also known as \emph{Heat-pipe volcanism}, a process in which magma is transported to the surface through localised vents \citep{oreilly1981}.
+Heat-pipe volcanism might have occurred in the early history of terrestrial planets in the Solar System \citep{moore2013,moore2017}, most notably on early Earth prior to the onset of plate tectonics.
 
 Besides providing a window into early volcanic activity in the Solar System, Io is also in many ways an analogue of a volcanically active exoplanet.
-Volcanic exoplanets, often dubbed \emph{super-Ios} or \emph{lava worlds}, have gathered a lot of interest in recent years because both photometric and spectral signatures of volcanic activity on such worlds will likely be detectable in the near future with telescopes such as JWST and LUVOIR \citep{kaltenegger2010,henning2018,oza2019,chao2020}.
-Existing exoplanet detections with potential volcanism include CoRoT-7b \citep{barnes2010}, the first rocky exoplanet to have been discovered and one which is likely heated by strong tidal forces; 55 Cancri e, whose inferred longitudinal offset in peak surface emission has been attributed to, among other things, lava flows on the surface \citep{demory2016,demory2016a,hammond2017}; several planets in the TRAPPIST-1 system in a Laplace-like resonance with likely volcanic activity \citep{kislyakova2017,dobos2019} and many others.
+Volcanic exoplanets, sometimes dubbed \emph{super-Ios} or \emph{lava worlds}, have gathered a lot of interest in recent years because both photometric and spectral signatures of volcanic activity on such worlds will likely be detectable in the near future with telescopes such as JWST and LUVOIR \citep{kaltenegger2010,henning2018,oza2019,chao2020}.
+Existing exoplanet detections of planets with potential volcanic activity include CoRoT-7b \citep{barnes2010}, the first rocky exoplanet discovered and one which is likely heated by strong tidal forces; 55 Cancri e, whose inferred longitudinal offset in peak surface emission has been attributed to, among other things, lava flows on the surface \citep{demory2016,demory2016d,hammond2017}; several planets in the TRAPPIST-1 system in a Laplace-like resonance with likely volcanic activity \citep{kislyakova2017,dobos2019}, and many others.
 Not all such exoplanets will have Io-like volcanism; some may have magma oceans due to their proximity to the star or volcanism caused by nuclear decay, similar to volcanism on present day Earth.
 
 Io has been observed extensively using both space and ground observatories.
 High resolution images of Io's surface were taken by space missions such as Voyager \citep{smith1979}, Galileo \citep{belton1996} and Juno \citep{mura2020}.
-It has also been resolved from the ground in the near infrared using disk resolved imaging
-\citep{howell1985,simonelli1986,spencer1990} and adaptive optics observations \citep{marchis2000,marchis2005,dekleer2016}.
-Most importantly for this work, Io has been sporadically observed for decades using high cadence near infrared photometry taken during occultations by Jupiter starting with \cite{spencer1990}.
-Occultations by Jupiter occur twice every orbit of ~1.7 days.
-Mutual occultations with Europa, Ganymede or Callisto happen at different times over the course of a single year but this only happens every ~6 years or so when Earth passes through the orbital plane of the Galilean satellites.
+The surface has also been resolved from ground based observations in the near infrared using disk resolved imaging \citep{howell1985,simonelli1986,spencer1990} and adaptive optics observations \citep{marchis2000,marchis2005,dekleer2016}.
+Most importantly for this work, Io has been sporadically observed for decades using high cadence near infrared photometry taken during occultations by Jupiter, starting with \cite{spencer1990}.
+Occultations by Jupiter occur twice every orbit of ~1.7 days whereas occultations by Europa, Ganymede or Callisto (so-called \emph{mutual occultations}) happen every ~6 years when Earth passes through the orbital plane of the Galilean satellites, multiple occultations are then observable over a course of approximately one year.
 The majority of occultations by Jupiter are observed when Io is in Jupiter's shadow (``in eclipse") while mutual occultations are almost always observed in sunlight.
 Only the brightest volcanoes are visible over the reflected light background when Io is illuminated by the Sun \citep{veeder1994,dekleer2016a}.
 
 Both kinds of occultations have been used to study volcanic activity on the surface.
 \cite{spencer1994} observed several occultations of Io by Europa and detected a major brightening of the most powerful of Io's volcanoes, Loki, relative to previous Voyager observations.
-\cite{rathbun2002},\citet{rathbun2006} and \citet{rathbun2010} used observations from NASA's IRTF telescope to study the long term variability of different volcanic spots, finding evidence of periodicity in Loki's eruptions and establishing the transient nature of observed emission from most volcanoes. 
-By studying a (spatially resolved) occultation of Io by Europa, \cite{dekleer2017} mapped the Loki region to a precision of about 2 kilometers.
+\cite{rathbun2002},\citet{rathbun2006} and \citet{rathbun2010} used observations from NASA's 
+Infrared Telescope Facility (IRTF) telescope to study the long term variability of different volcanic spots, finding evidence of periodicity in Loki's eruptions and establishing the transient nature of observed emission from most volcanoes. 
+By studying a (spatially resolved) occultation of Io by Europa, \cite{dekleer2017} mapped the Loki Patera (\emph{Patera} is a type of an irregular crater) region to a precision of about 2 kilometers.
 In addition to observations of occultations in the near infrared, several groups have been observing mutual occultations in the optical \citep[][and references therein]{arlot1974,saquet2018,morgado2016a} for decades with the purpose of inferring the optical albedo of Io and improving ephemeris precision for Galilean satellites.
-Understanding the detailed albedo distribution is crucial to constraining the ephemeris to a very high precision.
+Understanding the detailed albedo distribution is crucial to constraining the ephemeris of Io to a very high precision.
 
 Most studies of occultations of Io fit multiple light curves independently with the goal of inferring one-dimensional longitudinal variations in brightness on its surface (notable exceptions are \cite{spencer1994} and \cite{dekleer2017}), assuming strong priors on the locations of individual volcanoes based on maps from space mission observations.
-In this work, we build a fully probabilistic model in order to infer a two-dimensional \emph{map} of Io's volcanic surface from archival IRTF observations in the near infrared.
-We assume that the map corresponding to a given set of light curves is static (up to an overall amplitude) so we are restricted to modeling the surface during a timespan when the surface emission hasn't changed drastically.
-In a subsequent paper we build on the model we have developed here and generalize to a case where the surface is time-variable.
+In this work, we build a fully probabilistic model in order to infer a \emph{two-dimensional map} of Io's volcanic surface from archival IRTF observations of Io in the near infrared.
+We assume that the map corresponding to a given set of light curves is static (up to an overall amplitude), that is, that it didn't change substantially between the times of observations.
+In Paper II in this series we will relax this assumption by constructing a model which can be used to infer a time-variable map of Io from an any number of light curves observed at arbitrary times.
 
-The model is built on top of the recently developed code \textsf{starry}\citep[][Luger et al. 2021 in prep]{luger2019a} which enables fast analytic computation of occultation light curves and phase curves for objects whose surface features are represented in terms of spherical harmonics.
-Starry can compute phase curves and occultations in both emitted light (for modeling the isotropic thermal emission from Io's surface) and reflected light (for mapping albedo variations).
-It is many orders of magnitude faster and more accurate than pixel based codes and it computes exact gradients with respect to all parameters through automatic differentiation.
+The model relies on the recently developed code \textsf{starry} \citep[][Luger et al. 2021 in prep]{luger2019a} which enables fast analytic computation of occultation light curves and phase curves for objects whose surface can represented in terms of spherical harmonics.
+\textsf{starry} can compute phase curves and occultations in both emitted light (for modeling the isotropic thermal emission from Io's surface) and reflected light (for mapping albedo variations).
+It is many orders of magnitude faster and more accurate than pixel based algorithms and it computes exact gradients of the flux with respect to all parameters through automatic differentiation.
 \textsf{starry} also comes with extensive tools for visualizing spherical harmonic maps and simulating data.
 
-Our goal for this paper is to develop a general model for mapping surfaces of occulted bodies with sparse, high contrast features and to test it on a real world dataset. 
-Because we have lots of prior information on what the surface of Io should look like, we can compare our inferences to known features on its surface and test the sensitivity of the inferred maps to different choices of priors and noise models.
-The work should also be of interest to the Io research community as it presents a very different approach to modeling Io occultations without having to make strong assumptions on the locations of the hot spots. 
-
+Our main goal in this paper is to develop a general model for mapping surfaces of occulted bodies with sparse, high contrast features and apply it to observations of Io.
+Because we have lots of prior information on what the surface of Io should look like, we can compare features in our inferred maps to known volcanic hotspots and test the sensitivity of the inferred maps to different choices of priors and noise models.
 The paper is organized as follows.
-In \S\ref{sec:data} we describe the IRTF light curves of occultations by Jupiter that we use to infer maps.
-In \S\ref{sec:model} we discuss the generative model for the data and we write down the relevant likelihood functions.
+In \S\ref{sec:data} we describe the IRTF light curves of occultations by Jupiter which we use to infer maps.
+In \S\ref{sec:model} we discuss the generative model for the data and we write down the likelihood function.
 In \S\ref{sec:inverse_problem} we focus on the question of how to do Bayesian inference given the forward model specifications defined in \S\ref{sec:model}.
-We discuss and test different priors on map features, the information content of light curves and fitting the models using Hamiltonian Monte Carlo (HMC). 
-We then show results on simulated data.
+We discuss and test different priors on map features, we quantify the information content of light curves and fit the models using Hamiltonian Monte Carlo (HMC). 
+We then test the model on realistic simulated data.
 In \S\ref{sec:results} we show the results on real IRTF data for two pairs of light curves, one pair observed in 1998 and another in 2017.
-We show the inferred maps and the parameters quantifying the location and intensity of the hot spots, we discuss the sensitivity of the results to different choices of priors and compare the inferred values to previous results from the literature.
+We show the inferred maps and the parameters quantifying the location and intensity of the hot spots, we discuss the sensitivity of the results to different choices of priors and plot the inferred hotspots on an optical map of Io constructed from Galieleo observations.
 Finally, in \S\ref{sec:discussion} we summarize the main results of the paper and discuss potential applications of our model to observations of volcanic exoplanets.
-
-TODO: say that this paper is first in series of awesome papers.
 
 \vspace{1em}
 
@@ -114,22 +110,23 @@ of our results.
     \end{centering}
 \end{figure}
 
-The dataset we use to infer maps of Io's surface consists of 112 sets of observations of Io in the near infrared taken from 1996 until 2018 using different instruments at NASA's IRTF observatory, the NSFCam  1-5 $\mu m$ camera \citep{shure1994} (TODO: WHICH FILTERS), the SpeX 0.8-5.5 $\mu m$ spectrographer/imager \citep{rayner2003} (TODO: DETAILS) and the iShell 1.1-5.3 $\mu m$  spectrographer/imager \citep{johnrayner2016} (TODO: fix citation).
-Although the observations span decades, the cadence is non-uniform, there are only a few observations taken between 2008 and 2016.
-All of the observations were taken while Io was \emph{in eclipse}, meaning that it was in Jupiter's shadow and all of the observed emission from the surface is due to thermal radiation.
-Observations of Io \emph{in sunlight} on the other hand probe both the thermal (volcanic) emission and the surface albedo variations in the near infrared.
-Figure~\ref{fig:irtf_max_flux} shows the maximum flux for each occultation light curve in units of $\mathrm{GW}/\mu \mathrm{m}/\mathrm{sr}$ as a function of time.
+The complete dataset consists of 112 sets of observations of Io in the near infrared taken from 1996 until 2018 using different instruments at NASA's IRTF observatory, the NSFCam  1-5 $\mu m$ camera \citep{shure1994}, the SpeX 0.8-5.5 $\mu m$ spectrographer/imager \citep{rayner2003} and the iShell 1.1-5.3 $\mu m$  spectrographer/imager \citep{johnrayner2016}.
+%(TODO: fix citation).
+Although the observations span decades, the timespan between observations varies and there were very few observations taken between 2008 and 2016.
+All of the observations were taken while Io was \emph{in eclipse}, meaning that it was in Jupiter's shadow so the source of observed emission from the surface is thermal radiation.
+On the other hand, for observations of Io \emph{in sunlight} the observed flux is a sum of thermal (volcanic) emission and reflected sunlight which depends on the albedo map in the near infrared.
+In figure~\ref{fig:irtf_max_flux} we plot the maximum flux for each occultation light curve in units of $\mathrm{GW}/\mu \mathrm{m}/\mathrm{sr}$ as a function of time.
 This value is approximately equal to the total flux emitted from the Jupiter-facing side of Io.
 The major variation in the baseline brightness is driven by Loki.
-Most hotspots can be divided into those who are persistently active for a year or longer at moderate intensity, and those which have bursts of activity and reach very high intensities for short periods of time \cite{dekleer2016}.
+Most hotspots on Io can be divided into those who are persistently active for a year or longer at moderate intensity, and those which have bursts of activity and reach very high intensities for short periods of time \citep{dekleer2016}.
 
 \begin{figure}[h!]
     \begin{centering}
         \includegraphics[width=\linewidth]{figures/irtf_sample_lightcurves.pdf}
     \oscaption{irtf_dataset}{%
-        A selection of sample light curves taken during occultations of Io by Jupiter in our dataset.
-        The step-like morphology of the light curves is due to bright volcanoes on Io's surface coming in or out of view during an occultation.
-        These light curves thus visibly encode information about the features on the surface.
+        A selection of sample light curves observed using NASA's IRTF telescope during occultations of Io by Jupiter in our dataset.
+        The step-like morphology of the light curves is due to bright volcanoes on Io's surface coming in or out of view during the course of an occultation.
+        These light curves visibly encode information about the features on the surface.
         \label{fig:irtf_sample_lightcurves}
     }
     \end{centering}
@@ -137,37 +134,37 @@ Most hotspots can be divided into those who are persistently active for a year o
 
 In Figure~\ref{fig:irtf_sample_lightcurves} we display a random subset of all the light curves
 in the dataset. 
-Each light curve covers a timespan of $\sim 4$ minutes which is the duration of the ingress and ingress parts of the entire occultation.
+Each light curve covers a timespan of $\sim 4$ minutes which is the duration of the ingress (or egress) part of the entire occultation.
 The exposure cadence for each light curve is about a second, with some variation between light curves.
 It follows that over the course of a single exposure Jupiter's limb passes over about 15km on Io's surface which provides a lower bound for the size of the features that we can reliably estimate.
-The shapes of light curves strongly deviate from the smooth variability one would expect assuming uniform thermal surface emission.
-Especially prominent are light curves with clear step-like features which are present when bright localized spots come in or out of view during the course of an occultation.
-The fact that these features are so clearly visible means that even individual light curves encode precise information on the longitudinal position of the spots.
+The shapes of light curves strongly deviate from a smooth variation that one would expect to see if the surface thermal emission was uniformly distributed.
+Especially prominent are light curves with clear step-like features which are due to bright localized spots coming in and out of view during the course of an occultation.
+The fact that these features are so clearly visible means that even individual light curves encode a wealth of information about the spots.
 
 The photometric quality of the light curves varies from year to year because multiple instruments were used over the years. 
 As with all ground-based photometry, the observations are influenced by atmospheric variability which results in some correlated noise in the light curves, because of this the flux is not always monotonically increasing or decreasing as one would expect.
 Complicating matters, the light curves lack errorbars. 
 We deal with this by treating all errobars as free parameters with a common characteristic scale in the final model.
 
-
 \section{Model}
 \label{sec:model}
+In this section we describe the generative model for the occultation light curves of Io.
+To simulate the observed light curves, we first need to specify the geometry of each occultation event (Section~\ref{ssec:orbital_parameters}), we then need to specify what the surface of Io looks like in a spherical harmonic basis and compute the theoretical flux at the times of observations using \textsf{starry} (Section~\ref{ssec:model_spec}), finally, we need to specify a noise model for the observed data (Section~\ref{ssec:likelihood}).
+
 \subsection{Orbital parameters}
 \label{ssec:orbital_parameters}
-To model the occultations we need to know the projected relative position of Jupiter with respect to Io and the orientation of Io at any given time.
-To compute the geometry, we use the \href{https://ssd.jpl.nasa.gov/horizons.cgi}{JPL Horizons database} which uses the latest JUPxxx satellite ephemeris \citep{jacobson2015}.
-The JUPxxx ephemeris is usually accurate to a few kilometers on Io's surface.
-For both Jupiter and Io we need the right ascension and declination and the angular (equatorial) diameter (\textsf{Ang-diam}).
-In addition, we need to fix the orientation of Io we need the longitude and the latitude at the center of Io's disc as seen from Earth (\textsf{Ob-lon}, \textsf{Ob-lat}) and the counterclockwise angle between the celestial north pole unit vector projected onto the plane of the sky and the Io's north pole (\textsf{NP.ang}).
-All longitudes are positive  in the direction of west.
-\textsf{HORIZONS} provides all ephemeris with a minimum cadence of 1 minute, we interpolate these values so that we can evaluate them for arbitrary times.
+To compute the geometry of every occultation, we use the \href{https://ssd.jpl.nasa.gov/horizons.cgi}{JPL Horizons database} which uses the latest ephemeris for the position of Jupiter \citep{folkner2014}, and its satellites \citep{jacobson2015}.
+The ephemeris is usually accurate to a few kilometers on Io's surface.
+We access JPL Horizons through the Python package \textsf{astroquery} \citep{ginsburg2019}.
+To compute the relative position of Jupiter and Io we need the right ascension and declination and to to fix the orientation of Io we need the longitude and the latitude at the center of Io's disc as seen from Earth (\textsf{Ob-lon} and \textsf{Ob-lat} in \textsf{astroquery}) and the counterclockwise angle between the celestial north pole unit vector projected onto the plane of the sky and Io's north pole (\textsf{NP.ang}).
+All longitudes provided by Horizons are positive  in the direction of west.
+Horizons provides all ephemeris with a minimum cadence of 1 minute, we interpolate these values so that we can evaluate them for arbitrary times.
 
 The coordinate system in \textsf{starry} is defined to be right handed such that the $\hat{z}$
 axis points towards the observer and the $\hat{x}$ axis points to the right on the plane of the sky.
 The radius of the occulted sphere is fixed to 1 and the orientation is specified by three angles,
-the counterclockwise obliquity angle \textsf{obl} between the $\hat{y}$ axis and the north pole of the sphere, the inclination angle \textsf{inc} which is set to $90^\circ$ if the north pole is aligned with the $\hat{y}$ axis and the phase angle \textsf{theta} which rotates the sphere around the $\hat{y}$ axis in the eastward direction.
-We have $\mathrm{obl}=\textsf{NP.ang}$, $\mathrm{inc}=90^\circ-\textsf{Ob-lat}$ and
-$\mathrm{theta}=\textsf{Ob-lon}$.
+the counterclockwise obliquity angle \textsf{obl} between the $\hat{y}$ axis and the north pole of the sphere, the inclination angle \textsf{inc} which is set to $90^\circ$ if the north pole is aligned with the $\hat{y}$ axis, and the phase angle \textsf{theta} which rotates the sphere around the $\hat{y}$ axis in the eastward direction.
+Expressed in terms of Horizons variables, these angles are given by $\mathrm{obl}=\textsf{NP.ang}$, $\mathrm{inc}=90^\circ-\textsf{Ob-lat}$ and $\mathrm{theta}=\textsf{Ob-lon}$.
 The occultor position relative to the occulted object is given by
 \begin{align}
     \mathrm{xo}/\gamma&=-\Delta\alpha\,\cos\delta\\
@@ -180,17 +177,19 @@ where $\Delta\alpha$ and $\Delta\delta$ are differences in right ascension and d
 \label{ssec:effective_radius}
 Although the sky position of Jupiter relative to Io is known to a precision of a few kilometers, several complications arise when attempting to compute Jupiter's radius.
 First, Jupiter is not spherical and its equatorial radius is greater than the polar radius by thousands of kilometers. 
-Because \textsf{starry} does not (yet) support occultations by non-spherical occultors and because the effect is negligible at the resolution of our maps, we assume that Jupiter is locally spherical at the point of an occultation. 
-We estimate an effective radius from the measurements of Jupiter's shape from Voyager radio occultation data \citep{lindal1981}.
-These data come in the form of a plot of effective radius  as a function of Jupiter's planetocentric latitude at a fixed pressure of 100 mbar \citep[Fig.~7 in ][]{lindal1981}.
+Because \textsf{starry} does not (yet) support occultations for non-spherical objects and because the effect is negligible at the resolution of our maps, we assume that Jupiter is locally spherical at the point of an occultation. 
+We estimate an effective radius from the measurements of Jupiter's shape from Voyager radio occultation data \citep[Fig.~7]{lindal1981}.
 When computing the occultation latitude we fix Jupiter's latitude to the value at the center of Io's disc because 
 the variation of Jupiter's effective radius along Io's disc is negligible.
 
-
 Second, Jupiter is gaseous so it does not have a well defined boundary.
 In principle, we should compute an effective radius of Jupiter at different altitudes (pressure) in the atmosphere and model an occultation of Io by a fuzzy occultor.
-Although this is possible with \textsf{starry}, it is unnecessary for our models because the characteristic scale height of Jupiter is around 27 km (CITE) which is below the uncertainty of our inferred maps.
-Instead, we follow the approach in \cite{spencer1990} and compute the effective radius of Jupiter at about 2.2 mbar, the pressure (and the associated effective radius) at which a  bright source on the surface of Io fades by 50\% due to differential refraction during the course of an occultation.
+Although this is possible with \textsf{starry}, it is unnecessary for our models because the characteristic scale height of Jupiter is around 27 km  which is below the uncertainty of our inferred maps.
+We instead follow the approach in \cite{spencer1990} and compute the effective radius of Jupiter at about 2.2 mbar, the pressure (and the associated effective radius) at which a  bright source on the surface of Io fades by 50\% due to differential refraction during the course of an occultation.
+
+
+%These data come in the form of a plot of effective radius  as a function of Jupiter's planetocentric latitude at a fixed pressure of 100 mbar \citep[Fig.~7 in ][]{lindal1981}.
+%
 
 Third, the information on the effective radius in \cite{lindal1981} is provided only at a fixed pressure of 100 mbar.
 To adjust the values for a lower pressure of 2.2 mbar we assume an exponential pressure profile $P=P_0\, e^{-\Delta r/H}$ where $H$ is the scale height and $\Delta r$ is the height difference between the two pressure levels.
@@ -204,26 +203,23 @@ We ignore the variation in the bending and adopt a fixed value of one scale heig
 
 In summary, to compute an effective radius of Jupiter for a given occultation of Io first we have to compute Jupiter's planetocentric latitude at which Io's disk disappears or reappears behind the limb, then use a modified shape profile from \cite{lindal1981} to get an effective radius and finally we have to subtract one scale height due to light bending.
 There are substantial uncertainties in each of these steps.
-The data on the shape profile are quite old and it is not known if the structure of Jupiter's has remained constant since the 1980s. 
+The shape profile data are quite old and it is not known if the structure of Jupiter's has remained constant since the 1980s. 
 The shape profile also depends on the wind velocity structure and temperature which we do not take into account.
 In addition to uncertainties about the atmospheric structure, there are uncertainties associated with digitizing the data shown in Fig.~7 in \cite{lindal1981} because it is not available in table form.
-We digitized the figure by reading off the data points ``by eye" and then interpolating them using cubic spline interpolation.
+Since our main focus in this work is the map model, we leave a detailed investigation into the various sources of error that go into the radius estimate for future work.
 
-Throughout this paper the highest resolution maps we fit to the data are of order $l=25$ which corresponds to a characteristic length scale of around 230 km on the surface of Io.
-This is about an order of magnitude larger than the errors introduced in the effective radius estimate above so we are not concerned with substantial errors in our radius estimate.
-
-\subsection{Model specification}
+\subsection{Linear model for the flux}
 \label{ssec:model_spec}
-Given the geometry of on occultation event at an arbitrary time, computing the predicted flux with \textsf{starry} is straightforward.
-\textsf{starry} computes the integrated flux of an unocculted or an occulted sphere analytically assuming that the surface map can be expanded in terms of spherical harmonics $Y_{lm}(\theta,\phi)$ up to a certain \emph{degree} $l$.
-The map is thus defined by a vector of spherical harmonic coefficients $\mathbf{y}$ which multiplies the spherical harmonic basis $\left(Y_{0,0}\;Y_{1,-1}\;Y_{1,0}\;Y_{1,1}\;Y_{2,-2}\;Y_{2,-1}\;Y_{2,0}\;Y_{2,1}\;Y_{2,2}\; \cdots\right)^{\top}$ and the total number of coefficients is $(l+1)^2$.
-In addition to computing \emph{thermal} phase curves and occultation light curves, \textsf{starry} also solves the considerably more complex problem of computing reflected light phase curves and occultations when the sphere is illuminated by a distant light source \citep[Luger et al. 2021 in prep][]{} which is complicated by the presence of the terminator line.
-In the case of a reflected light map, the coefficient vector $\mathbf{y}$ represents spherical albedo in a given wavelength range.
-We only use data taken while Io was in eclipse shadowed by Jupiter so we do not need to model the reflected light component. 
-If instead we had occultation data or phase curves taken while Io is illuminated by the Sun and if both the thermal component and the reflected sunlight component of observed flux were comparable, it would be necessary to simultaneously fit for two vectors of spherical harmonic coefficients, 
-one for the albedo distribution and the other for thermal emission.
+Given the geometry of on occultation event at the times of observations, computing the predicted flux with \textsf{starry} is straightforward.
+\textsf{starry} computes the integrated flux of an unocculted or occulted sphere analytically given an expansion of the surface map in spherical harmonics $Y_{lm}(\theta,\phi)$ up to a certain \emph{degree} $l$.
+The map is defined by a vector of spherical harmonic coefficients $\mathbf{y}$ which is dotted into the spherical harmonic basis vector $\left(Y_{0,0}\;Y_{1,-1}\;Y_{1,0}\;Y_{1,1}\;Y_{2,-2}\;Y_{2,-1}\;Y_{2,0}\;Y_{2,1}\;Y_{2,2}\; \cdots\right)^{\top}$.
+The total number of spherical harmonic coefficients is $(l+1)^2$.
+In addition to computing thermal phase curves and occultation light curves, \textsf{starry} also solves the considerably more complex problem of computing reflected light phase curves and occultations in which the occulted object is illuminated by a distant light source \citep[Luger et al. 2021 in prep][]{}. 
+In that case the coefficient vector $\mathbf{y}$ represents spherical albedo.
+For observations of Io in sunlight in a wavelength range where where both the thermal component and the reflected sunlight component of observed flux are comparable, it would be necessary to simultaneously fit for two vectors of spherical harmonic coefficients, one for the albedo distribution and the other for thermal emission.
+In this paper we only use observations of Io in eclipse so we do not need to model the reflected light component.
 
-Importantly, conditioned on the parameters specifying the geometry of the occultations being fixed, the \textsf{starry} model is \emph{linear} for both emitted and reflected light maps.
+Conditioned on fixed parameters specifying the geometry of the occultations, the \textsf{starry} model is \emph{linear} for both emitted and reflected light maps.
 \cite{luger2019} achieved this by representing all rotations, changes of basis transformations and integrals with complicated boundaries which are needed to compute the flux as linear transformations.
 Since a sequence of linear mappings is also linear, the predicted flux can be written as
 \begin{equation}
@@ -231,22 +227,23 @@ Since a sequence of linear mappings is also linear, the predicted flux can be wr
     \quad,
     \label{eq:linear_model}
 \end{equation}
-where the column vector $\mathbf{f}$ of shape $(T, 1)$ is the predicted flux for different values of the occultor position and $\mathbf{A}$ is the design matrix \citep[see appendix B.1. in ][]{luger2021a} of shape $(T, N)$ (with $N=(l+1)^2$) which encodes the operations needed to compute the integrated flux at different viewing angles of the occulted sphere.
+where the column vector $\mathbf{f}$ of shape $(T, 1)$ is the predicted flux for different values of the occultor position and $\mathbf{A}$ is the design matrix \citep[see appendix B.1. in ][]{luger2021a} of shape $(T, N)$ (with $N=(l+1)^2$) which encodes all operations needed to compute the integrated flux at different viewing angles of the occulted sphere.
 If the geometry isn't known precisely the matrix $\mathbf{A}$ is not fixed and the model is in principle no longer linear although one can still use the fact that it is linear when conditioned on a particular values of the nonlinear parameters to speed up inference.
 
-The characteristic angular scale of features that can be represented with a given map is set by the degree of the map and it is approximately equal to $180^\circ/l$.
+The characteristic angular size of features that can be represented with a given map is set by the degree of the map and it is approximately equal to $180^\circ/l$.
 For reference, state of the art inferences involving phase curves and secondary eclipses of exoplanets are able to constrain features of order $l=1$ (inferring a bright spot offset from the substellar point) but for Io we need to fit much higher order maps because the typical scale of volcanic spots is on the order of tens of kilometers (a few degrees).
-\textsf{starry} can handle occultations up to $l\approx 20$ before numerical instabilities kick in \citep{luger2019a}.
+\textsf{starry} can handle occultations up to $l\approx 20$ before numerical instabilities kick in \citep{luger2019a} which corresponds to a minimum resolution of $9^\circ$ which means that we are not able to constrain the physical size of the spot.
+We discuss the implication of this resolution limit in Section~\ref{sec:results} and Section~\ref{sec:discussion}.
 
-Although \textsf{starry} was built around the idea of expanding surface features in a spherical harmonic basis in which we can compute all fluxes analytically, this basis is ideal basis for doing inference because it makes it difficult to encode assumptions (priors) on what we expect the map to look like.
+Although \textsf{starry} was built around the idea of expanding surface features in a spherical harmonic basis in which we can compute all fluxes analytically, this basis may not be ideal for doing inference because it can be difficult to encode assumptions (priors) on what we expect the map to look like.
 For example, the most important constraint on the map we would like to incorporate in the model is that the intensity of the map is positive at every location. 
 This constraint is important not only because we want to avoid having unphysical regions in inferred maps but also because it imposes a very strong prior on the map which substantially reduces the difficulty of inference when the data is not particularly informative.
-The are two ways of enforcing positivity that we are aware of, both of which involve evaluating the intensity on a fixed grid of \emph{pixels} and disallowing negative values of those pixels.
+
+There are two ways of enforcing positivity that we are aware of, both of which involve evaluating the intensity on a fixed grid of \emph{pixels} and disallowing negative values of those pixels.
 The first is to fit for the spherical harmonic coefficients $\mathbf{y}$, evaluate the pixel grid at each MCMC step and reject all samples of the coefficient vector $\mathbf{y}$ which result in pixels with negative intensity.
-The issue with this procedure is that rejecting samples in this way implies a prior probability distribution on $\mathbf{y}$ which cannot be mapped to a parameter space with infinite support\footnote{For example, if we want to impose a positive prior on some parameter $x$, instead of sampling in $x$ using a prior with a hard boundary at zero, we can derive the equivalent prior for $\ln x$ and sample in the (unbounded) parameter $\ln x$.
-It is not clear how to use a similar trick to ensure that all pixels on a fixed grid generated from spherical harmonics are positive.} and Hamiltonian Monte Carlo does not work well with constrained parameter spaces.
+The issue with this procedure is that rejecting samples in this way implies a prior probability distribution on $\mathbf{y}$ which cannot be mapped to a parameter space with infinite support and Hamiltonian Monte Carlo does not work well with constrained parameter spaces.
 The second approach is to dispense with the spherical harmonics entirely and compute the full model using a high resolution grid of pixels.
-In practice this is very difficult to do because we would need a very high resolution grid to compute the light curves accurately with minimal discretization noise and the model.  
+In practice this is very difficult to do because we would need a very high resolution grid to compute the light curves accurately with minimal discretization noise.  
 \textsf{starry} uses spherical harmonics as a basis precisely to avoid this problem.
 \textbf{Instead, we opt for a hybrid approach in which we fit for pixels but at each MCMC step we convert the pixels to spherical harmonic coefficients to compute the light curve.}
 
@@ -256,11 +253,11 @@ Transforming spherical harmonics $\mathbf{y}$ to pixels $\mathbf{p}$ is straight
     \mathbf{p}=\mathbf{P}\,\mathbf{y}
     \label{eq:ylms_to_pixels}
 \end{equation}
-Each row of $\mathbf{P}$ contains values of each of spherical harmonic coefficients at a given point on the grid. 
+Each row of $\mathbf{P}$ contains values of each of the spherical harmonic coefficients at a given point on the grid. 
 To construct the grid we use an equal area Molleweide projection in order to have a uniform distribution of pixels across the sphere.
-The grid needs to be fine enough to ensure that intensity is positive over most of the sphere.
+The grid needs to be fine enough to ensure that the intensity is positive over most of the sphere.
 
-Switching from pixels to spherical harmonics is somewhat more complicated because $\mathbf{P}$ is not a square matrix so we cannot compute its inverse to obtain the inverse transform.
+Switching from pixels to spherical harmonics is somewhat more complicated because $\mathbf{P}$ is in general not a square matrix so we cannot compute its inverse to obtain the inverse transform.
 Instead, we can compute an approximate inverse (a pseudoinverse) $\mathbf{P}^\dagger$ by solving the linear system $\mathbf{P}\,\mathbf{P}^\dagger=\mathbf{I}$, where $\mathbf{I}$ is the identity matrix. 
 The solution is given by
 \begin{equation}
@@ -274,7 +271,7 @@ The mapping from pixels to spherical harmonics is then given by
     \label{eq:pixels_to_ylms}
 \end{equation}
 Both $\mathbf{P}$ and $\mathbf{P}^\dagger$ can be precomputed to speed up inference.
-When using pixels to impose a positivity constraint on the spherical harmonic map we need to make sure that number of pixels is greater than the number of spherical harmonic coefficients by a factor of a few to ensure positivity approximately everywhere on the sphere.
+When using pixels to impose a positivity constraint on the spherical harmonic map we need to make sure that the number of pixels is greater than the number of spherical harmonic coefficients by a factor of a few to ensure positivity approximately everywhere on the sphere.
 In practice we find that we need to use at least 4 times as many pixels as spherical harmonics which means that the computational cost of this model is higher than if we just fit for spherical harmonics. 
 
 To summarize, in our hybrid model we first construct a fixed high resolution pixel grid in latitude and longitude, then use Equation~(\ref{eq:pixels_to_ylms}) to convert pixels to spherical harmonics and finally use Equation~(\ref{eq:linear_model}) to evaluate the model.
@@ -284,7 +281,7 @@ On the left we show the pixel map where each pixel was independently drawn from 
 On the right is the same pixel map transformed to a spherical harmonic basis via $\mathbf{P}^\dagger$. 
 The histograms underneath each map show the distribution of intensities.
 Since the pixel map is higher resolution than the spherical harmonic map it can only be approximately represented at a finite order of the spherical harmonic expansion so the map on the right appears to be smoother and the intensity distribution is more similar to a skewed Gaussian with a heavy right tail than an exponential distribution.
-Nevertheless, we find that setting priors on pixels is a far better solution than fitting the spherical harmonic coefficients directly and is worth the extra computational cost due the increased dimensionality of the parameter space (see Section~\ref{ssec:pixels_vs_harmonics} for a demonstration).
+Nevertheless, we find that setting priors on pixels is a far better solution than fitting the spherical harmonic coefficients directly and is worth the extra computational cost which comes with the increased dimensionality of the parameter space (see Section~\ref{ssec:pixels_vs_harmonics} for a demonstration).
 
 \begin{figure}[t!]
     \begin{centering}
@@ -302,10 +299,11 @@ Nevertheless, we find that setting priors on pixels is a far better solution tha
 
 \subsection{The likelihood}
 \label{ssec:likelihood}
-Assuming we have a single light curve with $T$ data points and a map set by the pixels $\mathbf{p}$, the (Gaussian) log likelihood is given by
+Finally, we have to specify the noise model which means we have to define a likelihood function.
+Assuming we have a single light curve with $T$ data points and a map defined by the pixels $\mathbf{p}$, the (Gaussian) log likelihood is given by
 \begin{equation}
     \ln\mathcal{L}=-\frac{1}{2}\left[\mathbf{f}_\mathrm{obs}-\mathbf{f} \right]^{\top}
-    \boldsymbol{\Sigma}_l^{-1}\left[\mathbf{f}_\mathrm{obs}-\mathbf{f} \right]
+    \boldsymbol{\Sigma}^{-1}\left[\mathbf{f}_\mathrm{obs}-\mathbf{f} \right]
     \quad,
     \label{eq:likelihood}
 \end{equation}
@@ -315,12 +313,12 @@ where $\mathbf{f}_\mathrm{obs}$ is the observed light curve, $\boldsymbol{\Sigma
     \quad,
     \label{eq:flux_model}
 \end{equation}
-where $\mathbf{A}'\equiv\mathbf{A}\mathbf{P}^\dagger$ and $b$ is a constant flux offset parameter which we have added to account for stray flux which cannot be attributed to Io and is likely due to residual light from Jupiter.
-
+where $\mathbf{A}'\equiv\mathbf{A}\mathbf{P}^\dagger$ and $b$ is a constant flux offset parameter which we have added to account for stray flux which cannot be attributed to Io.
+Depending on the observation, this flux is most often residual light from Jupiter.
 
 To model the data covariance $\boldsymbol{\Sigma}$ we use use a Gaussian Process and we compute the likelihood using the fast Celerite method \citep{foreman-mackey2017} as implemented in the \textsf{celerite2} package \citep{foreman-mackey2017a,foreman-mackey2018}.
-We use the simple (approximate) Matern 3/2 function which is parametrized by two values, a standard deviation parameter $\sigma_\mathrm{GP}$ and a characteristic timescale parameter $\rho_\mathrm{GP}$.
-The kernel is given by 
+We use the simple (approximate) Mat\'ern 3/2 kernel function which is parametrized by two values, a standard deviation parameter $\sigma_\mathrm{GP}$ and a characteristic timescale parameter $\rho_\mathrm{GP}$.
+It is given by 
 \begin{equation}
     k(\tau;\sigma_\mathrm{GP},
     rho_\mathrm{GP})=\sigma_\mathrm{GP}^{2}\left[(1+1 / \epsilon) e^{-(1-\epsilon) \sqrt{3} \tau / \rho_\mathrm{GP}}(1-1 / \epsilon) e^{-(1+\epsilon) \sqrt{3} \tau / \rho_\mathrm{GP}}\right]
@@ -334,32 +332,34 @@ A single element of the data covariance matrix $\boldsymbol{\Sigma}$ is then
     \label{eq:data_covariance_element}
 \end{equation}
 where $\sigma_n$ is the errorbar for the n-th data point.
-In cases where we fit multiple independent light curves the total log likelihood is the sum of individual likelihoods defined in Equation~(\ref{eq:likelihood}).
+Since we fit multiple independent light curves the total log likelihood is the sum of individual likelihoods defined in Equation~(\ref{eq:likelihood}).
 
 \section{The inverse problem}
 \label{sec:inverse_problem}
-Having defined the forward model in the previous section, in this section we describe how to solve the inverse problem in a Bayesian setting.
+Having defined a probabilistic model which describes how to compute a realistic light curve for an occultation of Io in the previous section, in this section we discuss the inverse problem of inferring a surface map by fitting a set of occultation light curves in a Bayesian framework.
 
 \subsection{The information content of a light curve}
 \label{ssec:information_content}
-The mapping problem is famously ill posed meaning that specific linear combinations of spherical harmonic coefficients will be in the nullspace of the linear mapping  $\mathbf{A}$ in Equation~(\ref{eq:linear_model}) \citep{luger2021}.
-This means that even if we had noiseless observations it would still be impossible to recover certain features.
-To recover the greatest information about the surface we need to have some mechanism which breaks the various degeneracies.
-With phase curves only we can recover primarily longitudinal variations in emission.
+The mapping problem is famously ill posed, meaning that specific linear combinations of spherical harmonic coefficients will be in the nullspace of the linear mapping  $\mathbf{A}$ in Equation~(\ref{eq:linear_model}) \citep{luger2021}.
+This means that in general, even if we had noiseless observations, it would still be impossible to recover certain features on the surface.
+To recover the greatest information about the surface we need to have a mechanism which breaks the various degeneracies.
+For example, with phase curves we can recover primarily longitudinal variations in emission.
 Occultations are substantially better because the limb of the occultor sweeps across the surface of the occulted sphere, thereby exposing or blocking light from different points on the surface.
 An ideal set of observations would consist of phase curves together with observations of multiple occultations by a small occultor at different latitudes and different phases.
-Observing phase curves and occultations in reflected light improves the model further because of the nonuniform illumination profile of the incident radiation and the presence of a day/night terminator line \citep[][Luger et al. 2021 in prep]{luger2019a}.
+Phase curves and occultations in reflected light are even more informative because of the nonuniform illumination profile of the incident radiation and the presence of a day/night terminator line \citep[][Luger et al. 2021 in prep]{luger2019a}.
 In some cases for reflected light observations (phase curves of an inclined planet for example) there can even be no nullspace \emph{at all} low spherical harmonic degrees.
 
-We can reformulate these statements more precisely by computing a measure of information content of the different kinds of observations.
+We can reformulate these statements on how useful given observations are more precisely by computing a measure of their information content.
 Given that our model is linear, assuming Gaussian priors on the spherical harmonic coefficients with covariance $\boldsymbol{\Lambda}_\mathbf{y}$ and a Gaussian likelihood, the posterior can be computed analytically and its mean is given by
 \begin{equation}
     \widehat{\mathbf{y}}=\boldsymbol{\Sigma}_{\hat{\mathbf{y}}}\left(\mathbf{A}^{\top} \boldsymbol{\Sigma}_{\mathbf{f}}^{-1} \mathbf{f}+\boldsymbol{\Lambda}_{\mathbf{y}}^{-1} \boldsymbol{\mu}_{\mathbf{y}}\right)
     \quad,
+    \label{eq:linear_solve_mean}
 \end{equation}
 where the posterior covariance matrix $\boldsymbol{\Sigma}_{\hat{\mathbf{y}}}$ is 
 \begin{equation}
 \boldsymbol{\Sigma}_{\hat{\mathbf{y}}}=\left( \mathbf{A}^{\top} \boldsymbol{\Sigma}_{\mathbf{f}}^{-1} \mathbf{A} +\boldsymbol{\Lambda}_{\mathbf{y}}^{-1}\right)^{-1}
+    \label{eq:linear_solve_cov}
 \end{equation}
 We define the information content as the variance reduction of the posterior relative to the prior which is called \emph{posterior shrinkage}.
 The posterior shrinkage $S$ is defined as \citep{luger2021a,betancourt2018}:
@@ -371,11 +371,11 @@ where $\sigma^2_0$ is the prior variance and $\sigma^2$ is the posterior varianc
 It tells us how well we can constrain a particular coefficient in the limit of infinite SNR observations.
 Posterior shrinkage of 1 indicates that the data provides perfect information on the parameters while 0 indicates no gain in information relative to the prior.
 
-In order to compute the posterior shrinkage we first compute the design matrices $\mathbf{A}$ using \textsf{starry} for different kinds of observations of Io in the period starting on the 1st of January 2009 and ending on the 1st of May 2010.
+In order to compute the posterior shrinkage we first compute the design matrices $\mathbf{A}$ with \textsf{starry} for different kinds of observations of Io in the period starting on the 1st of January 2009 and ending on the 1st of May 2010.
 We chose this period because it covers the full season of mutual occultations which occur every 6 years.
-We compute $\mathbf{A}$ for all observable Io by Galilean moons during that period, for occultations of Io by Jupiter and phase curves.
-We make sure that the number of observations and the cadence for each observation covers all possible geometries because the purpose of this exercise is do determine the upper bound on what we can learn about the surface. 
-We take the ephemeris from \textsf{JPL HORIZONS} and assume that it is known exactly; we also assume all observations are of the emitted light component independent of whether Io is in sunlight or in eclipse because we are interested in constraining the volcanic emission rather than the albedo.
+We compute $\mathbf{A}$ for all observable occultations of Io by Galilean moons during that period, for occultations of Io by Jupiter and for phase curve observations.
+The purpose of this is to determine the upper bound on what we can learn about the surface. 
+We take the ephemeris from \textsf{JPL Horizons} and assume that it is known exactly; we also assume all observations are observations of thermal emission independent of whether Io is in sunlight or in eclipse because we are interested in constraining the volcanic emission rather than the albedo.
 
 \begin{figure}[t!]
     \begin{centering}
@@ -389,52 +389,52 @@ We take the ephemeris from \textsf{JPL HORIZONS} and assume that it is known exa
     \end{centering}
 \end{figure}
 
-Fig.~\ref{fig:information_content} shows the posterior shrinkage as a function of $l$ (averaged over all $m$ modes) for phase curve observations (blue lines), occultations by Jupiter (orange), the former two combined (green) and mutual occultations by other Galilean moons (red).
+Fig.~\ref{fig:information_content} shows the posterior shrinkage as a function of $l$ (averaged over all $m$ modes) for phase curve observations (blue lines), occultations by Jupiter (orange), the former two combined (green), and mutual occultations by other Galilean moons (red).
 As expected, the mutual occultations of Io by other Galilean moons are by far the most informative with posterior shrinkage of unity at all angular scales considered. 
-Occultations by Jupiter are far less informative because we only see one side of Io during an occultation.
-Shrinkage for phase curve at odd degrees above $l=2$ is exactly zero because these coefficents are in the nullspace for objects rotating about an axis perpendicular to the line of sight these coefficients and therefore they cannot be constrained using only phase curves \citep{luger2021}. 
-Observations of mutual occultations most easily break the degeneracies but the drawback of these types of observations is that they only happen every 6 years and they almost never happen while Io is in eclipse, meaning that only the brightest volcanoes are visible above the reflected sunlight.
+Occultations by Jupiter are less informative because we only see one side of Io during an occultation.
+Shrinkage for phase curves at odd degrees above $l=2$ is exactly zero because these coefficents are in the nullspace for objects rotating about an axis perpendicular to the line of sight and therefore cannot be constrained using only phase curves \citep{luger2021}. 
+Although observations of mutual occultations most easily break the degeneracies, the drawback of these types of observations is that they only happen every 6 years and they almost never happen while Io is in eclipse, meaning that only the brightest volcanoes are visible above the reflected sunlight.
 This fact is not captured in Figure~\ref{fig:information_content}. 
 
-Although Figure~\ref{fig:information_content} gives us some idea about which kinds of observations are most informative, it doesn't really tell us how well we can constrain very bright spot-like features we expect to see on Io.
-To answer this question we have to simulate data and conduct the inference process.
+Figure~\ref{fig:information_content} gives us some idea about which kinds of observations are most informative but it doesn't really tell us how well we can constrain bright spot-like features we expect to see on Io.
+To answer this question we have to create a simulated dataset and conduct the whole inference process.
 
 \subsection{Pixels vs. spherical harmonics}
 \label{ssec:pixels_vs_harmonics}
 We use \textsf{starry} to generate a single simulated light curve of an occultation of Io by Jupiter from an $l=30$ map with known coefficients.
 The simulated map consists of a spherical harmonic expansion of a bright spot with a Gaussian profile which we add to a uniform brightness map using the built in \textsf{add\_spot} function in \textsf{starry}.
 The expansion is in the quantity $\cos(\Delta\theta)$ where $\Delta\theta$ is the angular separation between the center of the spot and another point on the surface of the sphere. 
-We place the spot at $13^\circ$ N latitude and $51^\circ$ E longitude, we set the diameter of the spot ($2\Delta\theta$) to $5^\circ$ and the amplitude of the spot such that the total \emph{luminosity} of the map increases by 50\% with the addition of the spot.
-We generate two light curves with 150 data points, one for the duration of the ingress of the full occultation and the other for the egress.
-Because the limb of the occultor sweeps over the disc of Io at different angles during ingress and ingress, this makes it possible break most degeneracies in the map and recover the location of the true spot.
+We place the spot at $13^\circ$ N latitude and $51^\circ$ E longitude, we set the diameter of the spot ($2\Delta\theta$) to $5^\circ$ and we set the amplitude of the spot such that the total \emph{luminosity} of the map increases by 50\% with the addition of the spot.
+We generate two light curves with 150 data points each, one for the duration of the ingress of the full occultation and the other for the egress.
+Because the limb of the occultor sweeps over the disc of Io at different angles during ingress and ingress, this makes it possible break most degeneracies in the map and recover the location of the simulated spot.
 We set the phase of the simulated map to be $10^\circ$ E at the beginning of ingress and $10^\circ$ W at the end of egress.
-We assume that the geometry of the occultation is known exactly and set the errorbars such that SNR=50 where SNR is the signal is defined as the maximum flux of light curve.
+We assume that the geometry of the occultation is known exactly and we set the errorbars such that SNR=50 where the signal is defined to be the maximum value of the computed flux.
     We use this dataset to test the difference between setting a prior in the spherical harmonic basis $\mathbf{y}$ and in the pixel basis $\mathbf{p}$ by fitting an $l=20$ map to the dataset.
 
-In the spherical harmonic model we place a Gaussian prior on the $\mathbf{y}$ with covariance $\boldsymbol{\Lambda}=\mathrm{diag}(1^2,0.5^2,\dots,0.5^2)$.
-Since the model is linear and the prior is Gaussian, the posterior probability distribution is also Gaussian and we can solve for the posterior mean and covariance matrix analytically \citep{luger2019a}.
-In the hybrid pixel model we place a positive exponential prior on the pixels evaluated on a Mollweide grid. 
-The purpose of the exponential prior is to favor sparser solutions for map because the exponential distribution pushes most pixels towards zero intensity.
+In the spherical harmonic model we place a Gaussian prior on $\mathbf{y}$ with covariance $\boldsymbol{\Lambda}=\mathrm{diag}(1^2,0.5^2,\dots,0.5^2)$.
+Since the model is linear and the prior is Gaussian, the posterior probability distribution is also Gaussian and we can solve for the posterior mean (Equation~(\ref{eq:linear_solve_mean})) and covariance (Equation~(\ref{eq:linear_solve_cov})) analytically.
+In the hybrid pixel model we place a positive exponential prior on the pixels which are defined on a Mollweide grid. 
+The purpose of the exponential prior is to favor sparser solutions for the map because the exponential distribution pushes most pixels towards zero intensity.
 We use four times as many pixels as spherical harmonics.
-Although the model is also linear in this case, the posterior distribution for the pixels is not analytic because of the non-Gaussian prior so we sample the posterior distribution using MCMC instead.
+Although the model is also linear in this case, the posterior distribution for the pixels is not analytic because of the non-Gaussian prior so we sample the posterior using MCMC instead.
 As the end product of inference we save the spherical harmonic coefficients $\mathbf{y}=\mathbf{P}^\dagger\mathbf{p}$ rather than the pixels themselves.
 The coefficients $\mathbf{y}$ can then be used to evaluate the map on a pixelated grid of arbitrary resolution via the matrix $\mathbf{P}$. 
 
-To ensure that the difference in the inferred maps is not in part due to a difference in the scale of the priors, we take 5000 samples from the prior on $y$ and evaluate $\mathbf{P}\mathbf{y}$ for each; we then compute the standard deviation of these pixels use that as the scale parameter in the exponential prior.
+To ensure that the difference in the inferred maps is not in part due to a difference in the scale of the priors, we take 5000 samples from the prior on $y$ and evaluate $\mathbf{P}\,\mathbf{y}$ for each; we then compute the standard deviation of these pixels and use that as the scale parameter in the exponential prior.
 We implement the pixel model in the probabilistic programming language \textsf{numpyro} \citep{phan2019a} which is built on top of the \textsf{JAX} \citep{jax2018github} library, and we fit it using Hamiltonian Monte Carlo with the No-U-Turn-Sampler (NUTS) \citep{hoffman2014}.
 \textsf{JAX} is a \textsf{numpy} like library which supports automatic differentiation, parallelization and GPUs.
 We run the chains for 1000 tuning steps and 2000 final steps, monitoring divergences \citep{betancourt2013} and the R-hat  diagnostic  \citep{gelman1992a} to check for convergence.
-Since all models in this paper have hundreds if not thousands of parameters, it would not be possible to sample the posterior  without the use of automatic differentiation and Hamiltonian Monte Carlo (at least for non-Gaussian priors).
+Since all models we fit in this paper have hundreds if not thousands of parameters, it would be extremely challenging to sample the posterior  without the use of automatic differentiation and Hamiltonian Monte Carlo (at least for non-Gaussian priors).
 
 \begin{figure}[t!]
     \begin{centering}
     \includegraphics[width=1.\linewidth]{figures/pixels_vs_harmonics.pdf}
     \oscaption{pixels_vs_harmonics}{%
         Comparison between two models fitted to a simulated light curve of an occultation by Jupiter which was generated from a map consisting of a single bright spot (top map).  
-       Each of the columns beneath the true map shows the (median) posterior estimate of the map (top), the data and the posterior flux samples (middle row) and the residuals (bottom row).
+       Each of the columns beneath the simulated map shows the (median) posterior estimate of the map (top), the data and the posterior flux samples (middle row) and the residuals (bottom row).
         The left column corresponds to a model in which we place a Gaussian prior on spherical harmonic coefficients $\mathbf{y}$ and fit for $\mathbf{y}$ while the right column correspond to a hybrid model in which we fit for pixels $\mathbf{p}$ (with an exponential prior on pixel intensity) but we use $\mathbf{y}$ to compute the flux analytically with \textsf{starry}.
         The benefit of using pixels is that it is much easier to encode assumptions on what the map should look like in pixel space rather than spherical harmonic space.
-        With the pixel model we are able to recover the true map precisely while the spherical harmonic model fails to do that. 
+        With the pixel model we are able to recover the simulated map precisely while the spherical harmonic model fails to do that. 
                \label{fig:pixels_vs_harmonics}
     }
     \end{centering}
@@ -442,23 +442,27 @@ Since all models in this paper have hundreds if not thousands of parameters, it 
 
 To visualize the inferred maps we plot the heatmap of the median intensity at each point on the map computed from posterior samples.
 Results are shown in Figure~\ref{fig:pixels_vs_harmonics}.
-The top row shows the true map, beneath it we show the inferred maps in Mollweide projection for the two models (second row), the data and posterior flux samples (orange lines) and the residuals with respect to the median flux (bottom row).
-The difference between the two models is striking, the left map has an elongated feature which does not resemble the spot in the true map while the map on the right is nearly identical to the true map. 
+The top row shows the simulated map, beneath it we show the inferred maps in Mollweide projection for the two models (second row), the data and posterior flux samples (orange lines) and the residuals with respect to the median flux (bottom row).
+The difference between the two models is striking. 
+The left map has an elongated feature which does not resemble the spot in the simulated map while the map on the right is nearly identical (except for a difference in intensity) to the simulated map. 
 We should emphasize here that the fact that the pixel model results in a spot-like map is mostly a consequence of the exponential prior which favors sparse solutions in pixel space.
 When we compared the spherical harmonic model to the pixel model using a prior with a lighter tail such as a Half Gaussian (Gaussian truncated at zero), we obtained a more elongated feature similar to shown on the left map in Figure~\ref{fig:pixels_vs_harmonics} but the map was still noticeably less complex because the positivity constraint substantially reduces the space of maps which fit the data well. 
-Thus, the benefit of using the pixel model is that it easy to impose the positivity constraint on the map but also other constraints such as sparsity.
+Thus, the benefit of using the pixel model makes it easy to impose the positivity constraint on the map but also other constraints such as sparsity.
 
-One issue with the map on the right is that there is a series of concentric rings around the spot which result in a wave-like pattern in the predicted flux and the residuals.
+An important issue with the map on the right is that there is a series of concentric rings around the spot which result in a wave-like pattern in the predicted flux and the residuals.
 This ringing pattern arises because representing spot-like features requires constructive interference between different spherical harmonic modes inside the spot and destructive interference elsewhere.
 The pattern is more pronounced when we fit a low resolution map (approximately $180/20=9^\circ$ in this case) and the model tries to represent a feature below the resolution of the map.
-Ringing is undesirable because we want to avoid situations in which the model uses the rings to explain the data instead of just placing a spot directly. 
+
+Ringing is also the reason why the inferred spot for the pixel model appears to be noticeably dimmer than the simulated spot.
+There is non-negligible leakage of total flux from the spot into the rings surrounding it, meaning that if we were to integrate the map intensity over a region encompassing the brightest part of the inferred spot, it would be an underestimate of the total emitted flux from the true spot within the same area.
+Ringing is also undesirable because we want to avoid situations in which the model uses the rings to explain the data instead of just placing a spot directly. 
 For example, we find that in some cases when we fit low degree maps, the model would place a bright spot on the unobserved side of Io in order to produce a ringing artefact on the observed side to explain an increase or decrease in brightness in the light curve. 
 Fortunately, convolving the map with a spatial smoothing filter prior to evaluating the flux fixes this issue. 
 We describe how to apply the smoothing filter in the following section.
 
 \subsection{Smoothing out spurious features}
 \label{ssec:spurious_features}
-To suppress ringing, which results in regions of negative intensity surrounding a spot-like feature as in Figure~\ref{fig:pixels_vs_harmonics}, we apply a spatial smoothing filter to the spherical harmonic coefficients.
+To suppress ringing artefacts which appear around inferred spots such as the one shown in Figure~\ref{fig:pixels_vs_harmonics}, we apply a spatial smoothing filter to the spherical harmonic coefficients.
 Mathematically, the filtering operation is a convolution between the map and some kernel function $B(\theta,\phi)$.
 Assuming both the map and the kernel function are expanded in terms of spherical harmonics, the convolution operation is simply a multiplication between the two sets of spherical harmonic coefficients.
 We use a Gaussian-like kernel function given by
@@ -474,7 +478,7 @@ This function can be expanded in terms of spherical harmonics as
 \end{equation}
 where $B_l$ are the spherical harmonic coefficients and $\mathcal{P}_l$ are the associated Legendre polynomials.
 They depend only on $l$ because all nonzero $m$ modes vanish due to azimuthal symmetry.
-For $\sigma_s\ll 1$ $B_l$ can be approximated as \citep{seon2007,white1995}
+For $\sigma_s\ll 1$, $B_l$can be approximated as \citep{seon2007,white1995}
 \begin{equation}
     B_l\simeq \exp\left[-\frac{1}{2}l(l+1)\sigma_s^2\right]
 \end{equation}
@@ -502,53 +506,53 @@ The effect of this filter is to exponentially suppress features on scales smalle
 
 Figure~\ref{fig:smoothing_kernel} shows the effect of (Gaussian) smoothing on a spherical harmonic expansion of a spot with a Gaussian intensity profile.
 We place the spot at $0^\circ$ latitude and longitude and set the size of the spot $\Delta\theta$ to $5^\circ$.
-All three subplots show the exact profile of the spot (black line) and expansions up to three different orders $l$ (colored lines).
-The subplot on the left shows the expansion with no smoothing ($\sigma_s=0$) in which case the symmetric ringing around the center of the spot is clearly visible even at relatively high order ($l=20$).
-The middle subplot shows an intermediate level of smoothing where $\sigma_s=0.1$, meaning that all features on scales above $l\approx 10$ are exponentially suppressed.
-The negative ringing is a lot less visible albeit at the cost of having a slightly larger spot because suppressing higher order harmonics necessarily means that we lose some ability to represent smaller scale features.
+All three panels show the exact profile of the spot (black line) and expansions up to three different orders $l$ (colored lines).
+The panel on the left shows the expansion with no smoothing ($\sigma_s=0$) in which case the symmetric ringing around the center of the spot is clearly visible even at relatively high order ($l=20$).
+The middle panel shows an intermediate level of smoothing with $\sigma_s=0.1$, meaning that all features on scales above $l\approx 10$ are exponentially suppressed.
+The negative ringing is a lot less visible, albeit at the cost of having a slightly larger spot because suppressing higher order harmonics necessarily means that we lose some ability to represent smaller scale features.
 For $\sigma_s=0.2$ (right) there is practically no ringing, but the expansions at $l=10$, $l=15$ and $l=20$ result in the spot of the same size because all coefficients above $l=5$ are significantly suppressed.
 
 Thus, there is a trade-off between smoothing and the ability to resolve smaller scale features
 in maps. 
 In principle we can always get rid of ringing by fitting sufficiently high order maps.
-In practice, computing the analytic integrals computed in \textsf{starry} becomes computationally unstable above $l\approx 20$ so instead of going to very high order we apply some smoothing to mitigate the ringing.
+In practice, the analytic integrals computed in \textsf{starry} become computationally unstable above $l\approx 20$ so instead of going to very high order we apply some smoothing to mitigate the ringing.
 We find that setting $\sigma_s=2/l$ where $l$ is the order of expansion of the map  is a good default setting for $\sigma_s$.
 
-\section{Results for simulated data}
+\section{Results -- simulated data}
 \label{sec:results_sim}
 \subsection{Fitting simulated ingress/egress light curves}
 \label{ssec:fitting_sim_ingress_egress}
 In this section we generalize the example from Section~\ref{ssec:pixels_vs_harmonics} such that the simulated map includes an additional faint hot spot located at $-15^\circ$ N latitude and $-40^\circ$ E longitude with a diameter of $5^\circ$.
-We set the amplitude of the ``faint" spot to 20\% of the luminosity of the featureless map.
-As before we assume that we know the ephemeris exactly.
-We generate the light curves from an $l=20$ map and fit a map of the same order and we apply a Gaussian smoothing filter to both the simulated map and the inferred map with the smoothing parameter set to $\sigma_s=2/l=0.1$.
-We fit the model with NUTS with 1000 warm-up steps and 2000 final steps. 
+We set the amplitude of the ``faint" spot to 30\% of the luminosity of the featureless map.
+As before we assume that we know the geometry of the occultation exactly.
+We generate the light curves from an $l=30$ map and fit an $l=20$ map and we apply a Gaussian smoothing filter to both the simulated map and the inferred map with the smoothing parameter set to $\sigma_s=2/l=0.1$.
+We fit the model using NUTS with 1000 warm-up steps and 2000 final steps. 
 
 We found that in cases where the simulated map consists of a bright and a faint spot the pixel model with an exponential prior such as the one we used in Section~\ref{ssec:pixels_vs_harmonics} does not recover the faint spot. 
 Instead, we use a different heavy tailed prior called the Regularized Horseshoe prior\footnote{To be precise, we use the truncated version of the Regularized Horseshoe prior where the coefficients are required to be positive.} (also known as the ``Finnish Horseshoe") \citep{piironen2017}.
 This prior is specifically designed for use in Bayesian sparse linear regression. 
 It is an improvement on the Horseshoe prior introduced in \cite{carvalho2010a}.
-The key idea behind both kinds of Horseshoe priors is to set the scale for each regression coefficient (pixel) to a product of a global scale $\tau$ and a local scale $\lambda_i$ (where $i$ indexes all the pixels) and marginalize over these scales by setting a prior for each. 
-For clarity, we discuss the Horseshoe priors in Appendix~\ref{app:horseshoe}.
+The key idea behind both kinds of Horseshoe priors is to set the scale for each regression coefficient (pixel) to a product of a global scale $\tau$ and a local scale $\lambda_i$ (where $i$ indexes all the pixels) and we marginalize over these scales by setting a prior for each. 
+For clarity, we omit the discussion of  the Horseshoe priors here and refer the reader to Appendix~\ref{app:horseshoe}.
 
 \begin{figure}[t!]
     \begin{centering}
     \includegraphics[width=1.\linewidth]{figures/ingress_egress_sim_snr_50.pdf}
     \oscaption{ingress_egress_sim_snr_50}{%
         Inferred $l=20$ map obtained by fitting a pair of simulated ingress/egress occultation light curves of Io using a hybrid pixel model with a Regularized Horseshoe prior on the pixels.
-With this prior, the model is able to accurately recover the true map.
-        The plot shows the true $l=20$ map (top), the posterior (median) estimate of the inferred map (second row), the inferred map as seen by the observer during the occultation (small circles), the data and posterior samples of the flux (orange lines), and the normalized residuals (bottom).
-        The location of the true spots on the inferred map is marker with a grey cross (X).
+With this prior, the model is able to accurately recover the simulated map.
+        The plot shows the simulated $l=20$ map (top), the posterior (median) estimate of the inferred map (second row), the inferred map as seen by the observer during the occultation (small circles), the data and posterior samples of the flux (orange lines), and the normalized residuals (bottom).
+        The location of the simulated spots on the inferred map is marker with a grey cross (X).
        \label{fig:ingress_egress_sim_snr_50}
     }
     \end{centering}
 \end{figure}
 
 
-The results for a high signal-to-noise light curve (SNR=50) are shown in Fig.~\ref{fig:ingress_egress_sim_snr_50}, the model recovers both spots.
-The plot shows the true map (top row), the median posterior estimate of the inferred map (second row), the inferred map as seen by the observer during the occultation (small circles), the data and posterior samples of flux (orange lines) and the residuals with respect to a median estimate of the flux (bottom). 
-The location of the true spots on the inferred map is marker with a grey cross (X).
-The bright spot is nearly indistinguishable from the true spot; the fainter spot is somewhat less well constrained but the error in position for both is at most a few degrees.
+The results for a high signal-to-noise light curve (SNR=50) are shown in Fig.~\ref{fig:ingress_egress_sim_snr_50}: the model recovers both spots.
+The plot shows the simulated map (top row), the median posterior estimate of the inferred map (second row), the inferred map as seen by the observer during the occultation (small circles), the data and posterior samples of flux (orange lines) and the residuals with respect to a median estimate of the flux (bottom). 
+The location of the simulated spots on the inferred map is marker with a grey cross (X).
+The bright spot is nearly indistinguishable from the simulated spot; the fainter spot is somewhat less well constrained but the error in position for both is at most a few degrees.
 Ringing artifacts are minimal because of the smoothing filter and there are no discernible patterns in the residuals.
 We found that without the Horseshoe priors the model was not able to capture the first step in the light curve which is due to the fainter spot coming in our out of view; it would only recover the brighter spot.
 In Fig.~\ref{fig:ingress_egress_sim_snr_10} we show the output of the same model assuming we have data of worse quality (SNR=10). 
@@ -570,19 +574,19 @@ A parametric spot model might be useful if we want to fit for a small number of 
 To test how the parametrized spot model compares to the model defined in Section~\ref{ssec:fitting_sim_ingress_egress} we fit it to the light curves shown in Figure~\ref{fig:ingress_egress_sim_snr_50}. 
 The model consists of 4 parameters: the latitude, longitude, amplitude and size of the spot.
 We place uniform priors on the angles and positive Gaussian priors on other parameters. 
-We find that if the number of modeled spots matches the number of true spots the model easily converges to the true solution. 
-If the number of modeled spots is larger or smaller than the true number the model does not converge due to pathologies in the posterior distribution.
+We find that if the number of modeled spots matches the number of simulated spots the model easily converges to the true solution. 
+If the number of modeled spots is larger or smaller than the true number of spots the model does not converge to the true solution due to pathologies in the posterior distribution.
 
 Although a parametric approach would likely have been sufficient for modeling the light curves shown in this work, it does not work well when the number of spots is unknown or if the features aren't spots.
 There is no need to restrict ourselves to a parametric model because the pixel model gives the same results with only weak assumptions about the global structure of the map. 
 The computational advantages of the parametric spot model relative to the pixel model are minimal. 
 Even though the spot model has only 5 parameters per spot and the pixel model has thousands of parameters, the runtime for the pixel model is longer only by a factor of a few. 
 
-\section{Results for IRTF data}
+\section{Results -- IRTF light curves}
 \label{sec:results}
 \subsection{1998 pair of occultations by Jupiter}
-Having demonstrated that our model works well on simulated data, we turn to fitting observations of actual occultation of Io observed with the IRTF telescope.
-We selected two pairs of high quality ingress/egress light curves relatively closely spaced in time so that the assumption that the surface map is identical for both the ingress and the egress light curve is at least approximately correct; although we allow for a difference in the overall amplitude of the maps between the two occultations.
+Having demonstrated that our model works well on simulated data, we turn to fitting observations of actual occultations of Io observed with the IRTF telescope.
+We selected two pairs of high quality ingress/egress light curves relatively closely spaced in time so that the assumption that the surface map is identical for both the ingress and the egress light curve is at least approximately correct, although we allow for a difference in the overall amplitude of the maps between the two occultations.
 We fit a pair of events from 1998, an ingress occultation observed on the 27th of August and an egress occultation observed on the 29th of November.
 For comparison, we also fit a pair of events observed nearly two decades later in 2017.
 The predicted fluxes are given by 
@@ -608,7 +612,8 @@ That is, we have
     \sigma_{i,E}&\sim \mathcal{N}^+(0,l_I),\quad i=1,\dots, N_E
 \end{align}
 where $\sigma_{i,I}$ are the errobars for the ingress light curve and $\sigma_{i,E}$ are the errobars for the egress light curve.
-Treating errobars as free parameters means that we are introducing hundreds of more parameters (as many as there are data points) which is not an issue as long as these parameters are constrained by the data (and our model is regularized).
+The symbol $\mathcal{N}^+$ denotes a truncated Gaussian distribution restricted to positive values.
+Treating errobars as free parameters means that we are introducing hundreds of more parameters (as many as there are data points) which is not an issue as long as these parameters are constrained by the data and our model is regularized.
 The noise model as defined above is extremely flexible, it can account for a given feature in the light curve by inflating individual errobars (white noise) or by varying the characteristic timescale $\rho_\mathrm{GP}$ in the Matern 3/2 kernel.
 All model parameters and their associated priors are listed in Table~\ref{tab:priors}. 
 
@@ -639,7 +644,7 @@ Parameters and priors for the final model.
             \endfoot
             %
             %
-            $\tau$ & global pixel scale &  \begin{minipage}{0.5\textwidth}  \shortstack[l]{$\mathrm{Half}-\mathcal{C}(0,\tau_0)$, $\tau_0$ defined in Equation~(\ref{eq:horseshoe_tau0}) \\with $p_0=0.8D$}\end{minipage}
+            $\tau$ & global pixel scale &  \begin{minipage}{0.5\textwidth}  \shortstack[l]{$\mathrm{Half}-\mathcal{C}(0,\tau_0)$, $\tau_0$ defined by\\Equation~(\ref{eq:horseshoe_tau0}) with $p_0=0.8D$}\end{minipage}
            %
             \\
             %
@@ -690,7 +695,7 @@ The orange lines in the second panels from the bottom are posterior samples of f
 The bottom panel shows the residuals with respect to the median flux.
 Each data point is shown with the median prediction of its errorbar.
 The posterior distribution for the errobars is shown in Figure~\ref{fig:irtf_1998_errorbars}.
-Both the global scale for the errobars and the individual errobars are well constrained by the data. 
+Both the global scale for of the errobars and the individual errobars are well constrained by the data. 
 The outlier points are naturally accounted for in our model because those points end up having higher variance.
 
 \begin{figure}[ht!]
@@ -714,7 +719,7 @@ Despite the fact that our noise model is extremely flexible, it does not seem to
 The Gaussian Process accounts for the  variation in the data due to atmospheric variability, the emission due to surface features which are too faint to be well constrained by the physical model and the limitation of the physical model to capture the true size of the spot. 
 There is a trade-off between the explanatory power of the noise model and the physical model. 
 In general, we expect that a given feature in the light curve will be accounted for by the physical model if the physical model provides a better explanation for the data than the noise model.
-We will return to this point later. 
+We will return to this point shortly. 
 
 \begin{figure}[t!]
     \begin{centering}
@@ -723,7 +728,7 @@ We will return to this point later.
         Posterior distribution for the errobars of the 1998 pair of light curves shown in Figure~\ref{fig:irtf_1998}. 
         Each color corresponds to a single data point in the light curve.
         The errobars are estimated using a hierarchical model in which we assume  that each errobar is drawn from a Half Gaussian distribution with a global scale parameter common to all errobars in a single light curve.
-       \label{fig:irtf_1998_errorbarss}
+       \label{fig:irtf_1998_errorbars}
     }
     \end{centering}
 \end{figure}
@@ -782,7 +787,7 @@ To obtain some measure of the location of the inferred spots and its uncertainty
 In addition to the locations of the spots, we also compute the total power emitted within a 15 degree range in latitude and longitude around the (inferred) center of the spots.
 Both of these quantities are listed in Table~\ref{tab:irtf_1998_derived}. 
 
-Figure~\ref{fig:irtf_1998_spots} shows  a contour map of both hot spots overlaid on top of the U.S. Geological Survey's map of the surface of Io \cite{williams2011} which was constructed from Galileo observations.
+Figure~\ref{fig:irtf_1998_spots} shows  a contour map of both hot spots overlaid on top of the U.S. Geological Survey's map of the surface of Io \citep{williams2011} which was constructed from observations by the Galileo satellite.
 The plot shows the error in the inferred latitude and longitude for each spot (white lines) and a contour map computed from the median posterior estimate of the map.
 The contour lines correspond to the 5th, 50th, and 95th percentiles of intensity above an arbitrarily defined intensity of ``background" region around the spot.
 
@@ -790,7 +795,7 @@ The location of the bright hotspot is $16.414_{-0.011}^{+0.027}\quad^\circ$ N la
 The faint hot spot is at $-15.756_{-11.382}^{+3.812}\quad ^\circ$ N latitude and $321.568_{-4.208}^{2.803}\quad^\circ$ E longitude which is the Kanehekili Fluctus lava flow.
 The error on the inferred position of peak intensity of the Loki hotspot is only a fraction of a degree which is much smaller than the minimum resolution of the map features set by the degree of the map; this corresponds to an uncertainty of less than a kilometer on the surface of Io.
 Thus, \textbf{despite the fact that at $l=20$ the resolution of maps is limited to about $9^\circ$, we can constrain the centroid of the spots much more precisely}.
-We should note however that this errorbar does not include a possible systematic shift in position due to a wrong estimate of Jupiter's effective radius (see Section~\ref{ssec:effective_radius}).
+We should note however that this errorbar does not include a possible systematic shift in position due to a wrong estimate of Jupiter's effective radius (see Section~\ref{ssec:effective_radius}) or an error in the ephemeris data.
 
 \renewcommand*{\arraystretch}{1.4}
 \begin{table}[t!]
@@ -851,15 +856,15 @@ The contour lines show the 5th, 50th, and 95th percentiles of intensity above an
 
 To see how the above results change if we don't include a Gaussian Process in the noise model we fit the same pair of occultations from 1998 using the same priors, the results are shown in Figure~\ref{fig:irtf_1998_no_GP}.
 The main difference in the inferred map compared to Figure~\ref{fig:irtf_1998} is that there are two extra spots visible in the map.
-The two spots in the eastern hemisphere are the result of the model struggling to explain the main feature in the light curve at around 3.2 minutes in ingress light curve and 3.8 minutes in the egress light curve which is Loki coming out and into view during the occultation.
+The two spots in the eastern hemisphere are the result of the model struggling to explain the main feature in the light curve at around 3.2 minutes in ingress light curve and 3.8 minutes in the egress light curve, which is due to  Loki coming out and into view during the occultation.
 The model inflates the errobars around those times because it unable to make the spot small enough.
 This results in the single hot spot at the location of Loki shown in Figure~\ref{fig:irtf_1998} morphing into two spots.
 While this feature is almost certainly spurious, the other spot in the northwestern hemisphere appears more likely to be real.
 Looking at the miniature maps in Figure~\ref{fig:irtf_1998_no_GP}, this spot is in view only at egress and it corresponds to a small step in the light curve starting at 0.9 minutes.
 The estimated location of this spot is $20.449_{-0.066}^{+1.253}\quad^\circ$ N latitude and $53.107_{-0.115}^{+0.296}\quad^\circ$ W longitude.
-This location is to the mountain Mongibello Mons but it does not correspond to a well known hotspot.
-Overall, we conclude that that including the Gaussian Process prevents the physical model from overfitting the data although it might occasionally pick up a feature in thedat which is due to a faint real hot spot.
-With a particular scientific goal in mind, it is straightforward to experiment with different noise models to test how the properties of any given spot change.
+This location corresponds to the mountain Mongibello Mons but it does not correspond to a well known hotspot.
+Overall, we conclude that including the Gaussian Process prevents the physical model from overfitting the data although it might occasionally pick up a feature which is due to a faint real hot spot.
+With a particular scientific goal in mind, it is straightforward to experiment with different noise models to test how the properties of any given spot change with different assumptions.
 
 
 One other notable feature in Figure~\ref{fig:irtf_1998_no_GP} is that the first step in the ingress light curve at around 0.6 minutes isn't fully accounted for by the model.
@@ -1018,45 +1023,60 @@ The contour lines show the 5th, 50th, and 95th percentiles of intensity above an
 \section{Discussion}
 \label{sec:discussion}
 \subsection{Occultation mapping of Io}
-We have presented a novel model for reconstructing volcanic emission features on Io from occultation light curves.
-It is built on top of the \textsf{starry} algorithm which enables fast analytic computation of occultation light curves using spherical harmonics.
-This approach is substantially different from past work because we do not assume where the volcanic features are located on the surface of Io, how many there are or what they look like.
-Instead, we place weaker assumptions on the global structure of the map by requiring that the inferred map has positive intensity everywhere and more importantly that it is \emph{sparse}.
-Besides the map model, our method also incorporates a sophisticated noise model which includes a Gaussian Process and a hierarchical model for the errorbars which are unknown.
-As a result of the sparsity and positivity constraints and the flexible noise model,
-our model is parsimonious, it places features on the map only if the data provides strong evidence for existence of those features.
-This property is not always desirable but it works very well for Io, whose surface is covered with small bright volcanic hotspots.
-Our model is superior to parametric methods in which we assume some fixed number of spots on the surface of Io and fit for the locations of those spots because we do not need to make such strong assumptions on the surface and the computational cost of the parametric models is comparable to our approach.
+We have presented a novel method for mapping the volcanic emission on Io from occultation light curves.
+The method relies on the \textsf{starry} algorithm which enables fast analytic computation of occultation light curves by expanding the surface emission map in spherical harmonics.
+Our method is substantially different from past work because we do not assume where the volcanic features are located on the surface of Io, how many there are or what they look like.
+Instead, we place weaker assumptions on the global structure of the map by requiring that the inferred map has positive intensity everywhere and most importantly, that it is \emph{sparse}.
+\cite{aizawa2020} also find the sparsity assumption useful in the context of exoplanet mapping.
+Besides the model for the surface map, our method also incorporates a sophisticated noise model which includes a Gaussian Process and a hierarchical model for the (unknown) errorbars.
+As a result of the sparsity and positivity constraints and the flexibility of the noise model,
+our model is parsimonious: it places features on the map only if the data provides strong evidence for the existence of those features.
+This property is not always desirable but it works very well for Io, whose surface is covered with small highly localized and bright volcanic hotspots.
+Our model is superior to parametric methods which assume some fixed number of spots on the surface of Io and parametrize the spot properties because we do not need to make such strong assumptions about the surface and the computational cost of the parametric models is comparable to our approach.
 
-We test the model first on simulated data and then on observations of actual occultations of Io by Jupiter taken using NASA's Infrared Telescope Facility.
-We choose two pairs of light curves to demonstrate that the model gives useful results.
+We test the model first on simulated data and then on observations of real occultations of Io by Jupiter observed using NASA's Infrared Telescope Facility.
+We choose two pairs of light curves to demonstrate that the model can recover known hotspots.
 Each pair consists of an ingress observation and an egress observation of an occultation. 
 The two observations are sufficient to break the degeneracy in the position of the spots because Jupiter's limb sweeps across the projected disc of Io at different angles at ingress and egress.
-Using a pair of observations from 1998 we infer a map consisting of two hot spots.
-Locations of both hotspots correspond to well known features on the surface of Io, the major volcano Loki and the lava flow Kanehekili.
+By fitting a pair of observations from 1998 we infer a map consisting of two spots whose locations correspond to well known hotspots on the surface of Io, the major volcano Loki and the lava flow Kanehekili.
 We also find circumstantial evidence for a third hot spot.
-Because our model is fully probabilistic, we can derive uncertainties on location of the inferred hot spots and the total power emitted from the hot spot.
+Because our model is fully probabilistic, we can derive uncertainties on location of the inferred hot spots and the total power emitted from each spot.
 In addition to the pair of observations from 1998, we test the model on another pair of observations from 2017.
 We again find two hotspots, one of which is Loki (although the peak of the intensity shifted relative to the 1998 map) and the other is Janus Patera.
 
-This paper is merely a first step in a series of papers dedicated to probabilistic modeling of Io's surface and also extending the models to exoplanet surfaces. 
-The major issue with the model presented in this work is that we can only fit a static map to some number of light curves.
-We are unable to model time variable features and quantify that variability.
-In Paper II we aim to develop a generalized model with which we will be able to fit all IRTF light curves simultaneously and infer a time-dependent map.
-
 The main limitation of our model besides the fact that we cannot account for time-dependent maps is the limited resolution of the spherical harmonic maps for which \textsf{starry} can compute occultation light curves.
-Although we can still constrain the peak intensity of spots (or some other measure of the center of emission) with much higher precision, we do lose the ability to resolve two spots close to each other and the ability to constrain the actual size of the spots. 
-It is quite possible that we can get around this problem by computing the various integrals in starry numerically using high precision arithmetic.
-Since all these operations are contained in the design matrix $\mathbf{A}$ (assuming that the ephemeris is fixed) we would only need to compute the expensive numerical integrals once for each occultation.
+Although we can still constrain the peak intensity of hotspots (or some other measure of the center of emission) with much higher precision, we lose the ability to resolve two spots close to each other and the ability to constrain the actual size of the spots. 
+It is quite possible that there is a way around this problem if we compute the various integrals in \textsf{starry} numerically using high precision arithmetic.
+Since all these operations are contained in the design matrix $\mathbf{A}$ (assuming that the ephemeris is fixed) we would only need to do the expensive computation once for each occultation.
 To be able to constrain the size of the Loki hotspot for example, we would need to fit maps on the order of $l\approx 50$.
+However, the kind of detailed mapping of Loki's magma lake with a precision of a few km done by \cite{dekleer2017} will not be possible with a spherical harmonic model because it would require maps of extremely large degrees ($l\gtrapprox 700$).
 
 \subsection{Relevance to mapping of exoplanets} 
-Exoplanets with likely extreme volcanism are prime targets for future secondary eclipse observations by the James Webb Space Telescope. 
-The formalism presented in this paper easily generalizes to exoplanets. 
-Nearly every aspect of the model we have discussed applies to exoplanets as well.
-In fact, modeling secondary eclipses exoplanets is simpler in a way because with exoplanets we can only hope to constrain lower resolution features on the map.
+\label{ssec:discussion_exoplanets}
+Hot Super Earths with likely molten surfaces such as 55 Cancri e are prime targets for future observations with the James Webb Space Telescope (JWST) \citep{samuel2014,henning2018}.
+The model we have presented in this paper can easily be applied to observations of exoplanets.
+All one has to do is compute the design matrix $\mathbf{A}$ given a specification of the planet's orbit.
+This is very straightforward in \textsf{starry} because the code was designed primarily for modeling occultations of exoplanets.
+Given that the observations of the secondary eclipses (occultations) of exoplanets will never be as high quality as observations of Io, the limited resolution spherical harmonic maps are more than sufficient for modeling exoplanet observations.
+The question of what kind of features on the surfaces of volcanic exoplanets it will be possible to constrain with secondary eclipse observations using JWST and with what precision is one we aim to address in future work.
+
+Besides being useful for modeling secondary eclipses of volcanic Super-Earths, our model is also likely to useful for modeling features on gaseous exoplanets with sparse surface features.
+These will be much easier to observe with JWST  than Super-Earths because of their larger size and higher surface temperatures.
+Even if the sparsity assumption is not valid for these types of planets the hybrid pixel/spherical harmonic model can be easily be used with a different set of priors more appropriate for observations.
+For example, a sensible prior for the surface of a fast rotating gaseous exoplanet might be requiring some degree of azimuthal symmetry.
 
 \subsection{Future work}
+This paper is a first step in a series of papers dedicated to probabilistic modeling of Io's surface. 
+A major issue with the model presented in this work is that we cannot naturally account for the time variability of surface emission.
+In Paper II in this series, we aim to fit an ensemble of light curves (occultations by Jupiter, mutual occultations and phase curves) with a generalized model which will enable us to infer a time-dependent map of the entire surface and quantify the time variability over time scales of decades.
+A spatio-temporal map of volcanic emission spanning such a long timescale will help us better understand global evolution of volcanism on Io. 
+
+Besides extending the model to time-dependent maps, it should be straightforward to extend it for use in fitting \emph{resolved} observations of Io (either occulted or not) such as the adaptive optics observations done by \cite{dekleer2016a} and \cite{dekleer2016}.
+Since we would not need to compute integrated flux over complicated boundaries in that case, we could fit maps of much higher order.
+
+
+% Bibliography
+\bibliography{bib}
 
 \appendix
 \section{Horseshoe priors}
@@ -1124,8 +1144,5 @@ To implement the non-centered parametrization we replace priors in Equation~\ref
 We find that without using the non-centered parametrization the sampling is problematic and there are lots of divergences in the gradients of the parameters; with the non-centered parametrization there are no problems with sampling.
 
 \clearpage
-
-% Bibliography
-\bibliography{bib}
 
 \end{document}
