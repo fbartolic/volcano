@@ -40,7 +40,7 @@ def get_median_map(
     map = starry.Map(ydeg=ydeg_inf)
     map.inc = inc
 
-    for n in np.random.randint(0, len(samples), 10):
+    for n in np.random.randint(0, len(samples), nsamples):
         x = samples[n]
         map.amp = x[0]
         map[1:, :] = x[1:] / map.amp
@@ -218,7 +218,7 @@ resol = 300
 
 median_map_moll_ylm = get_median_map(ydeg_inf, samples_ylm["x"], resol=resol)
 median_map_moll_pix = get_median_map(ydeg_inf, samples_pix["x"], resol=resol)
-true_map_image = map_true.render(res=300, projection="Mollweide")
+true_map_image = map_true.render(res=resol, projection="Mollweide")
 
 fig = plt.figure(figsize=(14, 16))
 
@@ -279,7 +279,7 @@ map.show(
     colorbar=False,
     cmap=cmap,
 )
-ax_true_map.set_title("True map\n")
+ax_true_map.set_title("Simulated map\n")
 
 ax_inf_map[0].set_title("Spherical harmonic model\n(Gaussian prior)")
 map.show(
