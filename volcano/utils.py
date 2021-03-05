@@ -498,8 +498,10 @@ def get_occultor_position_and_radius(
         yo_unrot = yo.value
 
         # Rotate to coordinate system where the obliquity of Io is 0
-        theta_rot = -obl.to(u.rad)
-        xo_rot, yo_rot = rotate_vectors(xo_unrot, yo_unrot, theta_rot)
+        theta_rot = -obl.to(u.rad).value
+        xo_rot, yo_rot = rotate_vectors(
+            np.array(xo_unrot), np.array(yo_unrot), np.array(theta_rot)
+        )
 
         # Choose point inside Jupiter
         idx = np.argmin(np.abs(xo_rot))
@@ -514,8 +516,10 @@ def get_occultor_position_and_radius(
 
     # Rotate position vefctors such that obliquity of the occultor is 0
     if rotate:
-        theta_rot = -eph_occulted["obl"].to(u.rad)
-        xo, yo = rotate_vectors(xo.value, yo.value, theta_rot)
+        theta_rot = -eph_occulted["obl"].to(u.rad).value
+        xo, yo = rotate_vectors(
+            np.array(xo), np.array(yo), np.array(theta_rot)
+        )
     else:
         xo = xo
         yo = yo

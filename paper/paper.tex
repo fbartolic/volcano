@@ -30,9 +30,9 @@
 
 \begin{abstract}
 Jupiter's moon Io is the most volcanically active body in the Solar System with hundreds of active volcanoes varying in intensity on different timescales.
-Io has been observed during occultations of its surface by other Galilean moons and Jupiter since the 1980s, using high-cadence near infrared photometry. 
+Io has been observed during occultations by other Galilean moons and Jupiter since the 1980s, using high-cadence near infrared photometry. 
 These observations encode a wealth of information about the volcanic features on its surface.
-    We built a generative model of Io's surface emission using the code \textsf{starry} which enables fast, analytic, and differentiable computation of occultation light curves in emitted and reflected light.
+    We built a generative model for the observed occultations using the code \textsf{starry} which enables fast, analytic, and differentiable computation of occultation light curves in emitted and reflected light.
     Our probabilistic Bayesian model is able to recover known hotspots on the surface of Io using only two light curves and without any assumptions on the locations, shapes or the number of spots.
     The methods we have developed are also directly applicable to the problem of mapping the surfaces of stars and exoplanets. \href{https://github.com/fbartolic/volcano}{\color{linkcolor}\faGithub}
 \end{abstract}
@@ -59,7 +59,7 @@ Io has been observed extensively using both space and ground observatories.
 High resolution images of Io's surface were taken by space missions such as Voyager \citep{smith1979}, Galileo \citep{belton1996} and Juno \citep{mura2020}.
 The surface has also been resolved from ground based observations in the near infrared using disk resolved imaging \citep{howell1985,simonelli1986,spencer1990} and adaptive optics observations \citep{marchis2000,marchis2005,dekleer2016}.
 Most importantly for this work,  starting with \cite{spencer1990} Io has been sporadically observed over a timespan of decades using high cadence near infrared photometry taken during occultations by Jupiter.
-Occultations by Jupiter occur twice every orbit of ~1.7 days whereas occultations by Europa, Ganymede or Callisto (so-called \emph{mutual occultations}) happen every ~6 years when Earth passes through the orbital plane of the Galilean satellites.
+Occultations by Jupiter occur twice every orbit of ~1.7 days whereas occultations by Europa, Ganymede or Callisto (so-called ``mutual occultations'') happen every ~6 years when Earth passes through the orbital plane of the Galilean satellites.
 Multiple occultations are then observable over a course of approximately one year.
 The majority of occultations by Jupiter are observed when Io is in Jupiter's shadow (``in eclipse'') while mutual occultations are almost always observed in sunlight.
 Only the brightest volcanoes are visible over the reflected light background when Io is illuminated by the Sun \citep{veeder1994,dekleer2016a}.
@@ -77,7 +77,7 @@ In this work, we build a fully probabilistic model in order to infer a \emph{two
 We assume that the map corresponding to a given set of light curves is static (up to an overall amplitude), that is, that it didn't change substantially between the times of observations.
 In Paper II in this series we will relax this assumption by constructing a model which can be used to infer a time-variable map of Io from an any number of light curves observed at arbitrary times.
 
-The model relies on the recently developed code \textsf{starry} \footnote{\url{https://starry.readthedocs.io/en/latest/}} \citep[][Luger et al. 2021 in prep]{luger2019a} which enables fast analytic computation of occultation light curves and phase curves for objects whose surface can represented in terms of spherical harmonics.
+The model relies on the recently developed code \textsf{starry}\footnote{\url{https://starry.readthedocs.io/en/latest/}} \citep[][Luger et al. 2021 in prep]{luger2019a} which enables fast analytic computation of occultation light curves and phase curves for objects whose surface can represented in terms of spherical harmonics.
 \textsf{starry} can compute phase curves and occultations in both emitted light (for modeling the isotropic thermal emission from Io's surface) and reflected light (for mapping albedo variations).
 It is many orders of magnitude faster and more accurate than pixel based algorithms and it computes exact gradients of the flux with respect to all parameters through automatic differentiation.
 \textsf{starry} also comes with extensive tools for visualizing spherical harmonic maps and simulating data.
