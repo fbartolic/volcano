@@ -30,12 +30,11 @@
 
 \begin{abstract}
 Jupiter's moon Io is the most volcanically active body in the Solar System with hundreds of active volcanoes varying in intensity on different timescales.
-Io has been observed during occultations by Jupiter and other Galilean moons using high-cadence near infrared photometry since the 1980s. 
-These observations encode a wealth of information about its surface.
-They are ideal for testing methods for inferring surface maps of occulted bodies from time series observations.
-    We built a generative model of Io's surface using the code \textsf{starry} \href{https://rodluger.github.io/starry/}{\color{linkcolor}\faGithub} which enables fast, analytic, and differentiable computation of occultation light curves in emitted and reflected light.
-    Our probabilistic Bayesian model is able to recover known bright features on the surface of Io using only two light curves and without any assumptions on the locations, shapes or the number of these features.
-    The methods we have developed are also easily applicable to the problem of mapping stars and exoplanets. \href{https://github.com/fbartolic/volcano}{\color{linkcolor}\faGithub}
+Io has been observed during occultations of its surface by other Galilean moons and Jupiter since the 1980s, using high-cadence near infrared photometry. 
+These observations encode a wealth of information about the volcanic features on its surface.
+    We built a generative model of Io's surface emission using the code \textsf{starry} which enables fast, analytic, and differentiable computation of occultation light curves in emitted and reflected light.
+    Our probabilistic Bayesian model is able to recover known hotspots on the surface of Io using only two light curves and without any assumptions on the locations, shapes or the number of spots.
+    The methods we have developed are also directly applicable to the problem of mapping surfaces of stars and exoplanets. \href{https://github.com/fbartolic/volcano}{\color{linkcolor}\faGithub}
 \end{abstract}
 
 %
@@ -292,7 +291,7 @@ Nevertheless, we find that setting priors on pixels is a far better solution tha
 \begin{figure}[t!]
     \begin{centering}
     \includegraphics[width=1.\linewidth]{figures/pixels_to_spherical_harmonics.pdf}
-    \oscaption{pixels_to_harmonics}{%
+    \oscaption{pixels_to_spherical_harmonics}{%
         Illustration of the transformation from a pixel map (left) defined on a fixed grid on the sphere into the spherical harmonic basis at $l=20$ (right) via a linear operator $\mathbf{P}^\dagger$.
         The intensity of each pixel was drawn independently from an exponential prior.
         The histograms below each of the maps show the distributions of intensities on the map. 
@@ -387,7 +386,7 @@ We take the ephemeris from \textsf{JPL Horizons} and assume that it is known exa
 \begin{figure}[t!]
     \begin{centering}
     \includegraphics[width=\linewidth]{figures/information_content.pdf}
-    \oscaption{InformationContent}{
+    \oscaption{information_content}{
         The posterior shrinkage for different kinds of observations of Io as a function of spherical harmonic degree (angular scale), averaged across all $m$ modes.
     Posterior shrinkage of 1 represent maximum information gain in updating from the prior to the posterior while 0 represents no information gain. 
     The posterior variance has been computed for different kinds of simulated observations of Io over the course of a single year: phase curves (blue), occultations by Jupiter (orange), combined phase curves and occultations by Jupiter (green) and occulltations of Io by other Galilean moons (red lines). 
@@ -545,7 +544,7 @@ For clarity, we omit the discussion of  the Horseshoe priors here and refer the 
 \begin{figure}[t!]
     \begin{centering}
     \includegraphics[width=1.\linewidth]{figures/ingress_egress_sim_snr_50.pdf}
-    \oscaption{ingress_egress_sim_snr_50}{%
+    \oscaption{simulated_ingress_egress}{%
         Inferred $l=20$ map obtained by fitting a pair of simulated ingress/egress occultation light curves of Io using a hybrid pixel model with a Regularized Horseshoe prior on the pixels.
 With this prior, the model is able to accurately recover the simulated map.
         The plot shows the simulated $l=20$ map (top), the posterior (median) estimate of the inferred map (second row), the inferred map as seen by the observer during the occultation (small circles), the data and posterior samples of the flux (orange lines), and the normalized residuals (bottom).
@@ -568,7 +567,7 @@ In this case the model still recovers both spots but the error in position of th
 \begin{figure}[t!]
     \begin{centering}
         \includegraphics[width=1.\linewidth]{figures/ingress_egress_sim_snr_10.pdf}
-    \oscaption{ingress_egress_sim_snr_10}{%
+    \oscaption{simulated_ingress_egress}{%
         Same as Fig.~\ref{fig:ingress_egress_sim_snr_50} except for light curves with SNR=10.
        \label{fig:ingress_egress_sim_snr_10}
     }
@@ -855,7 +854,7 @@ We should note however that this errorbar does not include a possible systematic
 \begin{figure}[ht!]
     \begin{centering}
     \includegraphics[width=\linewidth]{figures/irtf_1998_spots.pdf}
-    \oscaption{irtf_spots_plot}{%
+    \oscaption{irtf_spots_plots}{%
         Contour plot of the hot spots shown in Figure~\ref{fig:irtf_1998} overlaid on top of the U.S. Geological Survey's map of the surface of Io which has been constructed from observations by the Galileo spacecraft.
         The left hotspot is centered around Loki Patera, the right hotspot is centered at the Kanehekili Fluctus lava flow.
 The contour lines show the 5th, 50th, and 95th percentiles of intensity above an arbitrarily defined intensity of ``background" region around the spot.
@@ -907,7 +906,7 @@ The location of the other hotspot corresponds to Janus Patera.
 \begin{figure}[t!]
     \begin{centering}
     \includegraphics[width=1.\linewidth]{figures/irtf_2017.pdf}
-    \oscaption{irtf_2017}{%
+    \oscaption{irtf_main_plots}{%
 Inferred $l=20$ maps obtained by fitting a pair of observations of occultations of Io by Jupiter in 2017.
         The observations were made several months apart with the NASA Infrared Telescope Facility (IRTF).
 We fit a single map to both observations simultaneously although we allow for a difference in the overall amplitude of the map between ingress and egress.
@@ -975,7 +974,7 @@ We also fit for all errobars simultaneously using a hierarchical model and we pl
 \begin{figure}[t!]
     \begin{centering}
     \includegraphics[width=\linewidth]{figures/irtf_2017_spots.pdf}
-    \oscaption{irtf_spots_plot}{%
+    \oscaption{irtf_spots_plots}{%
         Contour plot of the hot spots shown in Figure~\ref{fig:irtf_2017} overlaid on top of the U.S. Geological Survey's map of the surface of Io which has been constructed from observations by the Galileo spacecraft.
         The left hotspot is centered around Loki Patera, the right hotspot is centered at Janus Patera.
 The contour lines show the 5th, 50th, and 95th percentiles of intensity above an arbitrarily defined intensity of ``background" region around the spot.
@@ -1074,7 +1073,7 @@ Besides being useful for modeling secondary eclipses of volcanic Super-Earths, o
 These will be much easier to observe with JWST  than Super-Earths because of their larger size and higher surface temperatures.
 Even if the sparsity assumption is not valid for these types of planets the hybrid pixel/spherical harmonic model can be easily be used with a different set of priors more appropriate for these observations.
 For example, a sensible prior for the surface of a fast rotating gaseous exoplanet might be requiring some degree of azimuthal symmetry for the inferred map.
-\newline
+
 \subsection{Future work}
 This paper is a first step in a series of papers dedicated to probabilistic modeling of Io's surface. 
 A major issue with the model presented in this work is that we cannot naturally account for the time variability of surface emission.
