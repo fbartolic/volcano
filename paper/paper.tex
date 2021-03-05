@@ -34,7 +34,7 @@ Io has been observed during occultations of its surface by other Galilean moons 
 These observations encode a wealth of information about the volcanic features on its surface.
     We built a generative model of Io's surface emission using the code \textsf{starry} which enables fast, analytic, and differentiable computation of occultation light curves in emitted and reflected light.
     Our probabilistic Bayesian model is able to recover known hotspots on the surface of Io using only two light curves and without any assumptions on the locations, shapes or the number of spots.
-    The methods we have developed are also directly applicable to the problem of mapping surfaces of stars and exoplanets. \href{https://github.com/fbartolic/volcano}{\color{linkcolor}\faGithub}
+    The methods we have developed are also directly applicable to the problem of mapping the surfaces of stars and exoplanets. \href{https://github.com/fbartolic/volcano}{\color{linkcolor}\faGithub}
 \end{abstract}
 
 %
@@ -49,7 +49,7 @@ This process is also known as \emph{heat-pipe volcanism}, whereby magma is trans
 Heat-pipe volcanism likely occurred in the early history of terrestrial planets in the Solar System \citep{moore2013,moore2017}, most notably on early Earth prior to the onset of plate tectonics.
 
 Besides providing a window into early volcanic activity in the Solar System, Io is also in many ways an analogue of a volcanically active exoplanet.
-Volcanic exoplanets, sometimes dubbed ``super-Ios" or ``lava worlds", have gathered a lot of interest in recent years.
+Volcanic exoplanets, sometimes dubbed ``super-Ios'' or ``lava worlds'', have gathered a lot of interest in recent years.
 Photometric and spectral signatures of volcanic activity on such worlds will likely be detectable in the near future with telescopes such as JWST and LUVOIR \citep{kaltenegger2010,henning2018,oza2019,chao2020}.
 Existing exoplanet detections of planets with potential volcanic activity include CoRoT-7b \citep{barnes2010}, the first rocky exoplanet discovered and one which is likely heated by strong tidal forces; 55 Cancri e, whose inferred longitudinal offset in peak surface emission has been attributed to (among other things) lava flows on the surface \citep{demory2016,demory2016d,hammond2017a}; several planets in the TRAPPIST-1 system in a Laplace-like resonance likely exhibiting volcanic activity \citep{kislyakova2017,dobos2019}, and many others.
 Not all such exoplanets are expected to have Io-like volcanism.
@@ -61,7 +61,7 @@ The surface has also been resolved from ground based observations in the near in
 Most importantly for this work,  starting with \cite{spencer1990} Io has been sporadically observed over a timespan of decades using high cadence near infrared photometry taken during occultations by Jupiter.
 Occultations by Jupiter occur twice every orbit of ~1.7 days whereas occultations by Europa, Ganymede or Callisto (so-called \emph{mutual occultations}) happen every ~6 years when Earth passes through the orbital plane of the Galilean satellites.
 Multiple occultations are then observable over a course of approximately one year.
-The majority of occultations by Jupiter are observed when Io is in Jupiter's shadow (``in eclipse") while mutual occultations are almost always observed in sunlight.
+The majority of occultations by Jupiter are observed when Io is in Jupiter's shadow (``in eclipse'') while mutual occultations are almost always observed in sunlight.
 Only the brightest volcanoes are visible over the reflected light background when Io is illuminated by the Sun \citep{veeder1994,dekleer2016a}.
 
 Both kinds of occultations have been used to study volcanic activity on the surface.
@@ -77,7 +77,7 @@ In this work, we build a fully probabilistic model in order to infer a \emph{two
 We assume that the map corresponding to a given set of light curves is static (up to an overall amplitude), that is, that it didn't change substantially between the times of observations.
 In Paper II in this series we will relax this assumption by constructing a model which can be used to infer a time-variable map of Io from an any number of light curves observed at arbitrary times.
 
-The model relies on the recently developed code \textsf{starry} \citep[][Luger et al. 2021 in prep]{luger2019a} which enables fast analytic computation of occultation light curves and phase curves for objects whose surface can represented in terms of spherical harmonics.
+The model relies on the recently developed code \textsf{starry} \footnote{\url{https://starry.readthedocs.io/en/latest/}} \citep[][Luger et al. 2021 in prep]{luger2019a} which enables fast analytic computation of occultation light curves and phase curves for objects whose surface can represented in terms of spherical harmonics.
 \textsf{starry} can compute phase curves and occultations in both emitted light (for modeling the isotropic thermal emission from Io's surface) and reflected light (for mapping albedo variations).
 It is many orders of magnitude faster and more accurate than pixel based algorithms and it computes exact gradients of the flux with respect to all parameters through automatic differentiation.
 \textsf{starry} also comes with extensive tools for visualizing spherical harmonic maps and simulating data.
@@ -529,13 +529,13 @@ We find that setting $\sigma_s=2/l$ where $l$ is the order of expansion of the m
 \subsection{Fitting simulated ingress/egress light curves}
 \label{ssec:fitting_sim_ingress_egress}
 In this section we generalize the example from Section~\ref{ssec:pixels_vs_harmonics} such that the simulated map includes an additional faint hot spot located at $-15^\circ$ N latitude and $-40^\circ$ E longitude with a diameter of $5^\circ$.
-We set the amplitude of the ``faint" spot to 30\% of the luminosity of the featureless map.
+We set the amplitude of the ``faint'' spot to 30\% of the luminosity of the featureless map.
 As before we assume that we know the geometry of the occultation exactly.
 We generate the light curves from an $l=30$ map and fit an $l=20$ map and we apply a Gaussian smoothing filter to both the simulated map and the inferred map with the smoothing parameter set to $\sigma_s=2/l=0.1$.
 We fit the model using NUTS with 1000 warm-up steps and 2000 final steps. 
 
 We found that in cases where the simulated map consists of a bright and a faint spot the pixel model with an exponential prior such as the one we used in Section~\ref{ssec:pixels_vs_harmonics} does not recover the faint spot. 
-Instead, we use a different heavy tailed prior called the Regularized Horseshoe prior\footnote{To be precise, we use the truncated version of the Regularized Horseshoe prior where the coefficients are required to be positive.} (also known as the ``Finnish Horseshoe") \citep{piironen2017}.
+Instead, we use a different heavy tailed prior called the Regularized Horseshoe prior\footnote{To be precise, we use the truncated version of the Regularized Horseshoe prior where the coefficients are required to be positive.} (also known as the ``Finnish Horseshoe'') \citep{piironen2017}.
 This prior is specifically designed for use in Bayesian sparse linear regression. 
 It is an improvement on the Horseshoe prior introduced in \cite{carvalho2010a}.
 The key idea behind both kinds of Horseshoe priors is to set the scale for each regression coefficient (pixel) to a product of a global scale $\tau$ and a local scale $\lambda_i$ (where $i$ indexes all the pixels) and we marginalize over these scales by setting a prior for each. 
@@ -798,7 +798,7 @@ Both of these quantities are listed in Table~\ref{tab:irtf_1998_derived}.
 
 Figure~\ref{fig:irtf_1998_spots} shows  a contour map of both hot spots overlaid on top of the U.S. Geological Survey's map of the surface of Io \citep{williams2011} which was constructed from observations by the Galileo satellite.
 The plot shows the error in the inferred latitude and longitude for each spot (white lines) and a contour map computed from the median posterior estimate of the map.
-The contour lines correspond to the 5th, 50th, and 95th percentiles of intensity above an arbitrarily defined intensity of ``background" region around the spot.
+The contour lines correspond to the 5th, 50th, and 95th percentiles of intensity above an arbitrarily defined intensity of ``background'' region around the spot.
 
 The location of the bright hotspot is $16.414_{-0.011}^{+0.027}\quad^\circ$ N latitude and $53.107_{-0.033}^{+0.041}\quad^\circ$ E longitude which corresponds to the location of Loki Patera.
 The faint hot spot is at $-15.756_{-11.382}^{+3.812}\quad ^\circ$ N latitude and $321.568_{-4.208}^{2.803}\quad^\circ$ E longitude which is the Kanehekili Fluctus lava flow.
@@ -857,7 +857,7 @@ We should note however that this errorbar does not include a possible systematic
     \oscaption{irtf_spots_plots}{%
         Contour plot of the hot spots shown in Figure~\ref{fig:irtf_1998} overlaid on top of the U.S. Geological Survey's map of the surface of Io which has been constructed from observations by the Galileo spacecraft.
         The left hotspot is centered around Loki Patera, the right hotspot is centered at the Kanehekili Fluctus lava flow.
-The contour lines show the 5th, 50th, and 95th percentiles of intensity above an arbitrarily defined intensity of ``background" region around the spot.
+The contour lines show the 5th, 50th, and 95th percentiles of intensity above an arbitrarily defined intensity of ``background'' region around the spot.
         \label{fig:irtf_1998_spots}
     }
     \end{centering}
@@ -977,7 +977,7 @@ We also fit for all errobars simultaneously using a hierarchical model and we pl
     \oscaption{irtf_spots_plots}{%
         Contour plot of the hot spots shown in Figure~\ref{fig:irtf_2017} overlaid on top of the U.S. Geological Survey's map of the surface of Io which has been constructed from observations by the Galileo spacecraft.
         The left hotspot is centered around Loki Patera, the right hotspot is centered at Janus Patera.
-The contour lines show the 5th, 50th, and 95th percentiles of intensity above an arbitrarily defined intensity of ``background" region around the spot.
+The contour lines show the 5th, 50th, and 95th percentiles of intensity above an arbitrarily defined intensity of ``background'' region around the spot.
         \label{fig:irtf_2017_spots}
     }
     \end{centering}
