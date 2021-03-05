@@ -3,7 +3,11 @@ import subprocess
 import os
 
 # Generate the github links
-hash = subprocess.check_output(["git", "rev-parse", "HEAD"]).decode("utf-8")[:-1]
+if os.getenv("CI", False):
+    hash = subprocess.check_output(["git", "rev-parse", "HEAD"]).decode("utf-8")[:-1]
+else:
+    hash = "0a3c2c1146e90206a77908016b9c3c26b60eba64"
+
 slug = os.getenv("TRAVIS_REPO_SLUG", "fbartolic/volcano")
 with open("gitlinks.tex", "w") as f:
     print(
