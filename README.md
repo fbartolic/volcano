@@ -7,4 +7,4 @@
   </a>
 </p>
 
-Time dependent maps of Io and exoplanets with Starry.
+Mapping the surface of Jupiter's moon Io with [starry](https://starry.readthedocs.io/en/latest/).
