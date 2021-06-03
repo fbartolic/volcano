@@ -441,7 +441,7 @@ for ax in (ax_lc[:2], ax_res[:2], ax_lc[2:], ax_res[2:]):
     ax[1].plot((-d, +d), (1 - d, 1 + d), **kwargs)
     ax[1].plot((-d, +d), (-d, +d), **kwargs)
 
-ax_lc[0].set_ylabel("Flux")
+ax_lc[0].set_ylabel("Intensity")
 
 fig.text(
     0.27, 0.07, "Occultor x position [Io radii]", ha="center", va="center"

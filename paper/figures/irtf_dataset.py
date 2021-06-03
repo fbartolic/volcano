@@ -42,7 +42,7 @@ ax[1].set(xticks=np.arange(0, 6, 1))
 ax[0].set_title(lc1_in.time.datetime[0].strftime("%Y-%m-%d %H:%M"))
 ax[1].set_title(lc1_eg.time.datetime[0].strftime("%Y-%m-%d %H:%M"))
 
-ax[0].set(ylabel="Flux [ GW/um/sr]")
+ax[0].set(ylabel="Spectral intensity [ GW/um/sr]")
 
 
 for a in ax:

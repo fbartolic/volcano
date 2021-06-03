@@ -514,7 +514,7 @@ def plot(
     fig.text(
         0.5, 0.06, "Occultor x position [Io radii]", ha="center", va="center"
     )
-    ax_lc[0].set_ylabel("Flux")
+    ax_lc[0].set_ylabel("Intensity")
     ax_res[0].set_ylabel("Residuals\n (norm.)")
 
     fig.savefig(fname, bbox_inches="tight", dpi=500)

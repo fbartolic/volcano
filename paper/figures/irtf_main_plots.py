@@ -411,7 +411,7 @@ def make_plots(
 
     # Set common labels
     fig.text(0.5, 0.04, "Duration [minutes]", ha="center", va="center")
-    ax_lc[0].set_ylabel("Flux [GW/sr/um]")
+    ax_lc[0].set_ylabel("Intensity [GW/sr/um]")
     ax_res[0].set_ylabel("Residuals")
 
     year = lc_in.time[0].isot[:4]
