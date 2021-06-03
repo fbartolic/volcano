@@ -1,62 +1,56 @@
-import os
-import pickle as pkl
-
 import numpy as np
-from astropy.table import vstack
-from matplotlib import pyplot as plt
-from matplotlib.ticker import MaxNLocator
+import matplotlib.pyplot as plt
+from matplotlib.ticker import FormatStrFormatter, AutoMinorLocator
+import pickle as pkl
+import astropy.units as u
 
 np.random.seed(42)
 
-# Load all light curves
-directory = "../../data/irtf_processed/"
-lcs = []
-for file in os.listdir(directory):
-    with open(os.path.join(directory, file), "rb") as handle:
-        lcs.append(pkl.load(handle))
-lcs_stacked = vstack(lcs, metadata_conflicts="silent")
-lcs_stacked.sort()
+# The 1998 pair of light curves
+with open("../../data/irtf_processed/lc_1998-08-27.pkl", "rb") as handle:
+    lc1_in = pkl.load(handle)
 
-## Plot stacked light curves
-# fig, ax = plt.subplots(figsize=(6, 2))
-# ax.plot(lcs_stacked.time.decimalyear, lcs_stacked["flux"], "k.", alpha=0.1)
-# ax.set_ylabel("Flux [GW/um/sr]")
-# ax.set_xlabel("time [years]")
-# ax.set_xticks(np.arange(1996, 2024, 4))
-# ax.set_yticks(np.arange(0, 250, 50))
+with open("../../data/irtf_processed/lc_1998-11-29.pkl", "rb") as handle:
+    lc1_eg = pkl.load(handle)
 
-# Plot maximum flux for each light curve
-max_f = np.array([np.sort(lcs[i]["flux"].value)[-2] for i in range(len(lcs))])
-yr = np.array([lc.time.decimalyear[0] for lc in lcs])
-idx_sorted = np.argsort(yr)
 
-fig, ax = plt.subplots(figsize=(8, 4))
-ax.plot(yr[idx_sorted], max_f[idx_sorted], "ko", alpha=0.6)
-ax.set_ylabel("Peak flux [GW/um/sr]")
-ax.set_xlabel("Time [years]")
-ax.set_xticks(np.arange(1996, 2024, 4))
-ax.set_yticks(np.arange(0, 250, 50))
-ax.grid()
-plt.savefig("irtf_max_flux.pdf", bbox_inches="tight", dpi=500)
+## The 2017 pair of light curves
+# with open("../../data/irtf_processed/lc_2017-03-31.pkl", "rb") as handle:
+#    lc2_in = pkl.load(handle)
+#
+# with open("../../data/irtf_processed/lc_2017-05-11.pkl", "rb") as handle:
+#    lc2_eg = pkl.load(handle)
 
-# Plot a few example light curves
-fig, ax = plt.subplots(4, 3, figsize=(10, 8), sharex=True)
-fig.subplots_adjust(wspace=0.2, hspace=0.3)
+fig, ax = plt.subplots(1, 2, figsize=(9, 4), sharey=True)
 
-idcs = np.random.randint(0, len(lcs) - 1, size=3 * 4)
+ax[0].plot(
+    (lc1_in.time.mjd - lc1_in.time.mjd[0]) * u.d.to(u.min),
+    lc1_in["flux"],
+    "ko",
+    alpha=0.4,
+)
+ax[1].plot(
+    (lc1_eg.time.mjd - lc1_eg.time.mjd[0]) * u.d.to(u.min),
+    lc1_eg["flux"],
+    "ko",
+    alpha=0.4,
+)
 
-for a, idx in zip(ax.flatten(), idcs):
-    t = (lcs[idx].time.mjd - lcs[idx].time.mjd[0]) * 24 * 60
-    f = lcs[idx]["flux"].value
+ax[0].set(xticks=np.arange(0, 5, 1), yticks=np.arange(0, 60, 10))
+ax[1].set(xticks=np.arange(0, 6, 1))
 
-    #     a.errorbar(t, lcs[i]['flux'].value, lcs[i]['flux_err'].value, color='black',
-    #                              marker='.',linestyle='',  alpha=0.3)
-    a.plot(t, f, "k.", alpha=0.3)
-    a.locator_params(nbins=8, axis="x")
-    a.yaxis.set_major_locator(MaxNLocator(integer=True, nbins=5))
-    a.set_ylim(bottom=-1)
-    a.set_title(f"{lcs[idx].time[0].isot[:19]}", fontdict={"fontsize": 12})
+ax[0].set_title(lc1_in.time.datetime[0].strftime("%Y-%m-%d %H:%M"))
+ax[1].set_title(lc1_eg.time.datetime[0].strftime("%Y-%m-%d %H:%M"))
 
-fig.text(0.5, 0.02, "Duration [minutes]", ha="center")
-fig.text(0.035, 0.5, "Flux [GW/um/sr]", va="center", rotation="vertical")
-plt.savefig("irtf_sample_lightcurves.pdf", bbox_inches="tight", dpi=500)
+ax[0].set(ylabel="Flux [ GW/um/sr]")
+
+
+for a in ax:
+    a.xaxis.set_minor_locator(AutoMinorLocator())
+    a.yaxis.set_minor_locator(AutoMinorLocator())
+
+for a in ax.flatten():
+    a.grid(alpha=0.5)
+
+fig.text(0.5, -0.02, "Duration [minutes]", ha="center", va="center")
+fig.savefig("irtf_1998_occultations.pdf", bbox_inches="tight", dpi=500)
