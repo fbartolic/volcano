@@ -1,5 +1,5 @@
 % !TeX root = ./paper.tex
-\documentclass[modern]{aastex62}
+\documentclass[linenumbers,modern]{aastex62}
 
 % Load the corTeX style definitions
 \input{cortex}
@@ -74,7 +74,7 @@ Understanding the detailed albedo distribution is crucial to constraining the ep
 
 Most studies of (unresolved) occultations of Io fit multiple light curves independently with the goal of inferring one-dimensional longitudinal variations in brightness on its surface (notable exceptions are \cite{spencer1994} and \cite{dekleer2017}), assuming relatively strong priors on the locations of individual volcanoes.
 In this work, we build a fully probabilistic model in order to infer a \emph{two-dimensional map} of Io's volcanic surface from archival IRTF observations of Io in the near infrared.
-We assume that the map corresponding to a given set of light curves is static (up to an overall amplitude), that is, that it didn't change substantially between the times of observations.
+We assume that the map corresponding to a given set of light curves is static (up to an overall amplitude), that is, we assume that it didn't change substantially between the times of observations.
 In Paper II in this series we will relax this assumption by constructing a model which can be used to infer a time-variable map of Io from an any number of light curves observed at arbitrary times.
 
 The model relies on the recently developed code \textsf{starry}\footnote{\url{https://starry.readthedocs.io/en/latest/}} \citep[][Luger et al. 2021 in prep]{luger2019a} which enables fast analytic computation of occultation light curves and phase curves for objects whose surface can represented in terms of spherical harmonics.
@@ -105,51 +105,38 @@ of our results.
 
 \section{Data}
 \label{sec:data}
+The observations of Io we use in this work were first described in \cite{spencer1994} who began the observing campaign and were joined by others to collect the data we use here \citep{stansberry1997,rathbun2002,rathbun2006,rathbun2010,tate2020}. 
+These data are currently being organized to be posted on the Planetary Data System (PDS) (Julie Rathbun, personal communication).  
+We used an early version of this data archive.
+The archive contains on the order of ~100 separate light curves of occultations of Io by Jupiter, observed at times when Io was in Jupiter's shadow (``in eclipse") so that the source of the observed flux is thermal emission.
+The geometry of the occultations is such that depending on the time of the year, Io is in eclipse during either the ingress or the egress of the occultation.
+This means that in any given year, the observations consist of only ingress (egress) observations during one fraction of the year and egress (ingress) observations during the other fraction. 
+In Paper II we plan to simultaneously fit a large fraction of the light curves in the complete archive with a generalized version of the model presented in this paper.
+
+Since we have restricted the scope of this work to fitting static maps of Io's thermal emission, we need light curves which are closely spaced in time so that Io's the surface emission doesn't drastically change between the observations.
+In addition, we need observations of both the ingress and the egress of an occultation  because Jupiter's limb sweeps across Io's projected disc at different angles at ingress and egress and this breaks the degeneracy in the position of a hotspot on the surface.
+Given these requirements, we chose a single pair of ingress/egress observations from 1998 observed 94 days apart and another pair of ingress/egress observations from 2017 observed 54 days apart.
+We fit one map for each of the two pairs of light curves.
+
+The 1998 occultations (Figure \ref{fig:irtf_1998_data}) have been observed with the NSFCam 1-5 $\mu m$ camera \citep{shure1994} while the 2017 occultations were observed with the SpeX 0.8-5.5 $\mu m$ spectrographer/imager \citep{rayner2003}.
+Each light curve covers a timespan of $\sim 4$ minutes which is the duration of the ingress (egress) part of the entire occultation.
+The observing cadence for each light curve is about a second which sets a lower limit for the size of the inferred spatial features (~15km).
+The selected light curves have high signal to noise ratio and they encode information about the surface emission.
+One can clearly see step-like features which correspond to a volcanic hotspot coming in or out of view during the course of the occultation.
+As with all ground-based photometry, the observations are influenced by atmospheric variability which results in some correlated noise in the light curves which needs to be accounted for in the model.
 
 \begin{figure}[t!]
     \begin{centering}
-    \includegraphics[width=\linewidth]{figures/irtf_max_flux.pdf}
+    \includegraphics[width=\linewidth]{figures/irtf_1998_occultations.pdf}
     \oscaption{irtf_dataset}{%
-        Maximum flux for each IRTF light curve of Io observed during an occultation of Io by Jupiter.
-       \label{fig:irtf_max_flux}
+       Occultations of Io by Jupiter observed 3 months apart in 1998 using NASA's IRTF telescope.
+        The light curve on the left is the ingress of the occultation (Io disappearing behind the limb of Jupiter) and the one on the right is the egress (Io appearing behind Jupiter).
+       Each visible step-like feature in the light curve (a rapid increase/decrease in total flux at particular times) is a  consequence of a volcanic hotspot coming in or out of view during the course of the occultation.
+        The two light curves contain a wealth of information about thermal emission from Io's surface. 
+       \label{fig:irtf_1998_data}
     }
     \end{centering}
 \end{figure}
-
-The complete dataset consists of 112 sets of observations of Io in the near infrared taken from 1996 until 2018 using different instruments at NASA's IRTF observatory, the NSFCam  1-5 $\mu m$ camera \citep{shure1994}, the SpeX 0.8-5.5 $\mu m$ spectrographer/imager \citep{rayner2003} and the iShell 1.1-5.3 $\mu m$  spectrographer/imager \citep{rayner2016}.
-Although the observations span decades, the timespan between observations varies and there were very few observations taken between 2008 and 2016.
-All of the observations were taken while Io was \emph{in eclipse}, meaning that it was in Jupiter's shadow so the source of observed emission from the surface is thermal radiation.
-On the other hand, for observations of Io \emph{in sunlight} the observed flux is a sum of thermal (volcanic) emission and reflected sunlight which depends on the albedo map in the near infrared.
-In figure~\ref{fig:irtf_max_flux} we plot the maximum flux for each occultation light curve in units of $\mathrm{GW}/\mu \mathrm{m}/\mathrm{sr}$ as a function of time.
-This value is approximately equal to the total flux emitted from the Jupiter-facing side of Io.
-The major variation in the baseline brightness is driven by Loki.
-Most hotspots on Io can be divided into those who are persistently active for a year or longer at moderate intensity, and those which have bursts of activity and reach very high intensities for short periods of time \citep{dekleer2016}.
-
-\begin{figure}[h!]
-    \begin{centering}
-        \includegraphics[width=\linewidth]{figures/irtf_sample_lightcurves.pdf}
-    \oscaption{irtf_dataset}{%
-        A selection of sample light curves observed using NASA's IRTF telescope during occultations of Io by Jupiter in our dataset.
-        The step-like morphology of the light curves is due to bright volcanoes on Io's surface coming in or out of view during the course of an occultation.
-        These light curves visibly encode information about the features on the surface.
-        \label{fig:irtf_sample_lightcurves}
-    }
-    \end{centering}
-\end{figure}
-
-In Figure~\ref{fig:irtf_sample_lightcurves} we display a random subset of all the light curves
-in the dataset. 
-Each light curve covers a timespan of $\sim 4$ minutes which is the duration of the ingress (or egress) part of the entire occultation.
-The exposure cadence for each light curve is about a second, with some variation between light curves.
-It follows that over the course of a single exposure Jupiter's limb passes over about 15km on Io's surface which provides a lower bound for the size of the features that we can reliably estimate.
-The shapes of light curves strongly deviate from a smooth variation that one would expect to see if the surface thermal emission was uniformly distributed.
-Especially prominent are light curves with clear step-like features which are due to bright localized spots coming in and out of view during the course of an occultation.
-The fact that these features are so clearly visible means that even individual light curves encode a wealth of information about the spots.
-
-The photometric quality of the light curves varies from year to year because multiple instruments were used over the years. 
-As with all ground-based photometry, the observations are influenced by atmospheric variability which results in some correlated noise in the light curves, because of this the flux is not always monotonically increasing or decreasing as one would expect.
-Complicating matters, the light curves lack errorbars. 
-We deal with this by treating all errobars as free parameters with a common characteristic scale in the final model.
 
 \section{Model}
 \label{sec:model}
