@@ -160,7 +160,7 @@ def get_body_ephemeris(
     epochs = {"start": start, "stop": end, "step": step}
     obj = Horizons(id=body_id, epochs=epochs, id_type="id")
 
-    eph = obj.ephemerides(quantities="1,13,20", extra_precision=True)
+    eph = obj.ephemerides(extra_precision=True)
     times_jpl = Time(eph["datetime_jd"], format="jd")
 
     # Store all data in a TimeSeries object
@@ -466,7 +466,7 @@ def get_occultor_position_and_radius(
 
     xo = (
         -delta_ra
-        * np.cos(eph_occultor["DEC"].to(u.rad))
+        * np.cos(eph_occulted["DEC"].to(u.rad))
         / (0.5 * eph_occulted["ang_width"].to(u.arcsec))
     ).value
     yo = delta_dec / (0.5 * eph_occulted["ang_width"].to(u.arcsec)).value
