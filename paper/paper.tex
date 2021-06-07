@@ -41,11 +41,10 @@ These observations encode a wealth of information about the volcanic features on
 \section{Introduction}
 The surface of Io is covered with hundreds of volcanoes which appear as bright spots in the near infrared, their intensities varying on timescales ranging from days to decades.
 The global heat flow on its surface is about 40 times larger than Earth's \citep{breuer2007,davies2010} and about 50\% of the heat flow emanates from only 1.2\% of Io's surface \citep{veeder2012}.
-This intense volcanic activity cannot be explained by radioactive decay, the mechanism which drives Earth's volcanism.
+This intense volcanic activity cannot be explained by radioactive decay, the mechanism which (in addition to residual heat from formation) drives Earth's volcanism.
 Instead, the volcanism on Io is driven by tidal interactions with Jupiter and sustained by the Laplace resonance with Europa and Ganymede \citep{peale1979}.
 Contrary to Earth, Io lacks plate tectonics.
-The heat transport mechanism most likely operating on Io is volcanism generated in the lithosphere (the outermost shell of a terrestrial body).
-This process is also known as \emph{heat-pipe volcanism}, whereby magma is transported to the surface through localised vents \citep{oreilly1981}.
+The heat transport mechanism most likely operating on Io is \emph{heat-pipe volcanism}, a process in which magma is transported to the surface through localised vents from the litosphere  (the outermost shell of a terrestrial body) \citep{oreilly1981}.
 Heat-pipe volcanism likely occurred in the early history of terrestrial planets in the Solar System \citep{moore2013,moore2017}, most notably on early Earth prior to the onset of plate tectonics.
 
 Besides providing a window into early volcanic activity in the Solar System, Io is also in many ways an analogue of a volcanically active exoplanet.
@@ -59,7 +58,7 @@ Io has been observed extensively using both space and ground observatories.
 High resolution images of Io's surface were taken by space missions such as Voyager \citep{smith1979}, Galileo \citep{belton1996} and Juno \citep{mura2020}.
 The surface has also been resolved from ground based observations in the near infrared using disk resolved imaging \citep{howell1985,simonelli1986,spencer1990} and adaptive optics observations \citep{marchis2000,marchis2005,dekleer2016}.
 Most importantly for this work,  starting with \cite{spencer1990} Io has been sporadically observed over a timespan of decades using high cadence near infrared photometry taken during occultations by Jupiter.
-Occultations by Jupiter occur twice every orbit of ~1.7 days whereas occultations by Europa, Ganymede or Callisto (so-called ``mutual occultations'') happen every ~6 years when Earth passes through the orbital plane of the Galilean satellites.
+Occultations by Jupiter occur once every orbit of ~1.7 days whereas occultations by Europa, Ganymede or Callisto (so-called ``mutual occultations'') happen every ~6 years when Earth passes through the orbital plane of the Galilean satellites.
 Multiple occultations are then observable over a course of approximately one year.
 The majority of occultations by Jupiter are observed when Io is in Jupiter's shadow (``in eclipse'') while mutual occultations are almost always observed in sunlight.
 Only the brightest volcanoes are visible over the reflected light background when Io is illuminated by the Sun \citep{veeder1994,dekleer2016a}.
@@ -69,7 +68,7 @@ Both kinds of occultations have been used to study volcanic activity on the surf
 \cite{rathbun2002},\citet{rathbun2006} and \citet{rathbun2010} used observations from NASA's 
 Infrared Telescope Facility (IRTF) telescope to study the long term variability of different volcanic spots, finding evidence of periodicity in Loki's eruptions and establishing the transient nature of observed emission from most volcanoes. 
 By studying a (spatially resolved) occultation of Io by Europa, \cite{dekleer2017} mapped the Loki Patera (\emph{Patera} is a type of an irregular crater) region to a precision of about 2 kilometers.
-In addition to observations of occultations in the near infrared, several groups have been observing mutual occultations in the optical for decades with the purpose of inferring the optical albedo of Io and improving ephemeris precision for Galilean satellites \citep[][and references therein]{arlot1974,saquet2018,morgado2016a}.
+In addition to observations of occultations in the near infrared, several groups have been observing mutual occultations in the optical for decades with the purpose of inferring the optical albedo of Io and improving ephemeris precision for Galilean satellites \citep[][and references therein]{arlot1974,lainey2009,saquet2018,morgado2016a}.
 Understanding the detailed albedo distribution is crucial to constraining the ephemeris of Io to a very high precision.
 
 Most studies of (unresolved) occultations of Io fit multiple light curves independently with the goal of inferring one-dimensional longitudinal variations in brightness on its surface (notable exceptions are \cite{spencer1994} and \cite{dekleer2017}), assuming relatively strong priors on the locations of individual volcanoes.
@@ -77,7 +76,7 @@ In this work, we build a fully probabilistic model in order to infer a \emph{two
 We assume that the map corresponding to a given set of light curves is static (up to an overall amplitude), that is, we assume that it didn't change substantially between the times of observations.
 In Paper II in this series we will relax this assumption by constructing a model which can be used to infer a time-variable map of Io from an any number of light curves observed at arbitrary times.
 
-The model relies on the recently developed code \textsf{starry}\footnote{\url{https://starry.readthedocs.io/en/latest/}} \citep[][Luger et al. 2021 in prep]{luger2019a} which enables fast analytic computation of occultation light curves and phase curves for objects whose surface can represented in terms of spherical harmonics.
+The model relies on the recently developed code \textsf{starry}\footnote{\url{https://starry.readthedocs.io/en/latest/}} \citep{luger2019a,luger2021b} which enables fast analytic computation of occultation light curves and phase curves for objects whose surface can represented in terms of spherical harmonics.
 \textsf{starry} can compute phase curves and occultations in both emitted light (for modeling the isotropic thermal emission from Io's surface) and reflected light (for mapping albedo variations).
 It is many orders of magnitude faster and more accurate than pixel based algorithms and it computes exact gradients of the flux with respect to all parameters through automatic differentiation.
 \textsf{starry} also comes with extensive tools for visualizing spherical harmonic maps and simulating data.
@@ -120,7 +119,7 @@ We fit one map for each of the two pairs of light curves.
 
 The 1998 occultations (Figure \ref{fig:irtf_1998_data}) have been observed with the NSFCam 1-5 $\mu m$ camera \citep{shure1994} while the 2017 occultations were observed with the SpeX 0.8-5.5 $\mu m$ spectrographer/imager \citep{rayner2003}.
 Each light curve covers a timespan of $\sim 4$ minutes which is the duration of the ingress (egress) part of the entire occultation.
-The observing cadence for each light curve is about a second which sets a lower limit for the size of the inferred spatial features (~15km).
+The observing cadence for each light curve is about a second which sets a lower limit for the size of the inferred spatial features ($\sim 15$km).
 The selected light curves have high signal to noise ratio and they encode information about the surface emission.
 One can clearly see step-like features which correspond to a volcanic hotspot coming in or out of view during the course of the occultation.
 As with all ground-based photometry, the observations are influenced by atmospheric variability which results in some correlated noise in the light curves which needs to be accounted for in the model.
@@ -170,7 +169,7 @@ where $\Delta\alpha$ and $\Delta\delta$ are differences in right ascension and d
 Although the sky position of Jupiter relative to Io is known to a precision of a few kilometers, several complications arise when attempting to compute Jupiter's radius.
 First, Jupiter is not spherical and its equatorial radius is greater than the polar radius by thousands of kilometers. 
 Because \textsf{starry} does not (yet) support occultations for non-spherical objects and because the effect is negligible at the resolution of our maps, we assume that Jupiter is locally spherical at the point of an occultation. 
-We estimate an effective radius from the measurements of Jupiter's shape from Voyager radio occultation data \citep[Fig.~7]{lindal1981}.
+We estimate an effective radius from the measurements of Jupiter's shape from Pioneer and Voyager radio occultation data \citep[Fig.~7 of][]{lindal1981}.
 When computing the occultation latitude we fix Jupiter's latitude to the value at the center of Io's disc because 
 the variation of Jupiter's effective radius along Io's disc is negligible.
 
@@ -198,6 +197,9 @@ There are substantial uncertainties in each of these steps.
 The shape profile data are quite old and it is not known if the structure of Jupiter's has remained constant since the 1980s. 
 The shape profile also depends on the wind velocity structure and temperature which we do not take into account.
 In addition to uncertainties about the atmospheric structure, there are uncertainties associated with digitizing the data shown in Fig.~7 in \cite{lindal1981} because it is not available in table form.
+The problems with Galileo's high gain antenna prevented it from obtaining more recent radio occultations of the neutral atmosphere and Juno's orbit has thus far avoided such occultations.  
+However, over the 2023-2025 period an extended Juno mission may be able to obtain radio occultations which will refine our understanding of Jupiter's size and shape \citep{hodges2020}.
+
 Since our main focus in this work is the map model, we leave a detailed investigation into the various sources of error that go into the radius estimate for future work.
 
 \subsection{Linear model for the flux}
@@ -206,21 +208,21 @@ Given the geometry of on occultation event at the times of observations, computi
 \textsf{starry} computes the integrated flux of an unocculted or occulted sphere analytically given an expansion of the surface map in spherical harmonics $Y_{lm}(\theta,\phi)$ up to a certain \emph{degree} $l$.
 The map is defined by a vector of spherical harmonic coefficients $\mathbf{y}$ which is dotted into the spherical harmonic basis vector $\left(Y_{0,0}\;Y_{1,-1}\;Y_{1,0}\;Y_{1,1}\;Y_{2,-2}\;Y_{2,-1}\;Y_{2,0}\;Y_{2,1}\;Y_{2,2}\; \cdots\right)^{\top}$.
 The total number of spherical harmonic coefficients is $(l+1)^2$.
-In addition to computing thermal phase curves and occultation light curves, \textsf{starry} also solves the considerably more complex problem of computing reflected light phase curves and occultations in which the occulted object is illuminated by a distant light source \citep[Luger et al. 2021 in prep][]{}. 
+In addition to computing thermal phase curves and occultation light curves, \textsf{starry} also solves the considerably more complex problem of computing reflected light phase curves and occultations in which the occulted object is illuminated by a distant light source \citep{luger2021b}. 
 In that case the coefficient vector $\mathbf{y}$ represents spherical albedo.
 For observations of Io in sunlight in a wavelength range where where both the thermal component and the reflected sunlight component of observed flux are comparable, it would be necessary to simultaneously fit for two vectors of spherical harmonic coefficients, one for the albedo distribution and the other for thermal emission.
 In this paper we only use observations of Io in eclipse so we do not need to model the reflected light component.
 
 Conditioned on fixed parameters specifying the geometry of the occultations, the \textsf{starry} model is \emph{linear} for both emitted and reflected light maps.
-\cite{luger2019} achieved this by representing all rotations, changes of basis transformations and integrals with complicated boundaries which are needed to compute the flux as linear transformations.
+\cite{luger2019a} achieved this by representing all rotations, changes of basis transformations and integrals with complicated boundaries which are needed to compute the flux as linear transformations.
 Since a sequence of linear mappings is also linear, the predicted flux can be written as
 \begin{equation}
     \mathbf{f}=\mathbf{A}\,\mathbf{y}
     \quad,
     \label{eq:linear_model}
 \end{equation}
-where the column vector $\mathbf{f}$ of shape $(T, 1)$ is the predicted flux for different values of the occultor position and $\mathbf{A}$ is the design matrix \citep[see appendix B.1. in ][]{luger2021a} of shape $(T, N)$ (with $N=(l+1)^2$) which encodes all operations needed to compute the integrated flux at different viewing angles of the occulted sphere.
-If the geometry isn't known precisely the matrix $\mathbf{A}$ is not fixed and the model is in principle no longer linear although one can still use the fact that it is linear when conditioned on a particular values of the nonlinear parameters to speed up inference.
+where the column vector $\mathbf{f}$ of shape $(T, 1)$ is the predicted flux for different values of the occultor position and $\mathbf{A}$ is the design matrix \citep[see appendix B.1. in ][]{luger2021a} of shape $(T, N)$ (with $N=(l+1)^2$) which encodes all operations needed for computing the integrated flux at different viewing angles of the occulted sphere (including the cosine emission law).
+If the geometry isn't known precisely $\mathbf{A}$ is not fixed and the model is in principle no longer linear, although one can still use the fact that it is linear when conditioned on a particular values of the nonlinear parameters to speed up inference.
 
 The characteristic angular size of features that can be represented with a given map is set by the degree of the map and it is approximately equal to $180^\circ/l$.
 For reference, state of the art inferences involving phase curves and secondary eclipses of exoplanets are able to constrain features of order $l=1$ (inferring a bright spot offset from the substellar point) but for Io we need to fit much higher order maps because the typical scale of volcanic spots is on the order of tens of kilometers (a few degrees).
@@ -231,22 +233,21 @@ Although \textsf{starry} was built around the idea of expanding surface features
 For example, the most important constraint on the map we would like to incorporate in the model is that the intensity of the map is positive at every location. 
 This constraint is important not only because we want to avoid having unphysical regions in inferred maps but also because it imposes a very strong prior on the map which substantially reduces the difficulty of inference when the data is not particularly informative.
 
-There are two ways of enforcing positivity that we are aware of, both of which involve evaluating the intensity on a fixed grid of \emph{pixels} and disallowing negative values of those pixels.
+There are two ways of enforcing positivity that we are aware of, both of which involve evaluating the map intensity on a fixed grid of \emph{pixels} (intensity evaluated at fixed set of points on the sphere) and disallowing negative values of those pixels because they are unphysical.
 The first is to fit for the spherical harmonic coefficients $\mathbf{y}$, evaluate the pixel grid at each MCMC step and reject all samples of the coefficient vector $\mathbf{y}$ which result in pixels with negative intensity.
 The issue with this procedure is that rejecting samples in this way implies a prior probability distribution on $\mathbf{y}$ which cannot be mapped to a parameter space with infinite support and Hamiltonian Monte Carlo does not work well with constrained parameter spaces.
-The second approach is to dispense with the spherical harmonics entirely and compute the full model using a high resolution grid of pixels.
-In practice this is very difficult to do because we would need a very high resolution grid to compute the light curves accurately with minimal discretization noise.  
+The second approach is to dispense with the spherical harmonics entirely and compute the full model using a pixelated intensity map.
+This is very difficult to do in practice because we would need a very high resolution grid to compute the light curves accurately with minimal discretization noise.  
 \textsf{starry} uses spherical harmonics as a basis precisely to avoid this problem.
-\textbf{Instead, we opt for a hybrid approach in which we fit for pixels but at each MCMC step we convert the pixels to spherical harmonic coefficients to compute the light curve.}
+\textbf{Instead, we opt for a hybrid approach in which we fit for a vector of pixel intensities but at each MCMC step we convert the pixels to spherical harmonic coefficients to compute the light curve.}
 
-To implement the hybrid approach we need to be able to switch between spherical harmonics and pixels.
-Transforming spherical harmonics $\mathbf{y}$ to pixels $\mathbf{p}$ is straightforward because there exists a linear operator $\mathbf{P}$ which maps $\mathbf{y}$ to $\mathbf{p}$:
+To implement the hybrid approach we need to be able to switch back and forth between spherical harmonics and pixels.
+Given pixels $\mathbf{p}$ evaluated on an equal are Mollweide grid, the transformation from spherical harmonics $\mathbf{y}$ to $\mathbf{p}$ is given by a linear operator $\mathbf{P}$:
 \begin{equation}
     \mathbf{p}=\mathbf{P}\,\mathbf{y}
     \label{eq:ylms_to_pixels}
 \end{equation}
 Each row of $\mathbf{P}$ contains values of each of the spherical harmonic coefficients at a given point on the grid. 
-To construct the grid we use an equal area Molleweide projection in order to have a uniform distribution of pixels across the sphere.
 The grid needs to be fine enough to ensure that the intensity is positive over most of the sphere.
 
 Switching from pixels to spherical harmonics is somewhat more complicated because $\mathbf{P}$ is in general not a square matrix so we cannot compute its inverse to obtain the inverse transform.
@@ -264,9 +265,9 @@ The mapping from pixels to spherical harmonics is then given by
 \end{equation}
 Both $\mathbf{P}$ and $\mathbf{P}^\dagger$ can be precomputed to speed up inference.
 When using pixels to impose a positivity constraint on the spherical harmonic map we need to make sure that the number of pixels is greater than the number of spherical harmonic coefficients by a factor of a few to ensure positivity approximately everywhere on the sphere.
-In practice we find that we need to use at least 4 times as many pixels as spherical harmonics which means that the computational cost of this model is higher than if we just fit for spherical harmonics. 
+In practice we find that we need to use at least 4 times as many pixels as spherical harmonics which means that the computational cost of this model is higher than if we just fit for spherical harmonic coefficients. 
 
-To summarize, in our hybrid model we first construct a fixed high resolution pixel grid in latitude and longitude, then use Equation~(\ref{eq:pixels_to_ylms}) to convert pixels to spherical harmonics and finally use Equation~(\ref{eq:linear_model}) to evaluate the model.
+To summarize, in our hybrid model we first construct a fixed high resolution pixel grid in latitude and longitude, then use Equation~(\ref{eq:pixels_to_ylms}) to convert a vector of pixel intensities to spherical harmonic coefficients and finally use Equation~(\ref{eq:linear_model}) to evaluate the model.
 Although we fit for the pixels $\mathbf{p}$ we store the spherical harmonic coefficient vectors $\mathbf{y}$ as the final product of the inference. 
 Figure~\ref{fig:pixels_to_harmonics} illustrates the transformation from the pixel basis to the spherical harmonic basis via $\mathbf{P}^\dagger$.
 On the left we show the pixel map where each pixel was independently drawn from an exponential prior. 
@@ -339,7 +340,7 @@ To recover the greatest information about the surface we need to have a mechanis
 For example, with phase curves we can recover primarily longitudinal variations in emission.
 Occultations are substantially better because the limb of the occultor sweeps across the surface of the occulted sphere, thereby exposing or blocking light from different points on the surface.
 An ideal set of observations would consist of phase curves together with observations of multiple occultations by a small occultor at different latitudes and different phases.
-Phase curves and occultations in reflected light are even more informative because of the nonuniform illumination profile of the incident radiation and the presence of a day/night terminator line \citep[][Luger et al. 2021 in prep]{luger2019a}.
+Phase curves and occultations in reflected light are even more informative because of the nonuniform illumination profile of the incident radiation and the presence of a day/night terminator line \citep{luger2021b}.
 In some cases for reflected light observations (phase curves of an inclined planet for example) there can even be no nullspace \emph{at all} low spherical harmonic degrees.
 
 We can reformulate these statements on how useful given observations are more precisely by computing a measure of their information content.
@@ -704,7 +705,7 @@ We fit a single map to both observations simultaneously although we allow for a 
 Our model includes a Gaussian Process which accounts for both the correlated noise due to seeing in the data, and the fact that our limited resolution map cannot fully capture the sharp steps in data.
 We also fit for all errobars simultaneously using a hierarchical model and we plot the median estimates of those errobars.
         The plot shows  the inferred maps (top row), the same maps from the perspective of the observer during the occultation (small circles), the light curves and posterior samples of the flux including the Gaussian Process (orange lines), and the residuals with respect to a median flux estimate.
-        The maps show two hotspots, the bright one is emission from Loki and the faint one is most likely emission from Kanehekili.
+        The maps show two hotspots, the bright one is emission from Loki Patera and the faint one is most likely emission from Kanehekili.
         A detailed view of the two hot spots is shown in Figure~\ref{fig:irtf_1998_spots}.
      \label{fig:irtf_1998}
     }
@@ -789,7 +790,7 @@ The contour lines correspond to the 5th, 50th, and 95th percentiles of intensity
 
 The location of the bright hotspot is $16.414_{-0.011}^{+0.027}\quad^\circ$ N latitude and $53.107_{-0.033}^{+0.041}\quad^\circ$ E longitude which corresponds to the location of Loki Patera.
 The faint hot spot is at $-15.756_{-11.382}^{+3.812}\quad ^\circ$ N latitude and $321.568_{-4.208}^{2.803}\quad^\circ$ E longitude which is the Kanehekili Fluctus lava flow.
-The error on the inferred position of peak intensity of the Loki hotspot is only a fraction of a degree which is much smaller than the minimum resolution of the map features set by the degree of the map; this corresponds to an uncertainty of less than a kilometer on the surface of Io.
+The error on the inferred position of peak intensity of the Loki Patera hotspot is only a fraction of a degree which is much smaller than the minimum resolution of the map features set by the degree of the map; this corresponds to an uncertainty of less than a kilometer on the surface of Io.
 Thus, \textbf{despite the fact that at $l=20$ the resolution of maps is limited to about $9^\circ$, we can constrain the centroid of the spots much more precisely}.
 We should note however that this errorbar does not include a possible systematic shift in position due to a wrong estimate of Jupiter's effective radius (see Section~\ref{ssec:effective_radius}) or an error in the ephemeris data.
 
@@ -852,9 +853,9 @@ The contour lines show the 5th, 50th, and 95th percentiles of intensity above an
 
 To see how the above results change if we don't include a Gaussian Process in the noise model we fit the same pair of occultations from 1998 using the same priors, the results are shown in Figure~\ref{fig:irtf_1998_no_GP}.
 The main difference in the inferred map compared to Figure~\ref{fig:irtf_1998} is that there are two extra spots visible in the map.
-The two spots in the eastern hemisphere are the result of the model struggling to explain the main feature in the light curve at around 3.2 minutes in ingress light curve and 3.8 minutes in the egress light curve, which is due to  Loki coming out and into view during the occultation.
+The two spots in the eastern hemisphere are the result of the model struggling to explain the main feature in the light curve at around 3.2 minutes in ingress light curve and 3.8 minutes in the egress light curve, which is due to  Loki Patera coming out and into view during the occultation.
 The model inflates the errobars around those times because it unable to make the spot small enough.
-This results in the single hot spot at the location of Loki shown in Figure~\ref{fig:irtf_1998} morphing into two spots.
+This results in the single hot spot at the location of Loki Patera shown in Figure~\ref{fig:irtf_1998} morphing into two spots.
 While this feature is almost certainly spurious, the other spot in the northwestern hemisphere appears more likely to be real.
 Looking at the miniature maps in Figure~\ref{fig:irtf_1998_no_GP}, this spot is in view only at egress and it corresponds to a small step in the light curve starting at 0.9 minutes.
 The estimated location of this spot is approximatel $\sim 20\quad^\circ$ N latitude and $\sim 69\quad^\circ$ W longitude.
@@ -886,8 +887,8 @@ To test how our model generalizes to a different dataset we fit a pair of observ
 We use the exact same model as the one we used to produce Figure~\ref{fig:irtf_1998}.
 The results are shown in Figure~\ref{fig:irtf_2017} and the inferred parameters are listed in Table~\ref{tab:irtf_2017}.
 A contour plots of the two spots overlaid on top of a surface map of Io from Galileo observations is shown in Figure~\ref{fig:irtf_2017_spots} and the derived spot parameters are listed in Table~\ref{tab:irtf_2017_derived}.
-The inferred map shows two spots, one of which is Loki. 
-Figure~\ref{fig:irtf_2017_spots} shows that the peak emission from Loki is again constrained very precisely but the location of the peak appears to have shifted southward since 1998.
+The inferred map shows two spots, one of which is Loki Patera. 
+Figure~\ref{fig:irtf_2017_spots} shows that the peak emission from Loki Patera is again constrained very precisely but the location of the peak appears to have shifted southward since 1998.
 The location of the other hotspot corresponds to Janus Patera.
 
 \begin{figure}[t!]
@@ -900,7 +901,7 @@ We fit a single map to both observations simultaneously although we allow for a 
 Our model includes a Gaussian Process which accounts for both the correlated noise due to seeing in the data, and the fact that our limited resolution map cannot fully capture the sharp steps in data.
 We also fit for all errobars simultaneously using a hierarchical model and we plot the median estimates of those errobars.
         The plot shows  the inferred maps (top row), the same maps from the perspective of the observer during the occultation (small circles), the light curves and posterior samples of the flux including the Gaussian Process (orange lines), and the residuals with respect to a median flux estimate.
-        The maps show two hotspots, the bright one is emission from Loki and the faint one is emission from Janus.
+        The maps show two hotspots, the bright one is emission from Loki Patera and the faint one is emission from Janus.
         A detailed view of the two hot spots is shown in Figure~\ref{fig:irtf_2017_spots}.
                 \label{fig:irtf_2017}
     }
@@ -1038,14 +1039,14 @@ From the 1998 observations we infer a map consisting of two spots whose location
 We also find circumstantial evidence for a third hot spot.
 Because our model is fully probabilistic, we can derive uncertainties on the location of the inferred hot spots and the total flux emitted from each spot.
 In addition to the pair of observations from 1998, we test the model on another pair of observations from 2017.
-We again find two hotspots, one of which is Loki (although the peak of the intensity shifted relative to the 1998 map) and the other is Janus Patera.
+We again find two hotspots, one of which is Loki Patera (although the peak of the intensity shifted relative to the 1998 map) and the other is Janus Patera.
 
 The main limitation of our model besides the fact that we do not yet account for time-dependent maps is the limited resolution of the spherical harmonic maps for which \textsf{starry} can compute occultation light curves.
 Although we can still constrain the peak intensity of hotspots (or some other measure of the center of emission) with much higher precision, we lose the ability to resolve two spots close to each other and the ability to constrain the actual size of the spots. 
 It is quite possible that there is a way around this problem if we compute the various integrals in \textsf{starry} numerically using high precision arithmetic.
 Since all these operations are contained in the design matrix $\mathbf{A}$ (assuming that the ephemeris is fixed) we would only need to do the expensive computation once for each occultation.
-To be able to constrain the size of the Loki hotspot for example, we would need to fit maps on the order of $l\approx 50$.
-However, the kind of detailed mapping of Loki's magma lake with a precision of a few kilometers done by \cite{dekleer2017} will not be possible with a spherical harmonic model because it would require maps of extremely large degrees ($l\gtrapprox 700$).
+To be able to constrain the size of the Loki Patera hotspot for example, we would need to fit maps on the order of $l\approx 50$.
+However, the kind of detailed mapping of Loki Patera magma lake with a precision of a few kilometers done by \cite{dekleer2017} will not be possible with a spherical harmonic model because it would require maps of extremely large degrees ($l\gtrapprox 700$).
 
 \subsection{Relevance to mapping of exoplanets} 
 \label{ssec:discussion_exoplanets}
