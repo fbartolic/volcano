@@ -196,7 +196,7 @@ In summary, to compute an effective radius of Jupiter for a given occultation of
 There are substantial uncertainties in each of these steps.
 The shape profile data are quite old and it is not known if the structure of Jupiter's has remained constant since the 1980s. 
 The shape profile also depends on the wind velocity structure and temperature which we do not take into account.
-In addition to uncertainties about the atmospheric structure, there are uncertainties associated with digitizing the data shown in Fig.~7 in \cite{lindal1981} because it is not available in table form.
+In addition to uncertainties on the atmospheric structure, there are uncertainties associated with digitizing the data shown in Fig.~7 in \cite{lindal1981} because it is not available in table form.
 The problems with Galileo's high gain antenna prevented it from obtaining more recent radio occultations of the neutral atmosphere and Juno's orbit has thus far avoided such occultations.  
 However, over the 2023-2025 period an extended Juno mission may be able to obtain radio occultations which will refine our understanding of Jupiter's size and shape \citep{hodges2020}.
 
@@ -221,7 +221,7 @@ Since a sequence of linear mappings is also linear, the predicted flux can be wr
     \quad,
     \label{eq:linear_model}
 \end{equation}
-where the column vector $\mathbf{f}$ of shape $(T, 1)$ is the predicted flux for different values of the occultor position and $\mathbf{A}$ is the design matrix \citep[see appendix B.1. in ][]{luger2021a} of shape $(T, N)$ (with $N=(l+1)^2$) which encodes all operations needed for computing the integrated flux at different viewing angles of the occulted sphere (including the cosine emission law).
+where the column vector $\mathbf{f}$ of shape $(T, 1)$ is the predicted flux for different values of the occultor position and $\mathbf{A}$ is the design matrix \citep[see appendix B.1. in ][]{luger2021a} of shape $(T, N)$ (with $N=(l+1)^2$) which encodes all operations needed for computing the integrated flux at different viewing angles of the occulted sphere (relative positions and radii of the occultor and the occulted object, rotations, basis transformations, integrals over the visible disc of the occulted object and the cosine emission law).
 If the geometry isn't known precisely $\mathbf{A}$ is not fixed and the model is in principle no longer linear, although one can still use the fact that it is linear when conditioned on a particular values of the nonlinear parameters to speed up inference.
 
 The characteristic angular size of features that can be represented with a given map is set by the degree of the map and it is approximately equal to $180^\circ/l$.
@@ -365,7 +365,7 @@ where $\sigma^2_0$ is the prior variance and $\sigma^2$ is the posterior varianc
 It tells us how well we can constrain a particular coefficient in the limit of infinite SNR observations.
 Posterior shrinkage of 1 indicates that the data provides perfect information on the parameters while 0 indicates no gain in information relative to the prior.
 
-In order to compute the posterior shrinkage we first compute the design matrices $\mathbf{A}$ with \textsf{starry} for different kinds of observations of Io in the period starting on the 1st of January 2009 and ending on the 1st of May 2010.
+In order to compute the posterior shrinkage we first compute the design matrices $\mathbf{A}$ using \textsf{starry} for different kinds of observations of Io for the period starting on the 1st of January 2009 and ending on the 1st of May 2010.
 We chose this period because it covers the full season of mutual occultations which occur every 6 years.
 We compute $\mathbf{A}$ for all observable occultations of Io by Galilean moons during that period, for occultations of Io by Jupiter and for phase curve observations.
 The purpose of this is to determine the upper bound on what we can learn about the surface. 
@@ -387,7 +387,7 @@ Fig.~\ref{fig:information_content} shows the posterior shrinkage as a function o
 As expected, the mutual occultations of Io by other Galilean moons are by far the most informative with posterior shrinkage of unity at all angular scales considered. 
 Occultations by Jupiter are less informative because we only see one side of Io during an occultation.
 Shrinkage for phase curves at odd degrees above $l=2$ is exactly zero because these coefficents are in the nullspace for objects rotating about an axis perpendicular to the line of sight and therefore cannot be constrained using only phase curves \citep{luger2021}. 
-Although observations of mutual occultations most easily break the degeneracies, the drawback of these types of observations is that they only happen every 6 years and they almost never happen while Io is in eclipse, meaning that only the brightest volcanoes are visible above the reflected sunlight.
+Although observations of mutual occultations most easily break the degeneracies because of the varying impact parameters and differents sizes of occultors, the drawback of these types of observations is that they only happen every 6 years and they almost never happen while Io is in eclipse which means that only the brightest volcanoes are visible above the reflected sunlight.
 This fact is not captured in Figure~\ref{fig:information_content}. 
 
 Figure~\ref{fig:information_content} gives us some idea about which kinds of observations are most informative but it doesn't really tell us how well we can constrain bright spot-like features we expect to see on Io.
@@ -402,7 +402,7 @@ We place the spot at $13^\circ$ N latitude and $51^\circ$ E longitude, we set th
 We generate two light curves with 150 data points each, one for the duration of the ingress of the full occultation and the other for the egress.
 Because the limb of the occultor sweeps over the disc of Io at different angles during ingress and ingress, this makes it possible break most degeneracies in the map and recover the location of the simulated spot.
 We set the phase of the simulated map to be $10^\circ$ E at the beginning of ingress and $10^\circ$ W at the end of egress.
-We assume that the geometry of the occultation is known exactly and we set the errorbars such that SNR=50 where the signal is defined to be the maximum value of the computed flux.
+We assume that the geometry of the occultation is known exactly and we set the errorbars such that SNR = 50 where the signal is defined to be the maximum value of the computed flux.
     We use this dataset to test the difference between setting a prior in the spherical harmonic basis $\mathbf{y}$ and in the pixel basis $\mathbf{p}$ by fitting an $l=20$ map to the dataset.
 
 In the spherical harmonic model we place a Gaussian prior on $\mathbf{y}$ with covariance $\boldsymbol{\Lambda}=\mathrm{diag}(1^2,0.5^2,\dots,0.5^2)$.
@@ -427,8 +427,8 @@ Since all models we fit in this paper have hundreds if not thousands of paramete
         Comparison between two models fitted to a simulated light curve of an occultation by Jupiter which was generated from a map consisting of a single bright spot (top map).  
        Each of the columns beneath the simulated map shows the (median) posterior estimate of the map (top), the data and the posterior flux samples (middle row) and the residuals (bottom row).
         The left column corresponds to a model in which we place a Gaussian prior on spherical harmonic coefficients $\mathbf{y}$ and fit for $\mathbf{y}$ while the right column correspond to a hybrid model in which we fit for pixels $\mathbf{p}$ (with an exponential prior on pixel intensity) but we use $\mathbf{y}$ to compute the flux analytically with \textsf{starry}.
-        The benefit of using pixels is that it is much easier to encode assumptions on what the map should look like in pixel space rather than spherical harmonic space.
-        With the pixel model we are able to recover the simulated map precisely while the spherical harmonic model fails to do that. 
+        The benefit of using pixels is that it is much easier to encode assumptions on what the map should look like in pixel space rather than spherical harmonic space, this results in a visibly more accurate inferred map.
+        The residuals for the pixel model show undesirable patterns due to ringing artefacts which are a consequence of the Exponential prior favoring more localized features, we discuss how to alleviate this issue in the text.
                \label{fig:pixels_vs_harmonics}
     }
     \end{centering}
@@ -601,17 +601,17 @@ where $a$ is a dimensionless parameter.
 
 The total log likelihood is the sum of the log likelihoods for individual light curves (Equation~(\ref{eq:likelihood})). 
 To compute it we also need to specify the data covariance matrix defined in Equation~(\ref{eq:data_covariance_element}).
-Each element of the covariance matrix consists of a white noise component (errobars) and a correlated noise component (Gaussian Process).
-Since the IRTF light curves are not provided with estimated errobars, we choose to fit for all errobars simultaneously using a hierarchical approach in which we assign a global scale $l$ for all errorbars in a given light curve and we draw each individual errobar from a Half Normal distribution with standard deviation equal to that scale.
+Each element of the covariance matrix consists of a white noise component (errorbars) and a correlated noise component (Gaussian Process).
+Since the IRTF light curves are not provided with estimated errorbars, we choose to fit for all errorbars simultaneously using a hierarchical approach in which we assign a global scale $l$ for all errorbars in a given light curve and we draw each individual errobar from a Half Normal distribution with standard deviation equal to that scale.
 That is, we have 
 \begin{align}
     \sigma_{i,I}&\sim \mathcal{N}^+(0, l_E),\quad i=1,\dots,N_I\\
     \sigma_{i,E}&\sim \mathcal{N}^+(0,l_I),\quad i=1,\dots, N_E
 \end{align}
-where $\sigma_{i,I}$ are the errobars for the ingress light curve and $\sigma_{i,E}$ are the errobars for the egress light curve.
+where $\sigma_{i,I}$ are the errorbars for the ingress light curve and $\sigma_{i,E}$ are the errorbars for the egress light curve.
 The symbol $\mathcal{N}^+$ denotes a truncated Gaussian distribution restricted to positive values.
-Treating errobars as free parameters means that we are introducing hundreds of more parameters (as many as there are data points) which is not an issue as long as these parameters are constrained by the data and our model is regularized.
-The noise model as defined above is extremely flexible, it can account for a given feature in the light curve by inflating individual errobars (white noise) or by varying the characteristic timescale $\rho_\mathrm{GP}$ in the Mat\'ern 3/2 kernel.
+Treating errorbars as free parameters means that we are introducing hundreds of more parameters (as many as there are data points) which is not an issue as long as these parameters are constrained by the data and our model is regularized.
+The noise model as defined above is extremely flexible, it can account for a given feature in the light curve by inflating individual errorbars (white noise) or by varying the characteristic timescale $\rho_\mathrm{GP}$ in the Mat\'ern 3/2 kernel.
 All model parameters and their associated priors are listed in Table~\ref{tab:priors}. 
 
 \renewcommand*{\arraystretch}{1.4}
@@ -669,7 +669,7 @@ Parameters and priors for the final model.
             %
             \\
             %
-            $\sigma_{i,I}$, $\sigma_{i,E},\quad i=1,\dots,N$& individual errobars&
+            $\sigma_{i,I}$, $\sigma_{i,E},\quad i=1,\dots,N$& individual errorbars&
             $\mathcal{N}^+(0,l_I),\quad \mathcal{N}^+(0,l_E)$
             %
             \\
@@ -691,8 +691,8 @@ The inferred map has two distinct hot spots, a bright hotspot in the Eastern hem
 The orange lines in the second panels from the bottom are posterior samples of flux from the full model which includes the map model and the Gaussian Process.
 The bottom panel shows the residuals with respect to the median flux.
 Each data point is shown with the median prediction of its errorbar.
-The posterior distribution for the errobars is shown in Figure~\ref{fig:irtf_1998_errorbars}.
-Both the global scale for of the errobars and the individual errobars are well constrained by the data. 
+The posterior distribution for the errorbars is shown in Figure~\ref{fig:irtf_1998_errorbars}.
+Both the global scale for of the errorbars and the individual errorbars are well constrained by the data. 
 The outlier points are naturally accounted for in our model because those points end up having higher variance.
 
 \begin{figure}[ht!]
@@ -703,7 +703,7 @@ Inferred $l=20$ maps obtained by fitting a pair of observations of occultations 
         The observations were made several months apart with the NASA Infrared Telescope Facility (IRTF).
 We fit a single map to both observations simultaneously although we allow for a difference in the overall amplitude of the map between ingress and egress.
 Our model includes a Gaussian Process which accounts for both the correlated noise due to seeing in the data, and the fact that our limited resolution map cannot fully capture the sharp steps in data.
-We also fit for all errobars simultaneously using a hierarchical model and we plot the median estimates of those errobars.
+We also fit for all errorbars simultaneously using a hierarchical model and we plot the median estimates of those errorbars.
         The plot shows  the inferred maps (top row), the same maps from the perspective of the observer during the occultation (small circles), the light curves and posterior samples of the flux including the Gaussian Process (orange lines), and the residuals with respect to a median flux estimate.
         The maps show two hotspots, the bright one is emission from Loki Patera and the faint one is most likely emission from Kanehekili.
         A detailed view of the two hot spots is shown in Figure~\ref{fig:irtf_1998_spots}.
@@ -718,18 +718,18 @@ There is a trade-off between the explanatory power of the noise model and the ph
 In general, we expect that a given feature in the light curve will be accounted for by the physical model if the physical model provides a better explanation for the data than the noise model.
 We will return to this point shortly. 
 
-\begin{figure}[t!]
-    \begin{centering}
-    \includegraphics[width=\linewidth]{figures/irtf_1998_errobars.pdf}
-    \oscaption{irtf_main_plots}{%
-        Posterior distribution for the errobars of the 1998 pair of light curves shown in Figure~\ref{fig:irtf_1998}. 
-        Each color corresponds to a single data point in the light curve.
-        The errobars are estimated using a hierarchical model in which we assume  that each errobar is drawn from a Half Gaussian distribution with a global scale parameter common to all errobars in a single light curve.
-       \label{fig:irtf_1998_errorbars}
-    }
-    \end{centering}
-\end{figure}
-
+%\begin{figure}[t!]
+%    \begin{centering}
+%    \includegraphics[width=\linewidth]{figures/irtf_1998_errorbars.pdf}
+%    \oscaption{irtf_main_plots}{%
+%        Posterior distribution for the errorbars of the 1998 pair of light curves shown in Figure~\ref{fig:irtf_1998}. 
+%        Each color corresponds to a single data point in the light curve.
+%        The errorbars are estimated using a hierarchical model in which we assume  that each errobar is drawn from a Half Gaussian distribution with a global scale parameter common to all errorbars in a single light curve.
+%       \label{fig:irtf_1998_errorbars}
+%    }
+%    \end{centering}
+%\end{figure}
+%
 \renewcommand*{\arraystretch}{1.4}
 \begin{table}[t!]
     \begin{center}
@@ -818,21 +818,21 @@ We should note however that this errorbar does not include a possible systematic
             The power of the spot is defined as the total emission from within a 15 degree circle around the (inferred) location of the spot.
         }
             \endfoot
-            Spot 1 latitude  & $16.295^{+0.009}_{-0.010}$& degrees 
+            Spot 1 latitude  & $16.30^{+0.01}_{-0.01}$& degrees 
             \\
-             Spot 1 (East) longitude & $53.105^{+0.011}_{-0.011}$& degrees 
+             Spot 1 (West) longitude & $306.90^{+0.01}_{-0.01}$& degrees 
             \\
-                Spot 1 power  ingress & $52.394^{+0.898}_{-0.773}$ & GW/um 
+                Spot 1 power  ingress & $52^{+1}_{-1}$ & GW/um 
             \\
-                Spot 1 power  egress & $60.422_{-1.151}^{+1.194}$ & GW/um 
+                Spot 1 power  egress & $60_{-1}^{+1}$ & GW/um 
                 \\
-            Spot 2 latitude  & $-16.129_{-7.929}^{+4.268}$& degrees 
+            Spot 2 latitude  & $-16_{-4}^{+8}$& degrees 
             \\
-             Spot 2 (East) longitude & $-37.422_{-0.264}^{+0.778}$ & degrees 
+             Spot 2 (West) longitude & $37.4_{-0.2}^{+0.8}$ & degrees 
             \\
-                Spot 2 power  ingress & $5.156_{-0.634}^{+0.818}$ & GW/um 
+                Spot 2 power  ingress & $5.4_{-0.7}^{+0.6}$ & GW/um 
                 \\
-                Spot 2 power  egress & $5.949_{-0.721}^{+0.957}$ & GW/um 
+                Spot 2 power  egress & $6.2_{-0.8}^{+0.7}$ & GW/um 
             \\
         \end{longtable}
     \end{center}
@@ -846,6 +846,9 @@ We should note however that this errorbar does not include a possible systematic
         Contour plot of the hot spots shown in Figure~\ref{fig:irtf_1998} overlaid on top of the U.S. Geological Survey's map of the surface of Io which has been constructed from observations by the Galileo spacecraft.
         The left hotspot is centered around Loki Patera, the right hotspot is centered at the Kanehekili Fluctus lava flow.
 The contour lines show the 5th, 50th, and 95th percentiles of intensity above an arbitrarily defined intensity of ``background'' region around the spot.
+        The asymmetric white cross in the center of the contours in each panel shows the uncertainty in the inferred position of the peak intensity of the hotspot.
+        This uncertainty is so small for the spot on the left that the cross is barely visible.
+        It is much larger for the spot on the right where the uncertainty in longitude is $\sim 2$ degrees and the uncertainty in the latitude of the spot is $\sim 15$ degrees.
         \label{fig:irtf_1998_spots}
     }
     \end{centering}
@@ -854,7 +857,7 @@ The contour lines show the 5th, 50th, and 95th percentiles of intensity above an
 To see how the above results change if we don't include a Gaussian Process in the noise model we fit the same pair of occultations from 1998 using the same priors, the results are shown in Figure~\ref{fig:irtf_1998_no_GP}.
 The main difference in the inferred map compared to Figure~\ref{fig:irtf_1998} is that there are two extra spots visible in the map.
 The two spots in the eastern hemisphere are the result of the model struggling to explain the main feature in the light curve at around 3.2 minutes in ingress light curve and 3.8 minutes in the egress light curve, which is due to  Loki Patera coming out and into view during the occultation.
-The model inflates the errobars around those times because it unable to make the spot small enough.
+The model inflates the errorbars around those times because it unable to make the spot small enough.
 This results in the single hot spot at the location of Loki Patera shown in Figure~\ref{fig:irtf_1998} morphing into two spots.
 While this feature is almost certainly spurious, the other spot in the northwestern hemisphere appears more likely to be real.
 Looking at the miniature maps in Figure~\ref{fig:irtf_1998_no_GP}, this spot is in view only at egress and it corresponds to a small step in the light curve starting at 0.9 minutes.
@@ -899,7 +902,7 @@ Inferred $l=20$ maps obtained by fitting a pair of observations of occultations 
         The observations were made several months apart with the NASA Infrared Telescope Facility (IRTF).
 We fit a single map to both observations simultaneously although we allow for a difference in the overall amplitude of the map between ingress and egress.
 Our model includes a Gaussian Process which accounts for both the correlated noise due to seeing in the data, and the fact that our limited resolution map cannot fully capture the sharp steps in data.
-We also fit for all errobars simultaneously using a hierarchical model and we plot the median estimates of those errobars.
+We also fit for all errorbars simultaneously using a hierarchical model and we plot the median estimates of those errorbars.
         The plot shows  the inferred maps (top row), the same maps from the perspective of the observer during the occultation (small circles), the light curves and posterior samples of the flux including the Gaussian Process (orange lines), and the residuals with respect to a median flux estimate.
         The maps show two hotspots, the bright one is emission from Loki Patera and the faint one is emission from Janus.
         A detailed view of the two hot spots is shown in Figure~\ref{fig:irtf_2017_spots}.
@@ -966,6 +969,7 @@ We also fit for all errobars simultaneously using a hierarchical model and we pl
         Contour plot of the hot spots shown in Figure~\ref{fig:irtf_2017} overlaid on top of the U.S. Geological Survey's map of the surface of Io which has been constructed from observations by the Galileo spacecraft.
         The left hotspot is centered around Loki Patera, the right hotspot is centered at Janus Patera.
 The contour lines show the 5th, 50th, and 95th percentiles of intensity above an arbitrarily defined intensity of ``background'' region around the spot.
+        The asymmetric white cross in the center of the contours in each panel shows the uncertainty in the inferred position of the peak intensity of the hotspot (barely visible in the left panel).
         \label{fig:irtf_2017_spots}
     }
     \end{centering}
@@ -996,21 +1000,21 @@ The contour lines show the 5th, 50th, and 95th percentiles of intensity above an
             The power is defined as the total emission from within a 15 degree circle around the (inferred) location of the spot.
         }
             \endfoot
-                            Spot 1 latitude  & $12.193^{+0.011}_{-0.008}$ & degrees 
+                            Spot 1 latitude  & $12.19^{+0.01}_{-0.01}$ & degrees 
             \\
-             Spot 1 (East) longitude & $52.515_{-0.009}^{+0.008}$ & degrees 
+             Spot 1 (West) longitude & $307.49_{-0.01}^{+0.01}$ & degrees 
             \\
-                Spot 1 power  ingress & $74.059_{-0.689}^{+0.911}$ & GW/um 
+                Spot 1 power  ingress & $73.4_{-0.8}^{+0.8}$ & GW/um 
             \\
-                Spot 1 power  egress & $106.158_{-1.412}^{+1.440}$ & GW/um 
+                Spot 1 power  egress & $105_{-1}^{+1}$ & GW/um 
                 \\
-            Spot 2 latitude  & $-4.114_{-8.327}^{+4.029}$ & degrees 
+            Spot 2 latitude  & $-4_{-4}^{+5}$ & degrees 
             \\
-             Spot 2 (East) longitude & $-41.055_{-8.588}^{+0.433}$ & degrees 
+             Spot 2 (West) longitude & $41_{-4}^{+1}$ & degrees 
             \\
-                Spot 2 power  ingress & $5.171_{-1.007}^{+1.543}$ & GW/um 
+                Spot 2 power  ingress & $6_{-2}^{+1}$ & GW/um 
                 \\
-                Spot 2 power  egress & $7.431_{-1.403}^{+2.227}$ & GW/um 
+                Spot 2 power  egress & $8_{-2}^{+1}$ & GW/um 
             \\
         \end{longtable}
     \end{center}
@@ -1123,7 +1127,7 @@ When pixels are far from zero ($\tau^2\overline{\lambda}_i^2\gg c^2$) then $\lam
     \quad,
     \label{eq:horseshoe_tau0}
 \end{equation}
-where $p_0$ is our prior guess for the number of significant pixels that are sufficiently far above zero, $D$ is the total number of pixels, $n$ is the number of data points and $\sigma$ is the standard deviation of the data points (the errobars).
+where $p_0$ is our prior guess for the number of significant pixels that are sufficiently far above zero, $D$ is the total number of pixels, $n$ is the number of data points and $\sigma$ is the standard deviation of the data points (the errorbars).
 Thus, we only need to specify $p_0$, the degree of freedom parameter $\nu$ and the slab width $c$.
 
 When using the Regularized Horseshoe prior in a small data regime it is often necessary to use the non-centered parametrization to avoid funnels in the posterior which are often present in hierarchical models\footnote{\url{https://mc-stan.org/docs/2_26/stan-users-guide/reparameterization-section.html}}.
