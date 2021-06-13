@@ -29,12 +29,12 @@
 %
 
 \begin{abstract}
-Jupiter's moon Io is the most volcanically active body in the Solar System with hundreds of active volcanoes varying in intensity on different timescales.
-Io has been observed during occultations by other Galilean moons and Jupiter since the 1980s, using high-cadence near infrared photometry. 
+With hundreds of active volcanoes varying in intensity on different timescales, Jupiter's moon Io is the most volcanically active body in the Solar System.
+Io has been observed from Earth using high-cadence near infrared photometry during occultations by Jupiter  and other Galilean moons since the 1980s.
 These observations encode a wealth of information about the volcanic features on its surface.
-    We built a generative model for the observed occultations using the code \textsf{starry} which enables fast, analytic, and differentiable computation of occultation light curves in emitted and reflected light.
-    Our probabilistic Bayesian model is able to recover known hotspots on the surface of Io using only two light curves and without any assumptions on the locations, shapes or the number of spots.
-    The methods we have developed are also directly applicable to the problem of mapping the surfaces of stars and exoplanets. \href{https://github.com/fbartolic/volcano}{\color{linkcolor}\faGithub}
+    We built a generative model for the observed occultation light curves using the code \textsf{starry} which enables fast, analytic, and differentiable computation of occultation light curves in emitted and reflected light.
+    Using this model we are able to recover surface emission maps of Io containing known volcanic hotspots, without having to make assumptions about the locations, shapes or the number of these hotspots.
+    Our model is also directly applicable to the problem of mapping the surfaces of stars and exoplanets. \href{https://github.com/fbartolic/volcano}{\color{linkcolor}\faGithub}
 \end{abstract}
 
 %
@@ -318,7 +318,7 @@ The Mat\'ern 3/2 kernel is defined by
     \sigma_\mathrm{GP}^{2}\left(1+\frac{\sqrt{3} \tau}{\rho_\mathrm{GP}}\right) \exp \left(-\frac{\sqrt{3} \tau}{\rho_\mathrm{GP}}\right)
     \quad,
 \end{equation}
-where $\tau=|t_n-t_m|$ and $\epsilon$ controls the quality of the approximation.
+where $\tau=|t_n-t_m|$.
 A single element of the data covariance matrix $\boldsymbol{\Sigma}$ is then 
 \begin{equation}
     \boldsymbol{\Sigma}_{nm}=\sigma_n^2\delta_{nm} + k(\tau;\sigma_\mathrm{GP},\rho_\mathrm{GP})
@@ -1099,7 +1099,7 @@ The Horseshoe prior is defined hierarchically as
     \quad,
     \label{eq:horseshoe}
 \end{equation}
-where $p_i$ are the pixels.
+where $p_i$ are the pixels and $\mathrm{Half}-\mathcal{C}$ is the Half Cauchy distribution.
 Each local scale parameter is drawn from a unit scale heavy tailed Half Cauchy distribution which allows for very large values of the pixels.
 The global scale parameter is also a free parameter, drawn from a Half Cauchy distribution with the scale equal to $\tau_0$.
 The Horseshoe prior is closely related to the spike-and-slab prior which is a mixture between a delta function prior at zero (\emph{spike}) and some other prior elsewhere (\emph{slab}).
@@ -1113,10 +1113,12 @@ The prior is defined by
     &c^{2}  \sim \mathrm{Inv}-\mathcal{G}\left(\frac{\nu}{2}, \frac{\nu}{2} s^{2}\right) \\
     &\overline{\lambda}_{i}  \sim \mathrm{Half}-\mathcal{C}(0,1)\\
     &\lambda_{i} =\frac{c \overline{\lambda}_{i}}{\sqrt{c^{2}+\tau^{2} \overline{\lambda}_{i}^{2}}} \\
-    &p_{i}  \sim \mathcal{N}^+\left(0, \tau \lambda_{i}\right) 
+    &p_{i}  \sim \mathrm{Half}-\mathcal{N}\left(\tau \lambda_{i}\right) 
 \end{aligned}
+\quad,
     \label{eq:reg_horseshoe}
 \end{equation}
+where $\mathrm{Inv}-\mathcal{G}$ is the Inverse Gamma distribution and  $\mathrm{Half}-\mathcal{N}$ is the Half Normal distribution.
 Integrating out the slab scale $c$ implies a marginal $\mathrm{Student}-\mathit{t}\,(\nu,0,s)$ prior for pixels far from zero.
 When pixels $p_i$ are close to zero ($\tau^2\overline{\lambda}_i^2\ll c^2$) we have $\lambda_i^2\rightarrow\overline{\lambda}_i^2$ and the prior approaches the original Horseshoe.
 When pixels are far from zero ($\tau^2\overline{\lambda}_i^2\gg c^2$) then $\lambda_i^2\rightarrow c^2/\tau^2$ and the prior approaches $\mathcal{N}(0, c)$.
@@ -1138,7 +1140,7 @@ To implement the non-centered parametrization we replace priors in Equation~\ref
     &\overline{\tau} \sim \mathrm{Half}-\mathcal{C}\left(0, 1\right)\\
     &\overline{c^{2}}  \sim \mathrm{Inv}-\mathcal{G}\left(\frac{\nu}{2}, 1\right) \\
     &\overline{\lambda}_{i}  \sim \mathrm{Half}-\mathcal{C}(0,1) \\
-    &\overline{p}_{i}  \sim \mathcal{N}^+\left(0, 1\right)\\
+    &\overline{p}_{i}  \sim \mathrm{Half}-\mathcal{N}\left(1\right)\\
     &\tau=\tau_0\overline{\tau}\\
     &c^2=\frac{\nu}{2}s^2\,\overline{c^2}\\
     &\lambda_{i} =\frac{c \overline{\lambda}_{i}}{\sqrt{c^{2}+\tau^{2} \overline{\lambda}_{i}^{2}}} \\
