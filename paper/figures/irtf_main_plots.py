@@ -237,8 +237,9 @@ def make_plots(
         colorbar=True,
         cmap=cmap,
     )
-    ax_map_in.set_title(f"Ingress map\n {lc_in.time[0].isot[:19]}")
-    ax_map_eg.set_title(f"Egress map\n {lc_eg.time[0].isot[:19]}")
+    
+    ax_map_in.set_title("Ingress map\n", {lc_in.time[0].datetime.strftime("%Y-%m-%d %H:%M")})
+    ax_map_eg.set_title("Egress map\n", {lc_eg.time[0].datetime.strftime("%Y-%m-%d %H:%M")})
 
     # Plot minimaps
     xo_im_in = np.linspace(xo_in[0], xo_in[-1], nim)
@@ -525,7 +526,7 @@ yticks = np.arange(0, 100, 20)
 ylim = (-2, 82)
 xticks_in = np.arange(0, 5, 1)
 xticks_eg = np.arange(0, 6, 1)
-res_yticks = np.arange(-5, 5, 2.5)
+res_yticks = np.arange(-5, 7.5, 2.5)
 res_ylim = (-5.5, 5.5)
 
 # Model including a GP
