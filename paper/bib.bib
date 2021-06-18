@@ -10603,7 +10603,7 @@ discussed.},
 	author = {Medina, F. and Echevarria, J. and Ledezma, E. and Martinez, F.},
 	month = aug,
 	year = {1989},
-	keywords = {ASTRONOMY, Callisto, CALLISTO, DISTRIBUTION, EARTH-BASED OBSERVATIONS, ECLIPSES, EUROPA, FLUX, Ganymede, GANYMEDE, HOTSPOTS, INFRARED, Infrared Photometry, Io, IO, JUPITER, OCCULTATIONS, PHOTOMETRY, SATELLITES, TEMPERATURE, VOLCANISM, Volcanoes, WAVELENGTHS},
+	keywords = {Io, IO, JUPITER, SATELLITES, VOLCANISM, Callisto, Ganymede, FLUX, INFRARED, TEMPERATURE, Volcanoes, WAVELENGTHS, CALLISTO, EUROPA, ASTRONOMY, DISTRIBUTION, EARTH-BASED OBSERVATIONS, ECLIPSES, GANYMEDE, HOTSPOTS, Infrared Photometry, OCCULTATIONS, PHOTOMETRY},
 	pages = {313--317},
 	file = {Full Text PDF:/Users/fb90/Zotero/storage/3TRRG5XQ/Medina et al. - 1989 - Infrared observations of Io during the mutual even.pdf:application/pdf}
 }
@@ -10620,6 +10620,871 @@ discussed.},
 	author = {Goguen, J. D. and Sinton, W. M. and Matson, D. L. and Howell, R. R. and Dyck, H. M. and Johnson, T. V. and Brown, R. H. and Veeder, G. J. and Lane, A. L. and Nelson, R. M. and Mc Laren, R. A.},
 	month = dec,
 	year = {1988},
-	keywords = {Galilean Satellites, Infrared Photometry, Io, Occultation, Satellite Surfaces, Satellite Temperature, Thermal Emission, Thermal Mapping},
+	keywords = {Io, Galilean Satellites, Occultation, Infrared Photometry, Satellite Surfaces, Satellite Temperature, Thermal Emission, Thermal Mapping},
 	pages = {465--484}
+}
+
+@article{albert2020,
+	title = {{JAXNS}: a high-performance nested sampling package based on {JAX}},
+	shorttitle = {{JAXNS}},
+	url = {http://arxiv.org/abs/2012.15286},
+	abstract = {Since its debut by John Skilling in 2004, nested sampling has proven a valuable tool to the scientist, providing hypothesis evidence calculations and parameter inference for complicated posterior distributions, particularly in the field of astronomy. Due to its computational complexity and long-running nature, in the past, nested sampling has been reserved for offline-type Bayesian inference, leaving tools such as variational inference and MCMC for online-type, time-constrained, Bayesian computations. These tools do not easily handle complicated multi-modal posteriors, discrete random variables, and posteriors lacking gradients, nor do they enable practical calculations of the Bayesian evidence. An opening thus remains for a high-performance out-of-the-box nested sampling package that can close the gap in computational time, and let nested sampling become common place in the data science toolbox. We present JAX-based nested sampling (JAXNS), a high-performance nested sampling package written in XLA-primitives using JAX, and show that it is several orders of magnitude faster than the currently available nested sampling implementations of PolyChord, MultiNEST, and dynesty, while maintaining the same accuracy of evidence calculation. The JAXNS package is publically available at {\textbackslash}url\{https://github.com/joshuaalbert/jaxns\}.},
+	urldate = {2021-03-10},
+	journal = {arXiv:2012.15286 [astro-ph]},
+	author = {Albert, Joshua G.},
+	month = dec,
+	year = {2020},
+	note = {arXiv: 2012.15286},
+	keywords = {Astrophysics - Instrumentation and Methods for Astrophysics},
+	file = {arXiv Fulltext PDF:/Users/fb90/Zotero/storage/JEWXYMYA/Albert - 2020 - JAXNS a high-performance nested sampling package .pdf:application/pdf;arXiv.org Snapshot:/Users/fb90/Zotero/storage/JD66HCBH/2012.html:text/html}
+}
+
+@article{mcewen2013,
+	title = {Sparse image reconstruction on the sphere: implications of a new sampling theorem},
+	volume = {22},
+	issn = {1057-7149, 1941-0042},
+	shorttitle = {Sparse image reconstruction on the sphere},
+	url = {http://arxiv.org/abs/1205.1013},
+	doi = {10.1109/TIP.2013.2249079},
+	abstract = {We study the impact of sampling theorems on the fidelity of sparse image reconstruction on the sphere. We discuss how a reduction in the number of samples required to represent all information content of a band-limited signal acts to improve the fidelity of sparse image reconstruction, through both the dimensionality and sparsity of signals. To demonstrate this result we consider a simple inpainting problem on the sphere and consider images sparse in the magnitude of their gradient. We develop a framework for total variation (TV) inpainting on the sphere, including fast methods to render the inpainting problem computationally feasible at high-resolution. Recently a new sampling theorem on the sphere was developed, reducing the required number of samples by a factor of two for equiangular sampling schemes. Through numerical simulations we verify the enhanced fidelity of sparse image reconstruction due to the more efficient sampling of the sphere provided by the new sampling theorem.},
+	number = {6},
+	urldate = {2021-03-11},
+	journal = {IEEE Trans. on Image Process.},
+	author = {McEwen, J. D. and Puy, G. and Thiran, J.-Ph and Vandergheynst, P. and Van De Ville, D. and Wiaux, Y.},
+	month = jun,
+	year = {2013},
+	note = {arXiv: 1205.1013},
+	keywords = {Astrophysics - Instrumentation and Methods for Astrophysics, Computer Science - Information Theory},
+	pages = {2275--2285},
+	file = {arXiv Fulltext PDF:/Users/fb90/Zotero/storage/5FEKG9C8/McEwen et al. - 2013 - Sparse image reconstruction on the sphere implica.pdf:application/pdf;arXiv.org Snapshot:/Users/fb90/Zotero/storage/VMLL4Z2Q/1205.html:text/html}
+}
+
+@article{mcewen2011,
+	title = {A novel sampling theorem on the sphere},
+	volume = {59},
+	issn = {1053-587X, 1941-0476},
+	url = {http://arxiv.org/abs/1110.6298},
+	doi = {10.1109/TSP.2011.2166394},
+	abstract = {We develop a novel sampling theorem on the sphere and corresponding fast algorithms by associating the sphere with the torus through a periodic extension. The fundamental property of any sampling theorem is the number of samples required to represent a band-limited signal. To represent exactly a signal on the sphere band-limited at L, all sampling theorems on the sphere require O(L{\textasciicircum}2) samples. However, our sampling theorem requires less than half the number of samples of other equiangular sampling theorems on the sphere and an asymptotically identical, but smaller, number of samples than the Gauss-Legendre sampling theorem. The complexity of our algorithms scale as O(L{\textasciicircum}3), however, the continual use of fast Fourier transforms reduces the constant prefactor associated with the asymptotic scaling considerably, resulting in algorithms that are fast. Furthermore, we do not require any precomputation and our algorithms apply to both scalar and spin functions on the sphere without any change in computational complexity or computation time. We make our implementation of these algorithms available publicly and perform numerical experiments demonstrating their speed and accuracy up to very high band-limits. Finally, we highlight the advantages of our sampling theorem in the context of potential applications, notably in the field of compressive sampling.},
+	number = {12},
+	urldate = {2021-03-11},
+	journal = {IEEE Trans. Signal Process.},
+	author = {McEwen, J. D. and Wiaux, Y.},
+	month = dec,
+	year = {2011},
+	note = {arXiv: 1110.6298},
+	keywords = {Astrophysics - Instrumentation and Methods for Astrophysics, Computer Science - Information Theory},
+	pages = {5876--5887},
+	file = {arXiv Fulltext PDF:/Users/fb90/Zotero/storage/8HJP9ET9/McEwen and Wiaux - 2011 - A novel sampling theorem on the sphere.pdf:application/pdf;arXiv.org Snapshot:/Users/fb90/Zotero/storage/JZQTUGLY/1110.html:text/html}
+}
+
+@article{stixrude2014,
+	title = {Melting in super-earths},
+	volume = {372},
+	issn = {1364-503X, 1471-2962},
+	url = {https://royalsocietypublishing.org/doi/10.1098/rsta.2013.0076},
+	doi = {10.1098/rsta.2013.0076},
+	abstract = {We examine the possible extent of melting in rock-iron super-earths, focusing on those in the habitable zone. We consider the energetics of accretion and core formation, the timescale of cooling and its dependence on viscosity and partial melting, thermal regulation via the temperature dependence of viscosity, and the melting curves of rock and iron components at the ultra-high pressures characteristic of super-earths. We find that the efficiency of kinetic energy deposition during accretion increases with planetary mass; considering the likely role of giant impacts and core formation, we find that super-earths probably complete their accretionary phase in an entirely molten state. Considerations of thermal regulation lead us to propose model temperature profiles of super-earths that are controlled by silicate melting. We estimate melting curves of iron and rock components up to the extreme pressures characteristic of super-earth interiors based on existing experimental and
+              ab initio
+              results and scaling laws. We construct super-earth thermal models by solving the equations of mass conservation and hydrostatic equilibrium, together with equations of state of rock and iron components. We set the potential temperature at the core–mantle boundary and at the surface to the local silicate melting temperature. We find that ancient (∼4 Gyr) super-earths may be partially molten at the top and bottom of their mantles, and that mantle convection is sufficiently vigorous to sustain dynamo action over the whole range of super-earth masses.},
+	language = {en},
+	number = {2014},
+	urldate = {2021-03-19},
+	journal = {Phil. Trans. R. Soc. A.},
+	author = {Stixrude, Lars},
+	month = apr,
+	year = {2014},
+	pages = {20130076},
+	file = {Stixrude - 2014 - Melting in super-earths.pdf:/Users/fb90/Zotero/storage/XVAPAUZ9/Stixrude - 2014 - Melting in super-earths.pdf:application/pdf}
+}
+
+@article{angelo2017,
+	title = {A {Case} for an {Atmosphere} on {Super}-{Earth} 55 {Cancri} e},
+	volume = {154},
+	issn = {1538-3881},
+	url = {https://iopscience.iop.org/article/10.3847/1538-3881/aa9278},
+	doi = {10.3847/1538-3881/aa9278},
+	abstract = {One of the primary questions when characterizing Earth-sized and super-Earth-sized exoplanets is whether they have a substantial atmosphere like Earth and Venus or a bare-rock surface like Mercury. Phase curves of the planets in thermal emission provide clues to this question, because a substantial atmosphere would transport heat more efﬁciently than a bare-rock surface. Analyzing phase-curve photometric data around secondary eclipses has previously been used to study energy transport in the atmospheres of hot Jupiters. Here we use phase curve, Spitzer time-series photometry to study the thermal emission properties of the super-Earth exoplanet 55 Cancri e. We utilize a semianalytical framework to ﬁt a physical model to the infrared photometric data at 4.5 μm. The model uses parameters of planetary properties including Bond albedo, heat redistribution efﬁciency (i.e., ratio between radiative timescale and advective timescale of the atmosphere), and the atmospheric greenhouse factor. The phase curve of 55 Cancri e is dominated by thermal emission with an eastward-shifted hotspot. We determine the heat redistribution efﬁciency to be 1.47-+00..2350, which implies that the advective timescale is on the same order as the radiative timescale. This requirement cannot be met by the bare-rock planet scenario because heat transport by currents of molten lava would be too slow. The phase curve thus favors the scenario with a substantial atmosphere. Our constraints on the heat redistribution efﬁciency translate to an atmospheric pressure of ∼1.4 bar. The Spitzer 4.5 μm band is thus a window into the deep atmosphere of the planet 55 Cancri e.},
+	language = {en},
+	number = {6},
+	urldate = {2021-03-19},
+	journal = {AJ},
+	author = {Angelo, Isabel and Hu, Renyu},
+	month = nov,
+	year = {2017},
+	pages = {232},
+	file = {Angelo and Hu - 2017 - A Case for an Atmosphere on Super-Earth 55 Cancri .pdf:/Users/fb90/Zotero/storage/PGMREJKW/Angelo and Hu - 2017 - A Case for an Atmosphere on Super-Earth 55 Cancri .pdf:application/pdf}
+}
+
+@article{majeau2012b,
+	title = {A {Two}-dimensional {Infrared} {Map} of the {Extrasolar} {Planet} {HD} 189733b},
+	volume = {747},
+	issn = {0004-637X},
+	url = {http://adsabs.harvard.edu/abs/2012ApJ...747L..20M},
+	doi = {10.1088/2041-8205/747/2/L20},
+	abstract = {We derive the first secondary eclipse map of an exoplanet, HD 189733b, based on Spitzer IRAC 8 μm data. We develop two complementary
+techniques for deriving the two-dimensional planet intensity:
+regularized slice mapping and spherical harmonic mapping. Both
+techniques give similar derived intensity maps for the infrared dayside flux of the planet, while the spherical harmonic method can be extended to include phase variation data which better constrain the map. The longitudinal offset of the dayside hot spot is consistent with that found in prior studies, strengthening the claim of super-rotating winds, and eliminating the possibility of phase variations being caused by stellar variability. The latitude of the hot spot is within 12fdg5 (68\% confidence) of the planet's equator, confirming the predictions of general circulation models for hot Jupiters and indicative of a small planet obliquity.},
+	urldate = {2021-03-19},
+	journal = {The Astrophysical Journal Letters},
+	author = {Majeau, Carl and Agol, Eric and Cowan, Nicolas B.},
+	month = mar,
+	year = {2012},
+	keywords = {infrared: planetary systems, techniques: photometric, methods: observational},
+	pages = {L20},
+	file = {Full Text PDF:/Users/fb90/Zotero/storage/FUD4B5GM/Majeau et al. - 2012 - A Two-dimensional Infrared Map of the Extrasolar P.pdf:application/pdf}
+}
+
+@article{kite2016a,
+	title = {Atmosphere-interior {Exchange} on {Hot}, {Rocky} {Exoplanets}},
+	volume = {828},
+	issn = {0004-637X},
+	url = {http://adsabs.harvard.edu/abs/2016ApJ...828...80K},
+	doi = {10.3847/0004-637X/828/2/80},
+	abstract = {We provide estimates of atmospheric pressure and surface composition on short-period, rocky exoplanets with dayside magma pools and
+silicate-vapor atmospheres. Atmospheric pressure tends toward
+vapor-pressure equilibrium with surface magma, and magma-surface composition is set by the competing effects of fractional vaporization and surface-interior exchange. We use basic models to show how
+surface-interior exchange is controlled by the planet’s
+temperature, mass, and initial composition. We assume that mantle rock undergoes bulk melting to form the magma pool, and that winds flow radially away from the substellar point. With these assumptions, we find that: (1) atmosphere-interior exchange is fast when the planet’s bulk-silicate FeO concentration is low, and slow when the planet’s bulk-silicate FeO concentration is high; (2) magma pools are
+compositionally well mixed for substellar temperatures ≲2400 K, but compositionally variegated and rapidly variable for substellar
+temperatures ≳2400 K; (3) currents within the magma pool tend to cool the top of the solid mantle (“tectonic refrigeration”)
+(4) contrary to earlier work, many magma planets have time-variable surface compositions.},
+	urldate = {2021-03-19},
+	journal = {The Astrophysical Journal},
+	author = {Kite, Edwin S. and Fegley, Jr., Bruce and Schaefer, Laura and Gaidos, Eric},
+	month = sep,
+	year = {2016},
+	keywords = {55 Cnc e, CoRoT-7 b, HD 219134 b, KIC 12557548 b, planets and satellites: individual: Kepler-10 b},
+	pages = {80},
+	file = {Full Text PDF:/Users/fb90/Zotero/storage/YZHCKYJK/Kite et al. - 2016 - Atmosphere-interior Exchange on Hot, Rocky Exoplan.pdf:application/pdf}
+}
+
+@article{mansfield2019,
+	title = {Identifying {Atmospheres} on {Rocky} {Exoplanets} through {Inferred} {High} {Albedo}},
+	volume = {886},
+	issn = {1538-4357},
+	url = {https://iopscience.iop.org/article/10.3847/1538-4357/ab4c90},
+	doi = {10.3847/1538-4357/ab4c90},
+	abstract = {The upcoming launch of the James Webb Space Telescope means that we will soon have the capability to characterize the atmospheres of rocky exoplanets. However, it is still unknown whether such planets orbiting close to M dwarf stars can retain their atmospheres, or whether high-energy irradiation from the star will strip the gaseous envelopes from these objects. We present a new method to detect an atmosphere on a synchronously rotating rocky exoplanet around a K/M dwarf, by using thermal emission during secondary eclipse to infer a high dayside albedo that could only be explained by bright clouds. Based on calculations for plausible surface conditions, we conclude that a high albedo could be unambiguously interpreted as a signal of an atmosphere for planets with substellar temperatures of Tsub=410–1250 K. This range corresponds to equilibrium temperatures of Teq=300–880 K. We compare the inferred albedos of eight possible planet surface compositions to cloud albedo calculations. We determine that a layer of clouds with optical depths greater than τ=0.5–7, would have high enough albedos to be distinguishable from a bare rock surface. This method of detecting an atmosphere on a rocky planet is complementary to existing methods for detecting atmospheres, because it provides a way to detect atmospheres with pressures below 1bar (e.g., Mars), which are too tenuous to transport signiﬁcant heat but thick enough to host high-albedo clouds.},
+	language = {en},
+	number = {2},
+	urldate = {2021-03-19},
+	journal = {ApJ},
+	author = {Mansfield, Megan and Kite, Edwin S. and Hu, Renyu and Koll, Daniel D. B. and Malik, Matej and Bean, Jacob L. and Kempton, Eliza M.-R.},
+	month = dec,
+	year = {2019},
+	pages = {141},
+	file = {Mansfield et al. - 2019 - Identifying Atmospheres on Rocky Exoplanets throug.pdf:/Users/fb90/Zotero/storage/9DCADMGI/Mansfield et al. - 2019 - Identifying Atmospheres on Rocky Exoplanets throug.pdf:application/pdf}
+}
+
+@article{koll2019,
+	title = {Identifying {Candidate} {Atmospheres} on {Rocky} {M} {Dwarf} {Planets} via {Eclipse} {Photometry}},
+	volume = {886},
+	issn = {0004-637X},
+	url = {http://adsabs.harvard.edu/abs/2019ApJ...886..140K},
+	doi = {10.3847/1538-4357/ab4c91},
+	abstract = {Most rocky planets in the galaxy orbit a cool host star, and there is 
+large uncertainty among theoretical models whether these planets can
+retain an atmosphere. The James Webb Space Telescope (JWST) might be
+able to settle this question empirically, but most proposals for doing
+so require large observational effort because they are based on
+spectroscopy. Here we show that infrared photometry of secondary
+eclipses could quickly identify “candidate” atmospheres, by
+searching for rocky planets with atmospheres thick enough that
+atmospheric heat transport noticeably reduces their dayside thermal
+emission compared to that of a bare rock. For a planet amenable to
+atmospheric follow-up, we find that JWST should be able to confidently
+detect the heat redistribution signal of an \{ {\textbackslash}mathcal O \}(1) bar
+atmosphere with one to two eclipses. One to two eclipses is generally
+much less than the effort needed to infer an atmosphere via transmission
+or emission spectroscopy. Candidate atmospheres can be further validated
+via follow-up spectroscopy or phase curves. In addition, because this
+technique is fast it could enable a first atmospheric survey of rocky
+exoplanets with JWST. We estimate that the TESS mission will find
+∼100 planets that are too hot to be habitable but that can be
+quickly probed via eclipse photometry. Knowing whether hot, rocky
+planets around M dwarfs have atmospheres is important not only for
+understanding the evolution of uninhabitable worlds: if atmospheres are
+common on hot planets, then cooler, potentially habitable planets around
+M dwarfs are also likely to have atmospheres.},
+	urldate = {2021-03-20},
+	journal = {The Astrophysical Journal},
+	author = {Koll, Daniel D. B. and Malik, Matej and Mansfield, Megan and Kempton, Eliza M.-R. and Kite, Edwin and Abbot, Dorian and Bean, Jacob L.},
+	month = dec,
+	year = {2019},
+	keywords = {112, 1244, 1655, 487, 496, 792, Atmospheric circulation, Exoplanet atmospheres, Exoplanet surface characteristics, Infrared photometry, Planetary atmospheres, Super Earths},
+	pages = {140},
+	file = {Full Text PDF:/Users/fb90/Zotero/storage/BGXZU8EW/Koll et al. - 2019 - Identifying Candidate Atmospheres on Rocky M Dwarf.pdf:application/pdf}
+}
+
+@article{sullivan2015,
+	title = {{THE} {TRANSITING} {EXOPLANET} {SURVEY} {SATELLITE}: {SIMULATIONS} {OF} {PLANET} {DETECTIONS} {AND} {ASTROPHYSICAL} {FALSE} {POSITIVES}},
+	volume = {809},
+	issn = {1538-4357},
+	shorttitle = {{THE} {TRANSITING} {EXOPLANET} {SURVEY} {SATELLITE}},
+	url = {https://iopscience.iop.org/article/10.1088/0004-637X/809/1/77},
+	doi = {10.1088/0004-637X/809/1/77},
+	abstract = {The Transiting Exoplanet Survey Satellite (TESS) is a NASA-sponsored Explorer mission that will perform a wide-ﬁeld survey for planets that transit bright host stars. Here, we predict the properties of the transiting planets that TESS will detect along with the EB stars that produce false-positive photometric signals. The predictions are based on Monte Carlo simulations of the nearby population of stars, occurrence rates of planets derived from Kepler, and models for the photometric performance and sky coverage of the TESS cameras. We expect that TESS will ﬁnd approximately 1700 transiting planets from 2 ´ 105 pre-selected target stars. This includes 556 planets smaller than twice the size of Earth, of which 419 are hosted by M dwarf stars and 137 are hosted by FGK dwarfs. Approximately 130 of the R {\textless} 2 RÅ planets will have host stars brighter than Ks = 9. Approximately 48 of the planets with R {\textless} 2 RÅ lie within or near the habitable zone (0.2 {\textless} S SÅ {\textless} 2); between 2 and 7 such planets have host stars brighter than Ks = 9. We also expect approximately 1100 detections of planets with radii 2–4 RÅ, and 67 planets larger than 4 RÅ. Additional planets larger than 2 RÅ can be detected around stars that are not among the pre-selected target stars, because TESS will also deliver full-frame images at a 30-minute cadence. The planet detections are accompanied by over 1000 astrophysical false positives. We discuss how TESS data and groundbased observations can be used to distinguish the false positives from genuine planets. We also discuss the prospects for follow-up observations to measure the masses and atmospheres of the TESS planets.},
+	language = {en},
+	number = {1},
+	urldate = {2021-03-22},
+	journal = {ApJ},
+	author = {Sullivan, Peter W. and Winn, Joshua N. and Berta-Thompson, Zachory K. and Charbonneau, David and Deming, Drake and Dressing, Courtney D. and Latham, David W. and Levine, Alan M. and McCullough, Peter R. and Morton, Timothy and Ricker, George R. and Vanderspek, Roland and Woods, Deborah},
+	month = aug,
+	year = {2015},
+	pages = {77},
+	file = {Sullivan et al. - 2015 - THE TRANSITING EXOPLANET SURVEY SATELLITE SIMULAT.pdf:/Users/fb90/Zotero/storage/BA85NDYR/Sullivan et al. - 2015 - THE TRANSITING EXOPLANET SURVEY SATELLITE SIMULAT.pdf:application/pdf}
+}
+
+@article{deibert2021,
+	title = {A {Near}-{Infrared} {Chemical} {Inventory} of the {Atmosphere} of 55 {Cancri} e},
+	url = {http://arxiv.org/abs/2102.08965},
+	abstract = {We present high-resolution near-infrared spectra taken during eight transits of 55 Cancri e, a nearby low-density super-Earth with a short orbital period ({\textless} 18 hours). While this exoplanet's bulk density indicates a possible atmosphere, one has not been detected definitively. Our analysis relies on the Doppler cross-correlation technique, which takes advantage of the high spectral resolution and broad wavelength coverage of our data, to search for the thousands of absorption features from hydrogen-, carbon-, and nitrogen-rich molecular species in the planetary atmosphere. Although we are unable to detect an atmosphere around 55 Cancri e, we do place strong constraints on the levels of HCN, NH\$\{\}\_3\$, and C\$\{\}\_2\$H\$\{\}\_2\$ that may be present. In particular, at a mean molecular weight of 5 amu we can rule out the presence of HCN in the atmosphere down to a volume mixing ratio (VMR) of 0.02\%, NH\$\{\}\_3\$ down to a VMR of 0.08\%, and C\$\{\}\_2\$H\$\{\}\_2\$ down to a VMR of 1.0\%. If the mean molecular weight is relaxed to 2 amu, we can rule out the presence of HCN, NH\$\{\}\_3\$, and C\$\{\}\_2\$H\$\{\}\_2\$ down to VMRs of 0.001\%, 0.0025\%, and 0.08\% respectively. Our results reduce the parameter space of possible atmospheres consistent with the analysis of HST/WFC3 observations by Tsiaras et al. (2016), and indicate that if 55 Cancri e harbors an atmosphere, it must have a high mean molecular weight and/or clouds.},
+	urldate = {2021-03-22},
+	journal = {arXiv:2102.08965 [astro-ph]},
+	author = {Deibert, Emily K. and de Mooij, Ernst J. W. and Jayawardhana, Ray and Ridden-Harper, Andrew and Sivanandam, Suresh and Karjalainen, Raine and Karjalainen, Marie},
+	month = feb,
+	year = {2021},
+	note = {arXiv: 2102.08965},
+	keywords = {Astrophysics - Earth and Planetary Astrophysics},
+	file = {arXiv Fulltext PDF:/Users/fb90/Zotero/storage/IMKCS9ZD/Deibert et al. - 2021 - A Near-Infrared Chemical Inventory of the Atmosphe.pdf:application/pdf;arXiv.org Snapshot:/Users/fb90/Zotero/storage/NNX9G6QM/2102.html:text/html}
+}
+
+@article{cowan2011,
+	title = {{THE} {STATISTICS} {OF} {ALBEDO} {AND} {HEAT} {RECIRCULATION} {ON} {HOT} {EXOPLANETS}},
+	volume = {729},
+	issn = {0004-637X, 1538-4357},
+	url = {https://iopscience.iop.org/article/10.1088/0004-637X/729/1/54},
+	doi = {10.1088/0004-637X/729/1/54},
+	abstract = {If both the day-side and night-side effective temperatures of a planet can be measured, it is possible to estimate its Bond albedo, 0 {\textless} AB {\textless} 1, as well as its day–night heat redistribution efﬁciency, 0 {\textless} ε {\textless} 1. We attempt a statistical analysis of the albedo and redistribution efﬁciency for 24 transiting exoplanets that have at least one published secondary eclipse. For each planet, we show how to calculate a sub-stellar equilibrium temperature, T0, and associated uncertainty. We then use a simple model-independent technique to estimate a planet’s effective temperature from planet/star ﬂux ratios. We use thermal secondary eclipse measurements—those obtained at λ {\textgreater} 0.8 μm—to estimate day-side effective temperatures, Td, and thermal phase variations—when available—to estimate night-side effective temperature. We strongly rule out the “null hypothesis” of a single AB and ε for all 24 planets. If we allow each planet to have different parameters, we ﬁnd that low Bond albedos are favored (AB {\textless} 0.35 at 1σ conﬁdence), which is an independent conﬁrmation of the low albedos inferred from nondetections of reﬂected light. Our sample exhibits a wide variety of redistribution efﬁciencies. When normalized by T0, the day-side effective temperatures of the 24 planets describe a uni-modal distribution. The two biggest outliers are GJ 436b (abnormally hot) and HD 80606b (abnormally cool), and these are the only eccentric planets in our sample. The dimensionless quantity Td/T0 exhibits no trend with the presence or absence of stratospheric inversions. There is also no clear trend between Td/T0 and T0. That said, the six planets with the greatest sub-stellar equilibrium temperatures (T {\textgreater} 2400 K) have low ε, as opposed to the 18 cooler planets, which show a variety of recirculation efﬁciencies. This hints that the very hottest transiting giant planets are qualitatively different from the merely hot Jupiters. We propose an explanation of this trend based on how a planet’s radiative and advective times scale with temperature: both timescales are expected to be shorter for hotter planets, but the temperature dependence of the radiative timescale is stronger, leading to decreased heat recirculation efﬁciency.},
+	language = {en},
+	number = {1},
+	urldate = {2021-03-24},
+	journal = {ApJ},
+	author = {Cowan, Nicolas B. and Agol, Eric},
+	month = mar,
+	year = {2011},
+	pages = {54},
+	file = {Cowan and Agol - 2011 - THE STATISTICS OF ALBEDO AND HEAT RECIRCULATION ON.pdf:/Users/fb90/Zotero/storage/Z3XR72UN/Cowan and Agol - 2011 - THE STATISTICS OF ALBEDO AND HEAT RECIRCULATION ON.pdf:application/pdf}
+}
+
+@article{changeat2021,
+	title = {An exploration of model degeneracies with a unified phase curve retrieval analysis: {The} light and dark sides of {WASP}-43 b},
+	shorttitle = {An exploration of model degeneracies with a unified phase curve retrieval analysis},
+	url = {http://arxiv.org/abs/2103.14566},
+	abstract = {The analysis of exoplanetary atmospheres often relies upon the observation of transit or eclipse events. While very powerful, these snapshots provide mainly 1-dimensional information on the planet structure and do not easily allow precise latitude-longitude characterisations. The phase curve technique, which consists of measuring the planet emission throughout its entire orbit, can break this limitation and provide useful 2-dimensional thermal and chemical constraints on the atmosphere. As of today however, computing performances have limited our ability to perform unified retrieval studies on the full set of observed spectra from phase curve observations at the same time. Here, we present a new phase curve model that enables fast, unified retrieval capabilities. We apply our technique to the combined phase curve data from the Hubble and Spitzer space telescopes of the hot-Jupiter WASP-43 b. We tested different scenarios and discussed the dependence of our solution to different assumptions in the model. Our more comprehensive approach suggests that multiple interpretation of this dataset are possible but our more complex model is consistent with the presence of thermal inversions and a metal rich atmosphere, contrasting with previous data analyses, although this likely depends on the Spitzer data reduction. The detailed constraints extracted here demonstrate the importance of developing and understanding advanced phase curve techniques, which we believe will unlock access to a richer picture of exoplanet atmospheres.},
+	urldate = {2021-03-29},
+	journal = {arXiv:2103.14566 [astro-ph]},
+	author = {Changeat, Quentin and Al-Refaie, Ahmed F. and Edwards, Billy and Waldmann, Ingo P. and Tinetti, Giovanna},
+	month = mar,
+	year = {2021},
+	note = {arXiv: 2103.14566},
+	keywords = {Astrophysics - Instrumentation and Methods for Astrophysics, Astrophysics - Earth and Planetary Astrophysics},
+	file = {arXiv Fulltext PDF:/Users/fb90/Zotero/storage/Q6IR3YWE/Changeat et al. - 2021 - An exploration of model degeneracies with a unifie.pdf:application/pdf;arXiv.org Snapshot:/Users/fb90/Zotero/storage/WIEG8W8D/2103.html:text/html}
+}
+
+@article{fortney2021,
+	title = {Hot {Jupiters}: {Origins}, {Structure}, {Atmospheres}},
+	volume = {126},
+	issn = {2169-9097, 2169-9100},
+	shorttitle = {Hot {Jupiters}},
+	url = {http://arxiv.org/abs/2102.05064},
+	doi = {10.1029/2020JE006629},
+	abstract = {We provide a brief review of many aspects of the planetary physics of hot Jupiters. Our aim is to cover most of the major areas of current study while providing the reader with additional references for more detailed follow-up. We first discuss giant planet formation and subsequent orbital evolution via disk-driven torques or dynamical interactions. More than one formation pathway is needed to understand the population. Next, we examine our current understanding of the evolutionary history and current interior structure of the planets, where we focus on bulk composition as well as viable models to explain the inflated radii of the population. Finally we discuss aspects of their atmospheres in the context of observations and 1D and 3D models, including atmospheric structure and escape, spectroscopic signatures, and complex atmospheric circulation. The major opacity sources in these atmospheres, including alkali metals, water vapor, and others, are discussed. We discuss physics that control the 3D atmospheric circulation and day-to-night temperature structures. We conclude by suggesting important future work for still-open questions.},
+	number = {3},
+	urldate = {2021-03-31},
+	journal = {J Geophys Res Planets},
+	author = {Fortney, Jonathan J. and Dawson, Rebekah I. and Komacek, Thaddeus D.},
+	month = mar,
+	year = {2021},
+	note = {arXiv: 2102.05064},
+	keywords = {Astrophysics - Earth and Planetary Astrophysics},
+	file = {arXiv Fulltext PDF:/Users/fb90/Zotero/storage/T7NGH89X/Fortney et al. - 2021 - Hot Jupiters Origins, Structure, Atmospheres.pdf:application/pdf;arXiv.org Snapshot:/Users/fb90/Zotero/storage/HHKBC328/2102.html:text/html}
+}
+
+@article{roman2021,
+	title = {Clouds in {Three}-{Dimensional} {Models} of {Hot} {Jupiters} {Over} a {Wide} {Range} of {Temperatures} {I}: {Thermal} {Structures} and {Broadband} {Phase} {Curve} {Predictions}},
+	volume = {908},
+	issn = {0004-637X, 1538-4357},
+	shorttitle = {Clouds in {Three}-{Dimensional} {Models} of {Hot} {Jupiters} {Over} a {Wide} {Range} of {Temperatures} {I}},
+	url = {http://arxiv.org/abs/2010.06936},
+	doi = {10.3847/1538-4357/abd549},
+	abstract = {Using a general circulation model (GCM), we investigate trends in simulated hot Jupiter atmospheres for a range of irradiation temperatures (1,500 - 4,000 K), surface gravities (10 and 40 m s-2), and cloud conditions. Our models include simplified temperature-dependent clouds with radiative feedback and show how different cloud compositions, vertical thicknesses, and opacities shape hot Jupiters atmospheres by potentially increasing planetary albedos, decreasing photospheric pressures and nightside temperatures, and in some cases producing strong dayside thermal inversions. With decreasing irradiation, clouds progressively form on the nightside and cooler western limb followed by the eastern limb and central dayside. We find that clouds significantly modify the radiative transport and affect the observable properties of planets colder than T\_irr {\textasciitilde} 3,000{\textasciitilde}K (T\_eq{\textasciitilde}2,100 K) depending on the clouds' vertical extent. The precise strength of expected effects depends on the assumed parameters, but trends in predicted phase curves emerge from an ensemble of simulations. Clouds lead to larger phase curve amplitudes and smaller phase curve offsets at IR wavelengths, compared to cloud-free models. At optical wavelengths, we predict mostly westward phase curve offsets at intermediate temperatures (T\_irr {\textasciitilde} 2,000 - 3,500 K) with clouds confined to the nightside and western limb. If clouds are vertically compact (i.e. on order of a pressure scale height in thickness), their distributions and effects become more complicated as different condensates form at different heights -- some too deep to significantly affect the observable atmosphere. Our results have implications for interpreting the diversity of phase curve observations of planets with T\_irr {\textless}{\textasciitilde}3,000{\textasciitilde}K.},
+	number = {1},
+	urldate = {2021-03-31},
+	journal = {ApJ},
+	author = {Roman, Michael T. and Kempton, Eliza M.-R. and Rauscher, Emily and Harada, Caleb K. and Bean, Jacob L. and Stevenson, Kevin B.},
+	month = feb,
+	year = {2021},
+	note = {arXiv: 2010.06936},
+	keywords = {Astrophysics - Earth and Planetary Astrophysics},
+	pages = {101},
+	file = {arXiv Fulltext PDF:/Users/fb90/Zotero/storage/4E7HB2AF/Roman et al. - 2021 - Clouds in Three-Dimensional Models of Hot Jupiters.pdf:application/pdf;arXiv.org Snapshot:/Users/fb90/Zotero/storage/FKDRYSI6/2010.html:text/html}
+}
+
+@article{parmentier2020,
+	title = {The cloudy shape of hot {Jupiter} thermal phase curves},
+	volume = {501},
+	issn = {0035-8711, 1365-2966},
+	url = {http://arxiv.org/abs/2010.06934},
+	doi = {10.1093/mnras/staa3418},
+	abstract = {Hot Jupiters have been predicted to have a strong day/night temperature contrast and a hot spot shifted eastward of the substellar point. This was confirmed by numerous phase curve observations probing the longitudinal brightness variation of the atmosphere. Global circulation models, however, systematically underestimate the phase curve amplitude and overestimate the shift of its maximum. We use a global circulation model including non-grey radiative transfer and realistic gas and cloud opacities to systematically investigate how the atmospheric circulation of hot Jupiters varies with equilibrium temperature from 1000 to 2200K. We show that the heat transport is very efficient for cloudless planets cooler than 1600K and becomes less efficient at higher temperatures. When nightside clouds are present, the day-to-night heat transport becomes extremely inefficient, leading to a good match to the observed low nightside temperatures. The constancy of this low temperature is, however, due to the strong dependence of the radiative timescale with temperature. We further show that nightside clouds increase the phase curve amplitude and decreases the phase curve offset at the same time. This change is very sensitive to the cloud chemical composition and particle size, meaning that the diversity in observed phase curves can be explained by a diversity of nightside cloud properties. Finally, we show that phase curve parameters do not necessarily track the day/night contrast nor the shift of the hot spot on isobars, and propose solutions to to recover the true hot-spot shift and day/night contrast.},
+	number = {1},
+	urldate = {2021-03-31},
+	journal = {Monthly Notices of the Royal Astronomical Society},
+	author = {Parmentier, Vivien and Showman, Adam P. and Fortney, Jonathan J.},
+	month = dec,
+	year = {2020},
+	note = {arXiv: 2010.06934},
+	keywords = {Astrophysics - Earth and Planetary Astrophysics},
+	pages = {78--108},
+	file = {arXiv Fulltext PDF:/Users/fb90/Zotero/storage/BAL86HSE/Parmentier et al. - 2020 - The cloudy shape of hot Jupiter thermal phase curv.pdf:application/pdf;arXiv.org Snapshot:/Users/fb90/Zotero/storage/HXIBDN2R/2010.html:text/html}
+}
+
+@article{komacek2019,
+	title = {Temporal {Variability} in {Hot} {Jupiter} {Atmospheres}},
+	volume = {888},
+	issn = {1538-4357},
+	url = {https://iopscience.iop.org/article/10.3847/1538-4357/ab5b0b},
+	doi = {10.3847/1538-4357/ab5b0b},
+	abstract = {Hot Jupiters receive intense incident stellar light on their daysides, which drives vigorous atmospheric circulation that attempts to erase their large dayside-to-nightside ﬂux contrasts. Propagating waves and instabilities in hot Jupiter atmospheres can cause emergent properties of the atmosphere to be time-variable. In this work, we study such weather in hot Jupiter atmospheres using idealized cloud-free general circulation models with double-gray radiative transfer. We ﬁnd that hot Jupiter atmospheres can be time-variable at the ∼0.1\%–1\% level in globally averaged temperature and at the ∼1\%–10\% level in globally averaged wind speeds. As a result, we ﬁnd that observable quantities are also time-variable: the secondary eclipse depth can be variable at the 2\% level, the phase-curve amplitude can change by 1\%, the phase-curve offset can shift by 5°, and terminator-averaged wind speeds can vary by 2kms−1. Additionally, we calculate how the eastern and western limb-averaged wind speeds vary with incident stellar ﬂux and the strength of an imposed drag that parameterizes Lorentz forces in partially ionized atmospheres. We ﬁnd that the eastern limb is blueshifted in models over a wide range of equilibrium temperature and drag strength, while the western limb is only redshifted if equilibrium temperatures are 1500K and drag is weak. Lastly, we show that temporal variability may be observationally detectable in the infrared through secondary eclipse observations with the James Webb Space Telescope, phase-curve observations with future space telescopes (e.g., ARIEL), and/or Doppler wind speed measurements with high-resolution spectrographs.},
+	language = {en},
+	number = {1},
+	urldate = {2021-03-31},
+	journal = {ApJ},
+	author = {Komacek, Thaddeus D. and Showman, Adam P.},
+	month = dec,
+	year = {2019},
+	pages = {2},
+	file = {Komacek and Showman - 2019 - Temporal Variability in Hot Jupiter Atmospheres.pdf:/Users/fb90/Zotero/storage/QE9IEETB/Komacek and Showman - 2019 - Temporal Variability in Hot Jupiter Atmospheres.pdf:application/pdf}
+}
+
+@article{rudner2018,
+	title = {Multi\${\textasciicircum}\{{\textbackslash}mathbf\{3\}\}\${Net}: {Segmenting} {Flooded} {Buildings} via {Fusion} of {Multiresolution}, {Multisensor}, and {Multitemporal} {Satellite} {Imagery}},
+	shorttitle = {Multi\${\textasciicircum}\{{\textbackslash}mathbf\{3\}\}\${Net}},
+	url = {http://arxiv.org/abs/1812.01756},
+	abstract = {We propose a novel approach for rapid segmentation of flooded buildings by fusing multiresolution, multisensor, and multitemporal satellite imagery in a convolutional neural network. Our model significantly expedites the generation of satellite imagery-based flood maps, crucial for first responders and local authorities in the early stages of flood events. By incorporating multitemporal satellite imagery, our model allows for rapid and accurate post-disaster damage assessment and can be used by governments to better coordinate medium- and long-term financial assistance programs for affected areas. The network consists of multiple streams of encoder-decoder architectures that extract spatiotemporal information from medium-resolution images and spatial information from high-resolution images before fusing the resulting representations into a single medium-resolution segmentation map of flooded buildings. We compare our model to state-of-the-art methods for building footprint segmentation as well as to alternative fusion approaches for the segmentation of flooded buildings and find that our model performs best on both tasks. We also demonstrate that our model produces highly accurate segmentation maps of flooded buildings using only publicly available medium-resolution data instead of significantly more detailed but sparsely available very high-resolution data. We release the first open-source dataset of fully preprocessed and labeled multiresolution, multispectral, and multitemporal satellite images of disaster sites along with our source code.},
+	urldate = {2021-04-01},
+	journal = {arXiv:1812.01756 [cs]},
+	author = {Rudner, Tim G. J. and Rußwurm, Marc and Fil, Jakub and Pelich, Ramona and Bischke, Benjamin and Kopackova, Veronika and Bilinski, Piotr},
+	month = dec,
+	year = {2018},
+	note = {arXiv: 1812.01756},
+	keywords = {Computer Science - Machine Learning, Computer Science - Artificial Intelligence, Computer Science - Computer Vision and Pattern Recognition, I.2.10, I.4.6},
+	file = {arXiv Fulltext PDF:/Users/fb90/Zotero/storage/IJW45J9V/Rudner et al. - 2018 - Multi\$^ mathbf 3 \$Net Segmenting Flooded Buildi.pdf:application/pdf;arXiv.org Snapshot:/Users/fb90/Zotero/storage/DJ4ZYDJ5/1812.html:text/html}
+}
+
+@article{gelman2020,
+	title = {Bayesian {Workflow}},
+	url = {http://arxiv.org/abs/2011.01808},
+	abstract = {The Bayesian approach to data analysis provides a powerful way to handle uncertainty in all observations, model parameters, and model structure using probability theory. Probabilistic programming languages make it easier to specify and fit Bayesian models, but this still leaves us with many options regarding constructing, evaluating, and using these models, along with many remaining challenges in computation. Using Bayesian inference to solve real-world problems requires not only statistical skills, subject matter knowledge, and programming, but also awareness of the decisions made in the process of data analysis. All of these aspects can be understood as part of a tangled workflow of applied Bayesian statistics. Beyond inference, the workflow also includes iterative model building, model checking, validation and troubleshooting of computational problems, model understanding, and model comparison. We review all these aspects of workflow in the context of several examples, keeping in mind that in practice we will be fitting many models for any given problem, even if only a subset of them will ultimately be relevant for our conclusions.},
+	urldate = {2021-04-14},
+	journal = {arXiv:2011.01808 [stat]},
+	author = {Gelman, Andrew and Vehtari, Aki and Simpson, Daniel and Margossian, Charles C. and Carpenter, Bob and Yao, Yuling and Kennedy, Lauren and Gabry, Jonah and Bürkner, Paul-Christian and Modrák, Martin},
+	month = nov,
+	year = {2020},
+	note = {arXiv: 2011.01808},
+	keywords = {Statistics - Methodology},
+	file = {arXiv Fulltext PDF:/Users/fb90/Zotero/storage/AU2PMCNN/Gelman et al. - 2020 - Bayesian Workflow.pdf:application/pdf;arXiv.org Snapshot:/Users/fb90/Zotero/storage/E5ZJ5MLE/2011.html:text/html}
+}
+
+@article{tamburo2018,
+	title = {Confirming {Variability} in the {Secondary} {Eclipse} {Depth} of the {Super}-{Earth} 55 {Cancri} e},
+	volume = {155},
+	issn = {1538-3881},
+	url = {http://arxiv.org/abs/1804.03735},
+	doi = {10.3847/1538-3881/aabd84},
+	abstract = {We present a reanalysis of five transit and eight eclipse observations of the ultra-short period super-Earth 55 Cancri e observed using the Spitzer Space Telescope during 2011-2013. We use pixel-level decorrelation to derive accurate transit and eclipse depths from the Spitzer data, and we perform an extensive error analysis. We focus on determining possible variability in the eclipse data, as was reported in Demory et al. 2016a. From the transit data, we determine updated orbital parameters, yielding T0 = 2455733.0037 \${\textbackslash}pm\$ 0.0002, P = 0.7365454 \${\textbackslash}pm\$ 0.0000003 days, i = 83.5 \${\textbackslash}pm\$ 1.3 degrees, and \$R\_p\$ = 1.89 \${\textbackslash}pm\$ 0.05 \$R\_{\textbackslash}oplus\$. Our transit results are consistent with a constant depth, and we conclude that they are not variable. We find a significant amount of variability between the eight eclipse observations, and confirm agreement with Demory et al. 2016a through a correlation analysis. We convert the eclipse measurements to brightness temperatures, and generate and discuss several heuristic models that explain the evolution of the planet's eclipse depth versus time. The eclipses are best modeled by a year-to-year variability model, but variability on shorter timescales cannot be ruled out. The derived range of brightness temperatures can be achieved by a dark planet with inefficient heat redistribution intermittently covered over a large fraction of the sub-stellar hemisphere by reflective grains, possibly indicating volcanic activity or cloud variability. This time-variable system should be observable with future space missions, both planned (JWST) and proposed (i.e. ARIEL).},
+	number = {5},
+	urldate = {2021-04-15},
+	journal = {AJ},
+	author = {Tamburo, Patrick and Mandell, Avi and Deming, Drake and Garhart, Emily},
+	month = may,
+	year = {2018},
+	note = {arXiv: 1804.03735},
+	keywords = {Astrophysics - Earth and Planetary Astrophysics},
+	pages = {221},
+	file = {arXiv Fulltext PDF:/Users/fb90/Zotero/storage/3NUJEQU8/Tamburo et al. - 2018 - Confirming Variability in the Secondary Eclipse De.pdf:application/pdf;arXiv.org Snapshot:/Users/fb90/Zotero/storage/HAJRK7YC/1804.html:text/html}
+}
+
+@article{dewit2012,
+	title = {Towards consistent mapping of distant worlds: secondary-eclipse scanning of the exoplanet {HD} 189733b},
+	volume = {548},
+	issn = {0004-6361, 1432-0746},
+	shorttitle = {Towards consistent mapping of distant worlds},
+	url = {http://www.aanda.org/10.1051/0004-6361/201219060},
+	doi = {10.1051/0004-6361/201219060},
+	abstract = {Methods. We use archived Spitzer/IRAC 8-µm data of HD 189733 (six transits, eight secondary eclipses, and a phase curve) in a global Markov chain Monte Carlo (MCMC) procedure for mitigating systematics. We also include HD 189733’s out-of-transit radial velocity (RV) measurements to assess their incidence on the inferences obtained solely from the photometry.
+Results. We ﬁnd a 6σ deviation from the expected occultation of a uniformly-bright disk. This deviation emerges mainly from a large-scale hot spot in HD 189733b’s atmosphere, not from HD 189733b’s shape. We indicate that the correlation of the exoplanet orbital eccentricity, e, and BD (“uniform time oﬀset”) does also depend on the stellar density, ρ , and the exoplanet impact parameter, b (“e-b-ρ -BD correlation”). For HD 189733b, we ﬁnd that relaxing the eccentricity constraint and using more complex BDs lead to lower stellar/planetary densities and a more localized and latitudinally-shifted hot spot. We, therefore, show that the light curve of an exoplanet does not constrain uniquely its brightness peak localization. Finally, we obtain an improved constraint on the upper limit of HD 189733b’s orbital eccentricity, e ≤ 0.011 (95\% conﬁdence), when including HD 189733’s RV measurements.
+Conclusions. Reanalysis of archived HD 189733’s data constrains HD 189733b’s shape and BD at 8 µm. Our study provides new insights into the analysis of exoplanet light curves and a proper framework for future eclipse-scanning observations. In particular, observations of the same exoplanet at diﬀerent wavelengths could improve the constraints on HD 189733’s system parameters while ultimately yielding a large-scale time-dependent 3D map of HD 189733b’s atmosphere. Finally, we discuss the perspective of extending our method to observations in the visible (e.g., Kepler data), in particular to better understand exoplanet albedos.},
+	language = {en},
+	urldate = {2021-05-11},
+	journal = {A\&A},
+	author = {de Wit, J. and Gillon, M. and Demory, B.-O. and Seager, S.},
+	month = dec,
+	year = {2012},
+	pages = {A128},
+	file = {de Wit et al. - 2012 - Towards consistent mapping of distant worlds seco.pdf:/Users/fb90/Zotero/storage/E6BCLJ8D/de Wit et al. - 2012 - Towards consistent mapping of distant worlds seco.pdf:application/pdf}
+}
+
+@article{williams2006,
+	title = {Resolving the {Surfaces} of {Extrasolar} {Planets} with {Secondary} {Eclipse} {Light} {Curves}},
+	volume = {649},
+	issn = {0004-637X},
+	url = {http://adsabs.harvard.edu/abs/2006ApJ...649.1020W},
+	doi = {10.1086/506468},
+	abstract = {We present a method that employs the secondary eclipse light curves of 
+transiting extrasolar planets to probe the spatial variation of their
+thermal emission. This technique permits an observer to resolve the
+surface of the planet without the need to spatially isolate its light
+from that of the central star. We evaluate the feasibility of this
+technique for the HD 209458 system by simulating observations made with
+the Spitzer Infrared Array Camera (IRAC). We consider two
+representations of the planetary thermal emission: a simple model
+parameterized by a sinusoidal dependence on longitude and latitude, and
+the results of a three-dimensional dynamical simulation of the planetary
+atmosphere previously published by Cooper \& Showman. We find that
+observations of the secondary eclipse light curve are most sensitive to
+a longitudinal asymmetry in the dayside planetary emission. To quantify
+this signal, we define a new parameter, the ``uniform time offset,''
+which measures the time lag between the observed secondary eclipse and
+that predicted by a planet with spatially uniform emission. We compare
+the predicted amplitude of this parameter for HD 20948 with the
+precision with which it could be measured with IRAC. We find that IRAC
+observations at 3.6μm of a single secondary eclipse should permit
+sufficient precision to confirm or reject the Cooper \& Showman model
+of the surface flux distribution for this planet. We quantify the
+signal-to-noise ratio for this offset in the remaining IRAC bands and
+find that a modest improvement in photometric precision should permit a
+similarly robust detection.},
+	urldate = {2021-05-11},
+	journal = {The Astrophysical Journal},
+	author = {Williams, Peter K. G. and Charbonneau, David and Cooper, Curtis S. and Showman, Adam P. and Fortney, Jonathan J.},
+	month = oct,
+	year = {2006},
+	keywords = {Infrared: Stars, Stars: Binaries: Eclipsing, Stars: Individual: Henry Draper Number: HD 209458, Stars: Planetary Systems, Techniques: High Anular Resolution, Techniques: Photometric},
+	pages = {1020--1027},
+	file = {Full Text PDF:/Users/fb90/Zotero/storage/E38KSQS5/Williams et al. - 2006 - Resolving the Surfaces of Extrasolar Planets with .pdf:application/pdf}
+}
+
+@article{rauscher2007,
+	title = {Toward {Eclipse} {Mapping} of {Hot} {Jupiters}},
+	volume = {664},
+	issn = {0004-637X},
+	url = {http://adsabs.harvard.edu/abs/2007ApJ...664.1199R},
+	doi = {10.1086/519213},
+	abstract = {Recent Spitzer infrared measurements of hot-Jupiter eclipses suggest that eclipse-mapping techniques could be used to spatially resolve the dayside photospheric emission of these planets using partial
+occultations. As a first step in this direction, we simulate
+ingress/egress light curves for three bright eclipsing hot Jupiters and evaluate the degree to which parameterized photospheric emission models can be distinguished from each other with repeated, noisy eclipse measurements. We find that the photometric accuracy of Spitzer is insufficient to use this tool effectively. On the other hand, the level of photospheric details that could be probed with a few JWST eclipse measurements could greatly inform hot-Jupiter atmospheric modeling efforts. A JWST program focused on nonparametric eclipse map inversions for hot Jupiters should be actively considered.},
+	urldate = {2021-05-11},
+	journal = {The Astrophysical Journal},
+	author = {Rauscher, Emily and Menou, Kristen and Seager, Sara and Deming, Drake and Cho, James Y.-K. and Hansen, Bradley M. S.},
+	month = aug,
+	year = {2007},
+	keywords = {Eclipses, Infrared: Stars, Stars: Individual: Henry Draper Number: HD 209458, Stars: Planetary Systems, Techniques: High Anular Resolution, Occultations, stars: individual (HD 189733), Stars: Individual: Alphanumeric: TrES-1},
+	pages = {1199--1209},
+	file = {Full Text PDF:/Users/fb90/Zotero/storage/U84LDR7P/Rauscher et al. - 2007 - Toward Eclipse Mapping of Hot Jupiters.pdf:application/pdf}
+}
+
+@article{madhusudhan2012,
+	title = {Analytic {Models} for {Albedos}, {Phase} {Curves}, and {Polarization} of {Reflected} {Light} from {Exoplanets}},
+	volume = {747},
+	issn = {0004-637X},
+	url = {http://adsabs.harvard.edu/abs/2012ApJ...747...25M},
+	doi = {10.1088/0004-637X/747/1/25},
+	abstract = {New observational facilities are becoming increasingly capable of 
+observing reflected light from transiting and directly imaged extrasolar
+planets. In this study, we provide an analytic framework to interpret
+observed phase curves, geometric albedos, and polarization of giant
+planet atmospheres. We compute the observables for non-conservative
+Rayleigh scattering in homogeneous semi-infinite atmospheres using both
+scalar and vector formalisms. In addition, we compute phase curves and
+albedos for Lambertian, isotropic, and anisotropic scattering phase
+functions. We provide analytic expressions for geometric albedos and
+spherical albedos as a function of the scattering albedo for Rayleigh
+scattering in semi-infinite atmospheres. Given an observed geometric
+albedo our prescriptions can be used to estimate the underlying
+scattering albedo of the atmosphere, which in turn is indicative of the
+scattering and absorptive properties of the atmosphere. We also study
+the dependence of polarization in Rayleigh scattering atmospheres on the
+orbital parameters of the planet-star system, particularly on the
+orbital inclination. We show how the orbital inclination of
+non-transiting exoplanets can be constrained from their observed
+polarization parameters. We consolidate the formalism, solution
+techniques, and results from analytic models available in the
+literature, often scattered in various sources, and present a systematic
+procedure to compute albedos, phase curves, and polarization of
+reflected light.},
+	urldate = {2021-05-11},
+	journal = {The Astrophysical Journal},
+	author = {Madhusudhan, Nikku and Burrows, Adam},
+	month = mar,
+	year = {2012},
+	keywords = {planetary systems, planets and satellites: general},
+	pages = {25},
+	file = {Full Text PDF:/Users/fb90/Zotero/storage/L5SUVG93/Madhusudhan and Burrows - 2012 - Analytic Models for Albedos, Phase Curves, and Pol.pdf:application/pdf}
+}
+
+@article{steinrueck2019,
+	title = {The {Effect} of {3D} {Transport}-induced {Disequilibrium} {Carbon} {Chemistry} on the {Atmospheric} {Structure}, {Phase} {Curves}, and {Emission} {Spectra} of {Hot} {Jupiter} {HD} 189733b},
+	volume = {880},
+	issn = {1538-4357},
+	url = {https://iopscience.iop.org/article/10.3847/1538-4357/ab2598},
+	doi = {10.3847/1538-4357/ab2598},
+	abstract = {On hot Jupiter exoplanets, strong horizontal and vertical winds should homogenize the abundances of the important absorbers CH4 and CO much faster than chemical reactions restore chemical equilibrium. This effect, typically neglected in general circulation models (GCMs), has been suggested to explain discrepancies between observed infrared light curves and those predicted by GCMs. On the nightsides of several hot Jupiters, GCMs predict outgoing ﬂuxes that are too large, especially in the Spitzer4.5 μm band. We modiﬁed the SPARC/MITgcm to include disequilibrium abundances of CH4, CO, and H2O by assuming that the CH4/CO ratio is constant throughout the simulation domain. We ran simulations of hot Jupiter HD 189733b with eight CH4/CO ratios. In the more likely COdominated regime, we ﬁnd temperature changes 50–100 K compared to the simulation for equilibrium chemistry across large regions. This effect is large enough to affect predicted emission spectra and should thus be included in GCMs of hot Jupiters with equilibrium temperatures between 600 and 1300 K. We ﬁnd that spectra in regions with strong methane absorption, including the Spitzer3.6 and 8 μm bands, are strongly impacted by disequilibrium abundances. We expect chemical quenching to result in much larger nightside ﬂuxes in the 3.6 μm band, in stark contrast to observations. Meanwhile, we ﬁnd almost no effect on predicted observations in the 4.5 μm band, because the changes in opacity due to CO and H2O offset each other. We thus conclude that disequilibrium carbon chemistry cannot explain the observed low nightside ﬂuxes in the 4.5 μm band.},
+	language = {en},
+	number = {1},
+	urldate = {2021-05-11},
+	journal = {ApJ},
+	author = {Steinrueck, Maria E. and Parmentier, Vivien and Showman, Adam P. and Lothringer, Joshua D. and Lupu, Roxana E.},
+	month = jul,
+	year = {2019},
+	pages = {14},
+	file = {Steinrueck et al. - 2019 - The Effect of 3D Transport-induced Disequilibrium .pdf:/Users/fb90/Zotero/storage/Y37FWFTT/Steinrueck et al. - 2019 - The Effect of 3D Transport-induced Disequilibrium .pdf:application/pdf}
+}
+
+@article{dang2018,
+	title = {Detection of a {Westward} {Hotspot} {Offset} in the {Atmosphere} of a {Hot} {Gas} {Giant} {CoRoT}-2b},
+	volume = {2},
+	issn = {2397-3366},
+	url = {http://arxiv.org/abs/1801.06548},
+	doi = {10.1038/s41550-017-0351-6},
+	abstract = {Short-period planets exhibit day-night temperature contrasts of hundreds to thousands of degrees K. They also exhibit eastward hotspot offsets whereby the hottest region on the planet is east of the substellar point; this has been widely interpreted as advection of heat due to eastward winds. We present thermal phase observations of the hot Jupiter CoRoT-2b obtained with the IRAC instrument on the Spitzer Space Telescope. These measurements show the most robust detection to date of a westward hotspot offset of 23 \${\textbackslash}pm\$ 4 degrees, in contrast with the nine other planets with equivalent measurements. The peculiar infrared flux map of CoRoT-2b may result from westward winds due to non-synchronous rotation magnetic effects, or partial cloud coverage, that obscures the emergent flux from the planet's eastern hemisphere. Non-synchronous rotation and magnetic effects may also explain the planet's anomalously large radius. On the other hand, partial cloud coverage could explain the featureless dayside emission spectrum of the planet. If CoRoT-2b is not tidally locked, then it means that our understanding of star-planet tidal interaction is incomplete. If the westward offset is due to magnetic effects, our result represents an opportunity to study an exoplanet's magnetic field. If it has Eastern clouds, then it means that our understanding of large-scale circulation on tidally locked planets is incomplete.},
+	number = {3},
+	urldate = {2021-05-11},
+	journal = {Nat Astron},
+	author = {Dang, Lisa and Cowan, Nicolas B. and Schwartz, Joel C. and Rauscher, Emily and Zhang, Michael and Knutson, Heather A. and Line, Michael and Dobbs-Dixon, Ian and Deming, Drake and Sundararajan, Sudarsan and Fortney, Jonathan J. and Zhao, Ming},
+	month = mar,
+	year = {2018},
+	note = {arXiv: 1801.06548},
+	keywords = {Astrophysics - Earth and Planetary Astrophysics},
+	pages = {220--227},
+	file = {arXiv Fulltext PDF:/Users/fb90/Zotero/storage/9FMJG7Y5/Dang et al. - 2018 - Detection of a Westward Hotspot Offset in the Atmo.pdf:application/pdf;arXiv.org Snapshot:/Users/fb90/Zotero/storage/QXSHF6YY/1801.html:text/html}
+}
+
+@article{madhusudhan2012a,
+	title = {{ANALYTIC} {MODELS} {FOR} {ALBEDOS}, {PHASE} {CURVES}, {AND} {POLARIZATION} {OF} {REFLECTED} {LIGHT} {FROM} {EXOPLANETS}},
+	volume = {747},
+	issn = {0004-637X, 1538-4357},
+	url = {https://iopscience.iop.org/article/10.1088/0004-637X/747/1/25},
+	doi = {10.1088/0004-637X/747/1/25},
+	abstract = {New observational facilities are becoming increasingly capable of observing reﬂected light from transiting and directly imaged extrasolar planets. In this study, we provide an analytic framework to interpret observed phase curves, geometric albedos, and polarization of giant planet atmospheres. We compute the observables for non-conservative Rayleigh scattering in homogeneous semi-inﬁnite atmospheres using both scalar and vector formalisms. In addition, we compute phase curves and albedos for Lambertian, isotropic, and anisotropic scattering phase functions. We provide analytic expressions for geometric albedos and spherical albedos as a function of the scattering albedo for Rayleigh scattering in semi-inﬁnite atmospheres. Given an observed geometric albedo our prescriptions can be used to estimate the underlying scattering albedo of the atmosphere, which in turn is indicative of the scattering and absorptive properties of the atmosphere. We also study the dependence of polarization in Rayleigh scattering atmospheres on the orbital parameters of the planet–star system, particularly on the orbital inclination. We show how the orbital inclination of non-transiting exoplanets can be constrained from their observed polarization parameters. We consolidate the formalism, solution techniques, and results from analytic models available in the literature, often scattered in various sources, and present a systematic procedure to compute albedos, phase curves, and polarization of reﬂected light.},
+	language = {en},
+	number = {1},
+	urldate = {2021-05-11},
+	journal = {ApJ},
+	author = {Madhusudhan, Nikku and Burrows, Adam},
+	month = mar,
+	year = {2012},
+	pages = {25},
+	file = {Madhusudhan and Burrows - 2012 - ANALYTIC MODELS FOR ALBEDOS, PHASE CURVES, AND POL.pdf:/Users/fb90/Zotero/storage/F68KL6MX/Madhusudhan and Burrows - 2012 - ANALYTIC MODELS FOR ALBEDOS, PHASE CURVES, AND POL.pdf:application/pdf}
+}
+
+@article{madhusudhan2012b,
+	title = {{ANALYTIC} {MODELS} {FOR} {ALBEDOS}, {PHASE} {CURVES}, {AND} {POLARIZATION} {OF} {REFLECTED} {LIGHT} {FROM} {EXOPLANETS}},
+	volume = {747},
+	issn = {0004-637X, 1538-4357},
+	url = {https://iopscience.iop.org/article/10.1088/0004-637X/747/1/25},
+	doi = {10.1088/0004-637X/747/1/25},
+	abstract = {New observational facilities are becoming increasingly capable of observing reﬂected light from transiting and directly imaged extrasolar planets. In this study, we provide an analytic framework to interpret observed phase curves, geometric albedos, and polarization of giant planet atmospheres. We compute the observables for non-conservative Rayleigh scattering in homogeneous semi-inﬁnite atmospheres using both scalar and vector formalisms. In addition, we compute phase curves and albedos for Lambertian, isotropic, and anisotropic scattering phase functions. We provide analytic expressions for geometric albedos and spherical albedos as a function of the scattering albedo for Rayleigh scattering in semi-inﬁnite atmospheres. Given an observed geometric albedo our prescriptions can be used to estimate the underlying scattering albedo of the atmosphere, which in turn is indicative of the scattering and absorptive properties of the atmosphere. We also study the dependence of polarization in Rayleigh scattering atmospheres on the orbital parameters of the planet–star system, particularly on the orbital inclination. We show how the orbital inclination of non-transiting exoplanets can be constrained from their observed polarization parameters. We consolidate the formalism, solution techniques, and results from analytic models available in the literature, often scattered in various sources, and present a systematic procedure to compute albedos, phase curves, and polarization of reﬂected light.},
+	language = {en},
+	number = {1},
+	urldate = {2021-05-11},
+	journal = {ApJ},
+	author = {Madhusudhan, Nikku and Burrows, Adam},
+	month = mar,
+	year = {2012},
+	pages = {25},
+	file = {Madhusudhan and Burrows - 2012 - ANALYTIC MODELS FOR ALBEDOS, PHASE CURVES, AND POL.pdf:/Users/fb90/Zotero/storage/4R3JL6XB/Madhusudhan and Burrows - 2012 - ANALYTIC MODELS FOR ALBEDOS, PHASE CURVES, AND POL.pdf:application/pdf}
+}
+
+@article{wallis2017,
+	title = {Sparse image reconstruction on the sphere: analysis and synthesis},
+	volume = {26},
+	issn = {1057-7149, 1941-0042},
+	shorttitle = {Sparse image reconstruction on the sphere},
+	url = {http://arxiv.org/abs/1608.00553},
+	doi = {10.1109/TIP.2017.2716824},
+	abstract = {We develop techniques to solve ill-posed inverse problems on the sphere by sparse regularisation, exploiting sparsity in both axisymmetric and directional scale-discretised wavelet space. Denoising, inpainting, and deconvolution problems, and combinations thereof, are considered as examples. Inverse problems are solved in both the analysis and synthesis settings, with a number of different sampling schemes. The most effective approach is that with the most restricted solution-space, which depends on the interplay between the adopted sampling scheme, the selection of the analysis/synthesis problem, and any weighting of the l1 norm appearing in the regularisation problem. More efficient sampling schemes on the sphere improve reconstruction fidelity by restricting the solution-space and also by improving sparsity in wavelet space. We apply the technique to denoise Planck 353 GHz observations, improving the ability to extract the structure of Galactic dust emission, which is important for studying Galactic magnetism.},
+	number = {11},
+	urldate = {2021-05-13},
+	journal = {IEEE Trans. on Image Process.},
+	author = {Wallis, Christopher G. R. and Wiaux, Yves and McEwen, Jason D.},
+	month = nov,
+	year = {2017},
+	note = {arXiv: 1608.00553},
+	keywords = {Astrophysics - Instrumentation and Methods for Astrophysics, Astrophysics - Astrophysics of Galaxies, Computer Science - Information Theory},
+	pages = {5176--5187},
+	file = {arXiv Fulltext PDF:/Users/fb90/Zotero/storage/H7FQ9ZV4/Wallis et al. - 2017 - Sparse image reconstruction on the sphere analysi.pdf:application/pdf;arXiv.org Snapshot:/Users/fb90/Zotero/storage/HTCSNEW6/1608.html:text/html}
+}
+
+@article{allamjr.2021,
+	title = {Paying {Attention} to {Astronomical} {Transients}: {Photometric} {Classification} with the {Time}-{Series} {Transformer}},
+	shorttitle = {Paying {Attention} to {Astronomical} {Transients}},
+	url = {http://arxiv.org/abs/2105.06178},
+	abstract = {Future surveys such as the Legacy Survey of Space and Time (LSST) of the Vera C. Rubin Observatory will observe an order of magnitude more astrophysical transient events than any previous survey before. With this deluge of photometric data, it will be impossible for all such events to be classified by humans alone. Recent efforts have sought to leverage machine learning methods to tackle the challenge of astronomical transient classification, with ever improving success. Transformers are a recently developed deep learning architecture, first proposed for natural language processing, that have shown a great deal of recent success. In this work we develop a new transformer architecture, which uses multi-head self attention at its core, for general multi-variate time-series data. Furthermore, the proposed time-series transformer architecture supports the inclusion of an arbitrary number of additional features, while also offering interpretability. We apply the time-series transformer to the task of photometric classification, minimising the reliance of expert domain knowledge for feature selection, while achieving results comparable to state-of-the-art photometric classification methods. We achieve a weighted logarithmic-loss of 0.507 on imbalanced data in a representative setting using data from the Photometric LSST Astronomical Time-Series Classification Challenge (PLAsTiCC). Moreover, we achieve a micro-averaged receiver operating characteristic area under curve of 0.98 and micro-averaged precision-recall area under curve of 0.87.},
+	urldate = {2021-05-14},
+	journal = {arXiv:2105.06178 [astro-ph]},
+	author = {Allam Jr., Tarek and McEwen, Jason D.},
+	month = may,
+	year = {2021},
+	note = {arXiv: 2105.06178},
+	keywords = {Astrophysics - Instrumentation and Methods for Astrophysics, Computer Science - Machine Learning},
+	file = {arXiv Fulltext PDF:/Users/fb90/Zotero/storage/F9BZTDTV/Allam Jr. and McEwen - 2021 - Paying Attention to Astronomical Transients Photo.pdf:application/pdf;arXiv.org Snapshot:/Users/fb90/Zotero/storage/8VYZNF2L/2105.html:text/html}
+}
+
+@article{price2021,
+	title = {Sparse image reconstruction on the sphere: a general approach with uncertainty quantification},
+	shorttitle = {Sparse image reconstruction on the sphere},
+	url = {http://arxiv.org/abs/2105.04935},
+	abstract = {Inverse problems defined naturally on the sphere are becoming increasingly of interest. In this article we provide a general framework for evaluation of inverse problems on the sphere, with a strong emphasis on flexibility and scalability. We consider flexibility with respect to the prior selection (regularization), the problem definition - specifically the problem formulation (constrained/unconstrained) and problem setting (analysis/synthesis) - and optimization adopted to solve the problem. We discuss and quantify the trade-offs between problem formulation and setting. Crucially, we consider the Bayesian interpretation of the unconstrained problem which, combined with recent developments in probability density theory, permits rapid, statistically principled uncertainty quantification (UQ) in the spherical setting. Linearity is exploited to significantly increase the computational efficiency of such UQ techniques, which in some cases are shown to permit analytic solutions. We showcase this reconstruction framework and UQ techniques on a variety of spherical inverse problems. The code discussed throughout is provided under a GNU general public license, in both C++ and Python.},
+	urldate = {2021-05-17},
+	journal = {arXiv:2105.04935 [astro-ph]},
+	author = {Price, Matthew A. and Pratley, Luke and McEwen, Jason D.},
+	month = may,
+	year = {2021},
+	note = {arXiv: 2105.04935},
+	keywords = {Astrophysics - Instrumentation and Methods for Astrophysics, Mathematics - Numerical Analysis, Computer Science - Information Theory},
+	file = {arXiv Fulltext PDF:/Users/fb90/Zotero/storage/TT5VL2Y9/Price et al. - 2021 - Sparse image reconstruction on the sphere a gener.pdf:application/pdf;arXiv.org Snapshot:/Users/fb90/Zotero/storage/WC9TIUM8/2105.html:text/html}
+}
+
+@article{prudden2021,
+	title = {Stochastic {Downscaling} to {Chaotic} {Weather} {Regimes} using {Spatially} {Conditioned} {Gaussian} {Random} {Fields} with {Adaptive} {Covariance}},
+	url = {http://arxiv.org/abs/2105.08188},
+	abstract = {Downscaling aims to link the behaviour of the atmosphere at fine scales to properties measurable at coarser scales, and has the potential to provide high resolution information at a lower computational and storage cost than numerical simulation alone. This is especially appealing for targeting convective scales, which are at the edge of what is possible to simulate operationally. Since convective scale weather has a high degree of independence from larger scales, a generative approach is essential. We here propose a statistical method for downscaling moist variables to convective scales using conditional Gaussian random fields, with an application to wet bulb potential temperature (WBPT) data over the UK. Our model uses an adaptive covariance estimation to capture the variable spatial properties at convective scales. We further propose a method for the validation, which has historically been a challenge for generative models.},
+	urldate = {2021-05-19},
+	journal = {arXiv:2105.08188 [physics, stat]},
+	author = {Prudden, Rachel and Robinson, Niall and Challenor, Peter and Everson, Richard},
+	month = may,
+	year = {2021},
+	note = {arXiv: 2105.08188},
+	keywords = {Statistics - Applications, Physics - Atmospheric and Oceanic Physics},
+	file = {arXiv Fulltext PDF:/Users/fb90/Zotero/storage/M4U7LB28/Prudden et al. - 2021 - Stochastic Downscaling to Chaotic Weather Regimes .pdf:application/pdf;arXiv.org Snapshot:/Users/fb90/Zotero/storage/39JZ2JTY/2105.html:text/html}
+}
+
+@article{brown2020,
+	title = {Future changes in heatwave severity, duration and frequency due to climate change for the most populous cities},
+	volume = {30},
+	issn = {2212-0947},
+	url = {https://www.sciencedirect.com/science/article/pii/S2212094720300608},
+	doi = {10.1016/j.wace.2020.100278},
+	abstract = {A novel approach to quantify the present and future heatwave hazard is presented which can discern characteristics beyond what can be achieved from current approaches, such as distributions of severity, duration and frequency, including very low probability events that may not have been seen. A statistical model is built that represents the seasonal cycle, climate change, magnitude and temporal behaviour of all temperatures above a moderately high time varying threshold at a site from which very large samples of temperature time series can be drawn. From these, user defined heatwaves can be extracted and precise empirical statistics calculated, allowing application to a wide range of problems such as heatwave impact on the pollination of food crops. Fitting the heatwave model to climate model simulations allows the changing severity, duration and frequency of heatwaves from the past to the future to be quantified. This approach is validated by reproducing the heatwave climatology of a pre-industrial 3 500 year GCM control run from a 110 year future emission run of the same GCM. Using this methodology, future heatwave changes for the most populous cities from 20 countries are derived from a 44 member ensemble of 28 GCMs from the CMIP5 archive forced with the RCP 8.5 emission scenario. Compared to 2006, absolute temperatures of 4–10 day long heatwaves are projected to be between 3.4 to 6.6 °C hotter in 2099, though the magnitude of the increases are independent of heatwave rarity and duration. For 13 of the cities no significant future changes in the distribution of durations are found relative to a contemporaneous threshold. Six cities show future heatwaves will have a tendency to be longer and one to be shorter. Half of the cities show increases in severity, the time integrated temperature anomalies above the contemporaneous threshold. The largest changes are found for Paris with 100 year return level severity changes equivalent to mean heatwave temperatures increasing by 3.4 °C or by 1.7 °C for 5 and 10 day heatwaves respectively, and the rate of 10 day heatwaves increasing by 130\%.},
+	language = {en},
+	urldate = {2021-05-19},
+	journal = {Weather and Climate Extremes},
+	author = {Brown, Simon J.},
+	month = dec,
+	year = {2020},
+	keywords = {Climate change, Extremal dependence, Heatwaves, Time-series extremes},
+	pages = {100278},
+	file = {ScienceDirect Full Text PDF:/Users/fb90/Zotero/storage/LMQQCGZV/Brown - 2020 - Future changes in heatwave severity, duration and .pdf:application/pdf}
+}
+
+@article{lueckmann2021,
+	title = {Benchmarking {Simulation}-{Based} {Inference}},
+	url = {http://arxiv.org/abs/2101.04653},
+	abstract = {Recent advances in probabilistic modelling have led to a large number of simulation-based inference algorithms which do not require numerical evaluation of likelihoods. However, a public benchmark with appropriate performance metrics for such 'likelihood-free' algorithms has been lacking. This has made it difficult to compare algorithms and identify their strengths and weaknesses. We set out to fill this gap: We provide a benchmark with inference tasks and suitable performance metrics, with an initial selection of algorithms including recent approaches employing neural networks and classical Approximate Bayesian Computation methods. We found that the choice of performance metric is critical, that even state-of-the-art algorithms have substantial room for improvement, and that sequential estimation improves sample efficiency. Neural network-based approaches generally exhibit better performance, but there is no uniformly best algorithm. We provide practical advice and highlight the potential of the benchmark to diagnose problems and improve algorithms. The results can be explored interactively on a companion website. All code is open source, making it possible to contribute further benchmark tasks and inference algorithms.},
+	urldate = {2021-05-19},
+	journal = {arXiv:2101.04653 [cs, stat]},
+	author = {Lueckmann, Jan-Matthis and Boelts, Jan and Greenberg, David S. and Gonçalves, Pedro J. and Macke, Jakob H.},
+	month = apr,
+	year = {2021},
+	note = {arXiv: 2101.04653},
+	keywords = {Statistics - Machine Learning, Computer Science - Machine Learning},
+	file = {arXiv Fulltext PDF:/Users/fb90/Zotero/storage/KLKMMN2F/Lueckmann et al. - 2021 - Benchmarking Simulation-Based Inference.pdf:application/pdf;arXiv.org Snapshot:/Users/fb90/Zotero/storage/6TAG55A5/2101.html:text/html}
+}
+
+@article{karchev2021,
+	title = {Strong-lensing source reconstruction with variationally optimised {Gaussian} processes},
+	url = {http://arxiv.org/abs/2105.09465},
+	abstract = {Strong-lensing images provide a wealth of information both about the magnified source and about the dark matter distribution in the lens. Precision analyses of these images can be used to constrain the nature of dark matter. However, this requires high-fidelity image reconstructions and careful treatment of the uncertainties of both lens mass distribution and source light, which are typically difficult to quantify. In anticipation of future high-resolution datasets, in this work we leverage a range of recent developments in machine learning to develop a new Bayesian strong-lensing image analysis pipeline. Its highlights are: (A) a fast, GPU-enabled, end-to-end differentiable strong-lensing image simulator; (B) a new, statistically principled source model based on a computationally highly efficient approximation to Gaussian processes that also takes into account pixellation; and (C) a scalable variational inference framework that enables simultaneously deriving posteriors for tens of thousands of lens and source parameters and optimising hyperparameters via stochastic gradient descent. Besides efficient and accurate parameter estimation and lens model uncertainty quantification, the main aim of the pipeline is the generation of training data for targeted simulation-based inference of dark matter substructure, which we will exploit in a companion paper.},
+	urldate = {2021-05-21},
+	journal = {arXiv:2105.09465 [astro-ph]},
+	author = {Karchev, Konstantin and Coogan, Adam and Weniger, Christoph},
+	month = may,
+	year = {2021},
+	note = {arXiv: 2105.09465},
+	keywords = {Astrophysics - Instrumentation and Methods for Astrophysics, Astrophysics - Astrophysics of Galaxies, Astrophysics - Cosmology and Nongalactic Astrophysics},
+	file = {arXiv Fulltext PDF:/Users/fb90/Zotero/storage/MDN3J5MF/Karchev et al. - 2021 - Strong-lensing source reconstruction with variatio.pdf:application/pdf;arXiv.org Snapshot:/Users/fb90/Zotero/storage/XU2PK3AJ/2105.html:text/html}
+}
+
+@article{sharkey,
+	title = {Statistical {Models} for {Extreme} {Weather} {Events}},
+	language = {en},
+	author = {Sharkey, Paul and Res, M},
+	pages = {211},
+	file = {Sharkey and Res - Statistical Models for Extreme Weather Events.pdf:/Users/fb90/Zotero/storage/NSS7XG35/Sharkey and Res - Statistical Models for Extreme Weather Events.pdf:application/pdf}
+}
+
+@article{vu2021,
+	title = {Warped {Gradient}-{Enhanced} {Gaussian} {Process} {Surrogate} {Models} for {Inference} with {Intractable} {Likelihoods}},
+	url = {http://arxiv.org/abs/2105.04374},
+	abstract = {Markov chain Monte Carlo methods for intractable likelihoods, such as the exchange algorithm, require simulations of the sufficient statistics at every iteration of the Markov chain, which often result in expensive computations. Surrogate models for the likelihood function have been developed to accelerate inference algorithms in this context. However, these surrogate models tend to be relatively inflexible, and often provide a poor approximation to the true likelihood function. In this article, we propose the use of a warped, gradient-enhanced, Gaussian process surrogate model for the likelihood function, which jointly models the sample means and variances of the sufficient statistics, and uses warping functions to capture covariance nonstationarity in the input parameter space. We show that both the consideration of nonstationarity and the inclusion of gradient information can be leveraged to obtain a surrogate model that outperforms the conventional stationary Gaussian process surrogate model when making inference, particularly in regions where the likelihood function exhibits a phase transition. We also show that the proposed surrogate model can be used to improve the effective sample size per unit time when embedded in exact inferential algorithms. The utility of our approach in speeding up inferential algorithms is demonstrated on simulated and real-world data.},
+	urldate = {2021-05-25},
+	journal = {arXiv:2105.04374 [stat]},
+	author = {Vu, Quan and Moores, Matthew T. and Zammit-Mangion, Andrew},
+	month = may,
+	year = {2021},
+	note = {arXiv: 2105.04374},
+	keywords = {Statistics - Computation},
+	file = {arXiv Fulltext PDF:/Users/fb90/Zotero/storage/MWFH9IA3/Vu et al. - 2021 - Warped Gradient-Enhanced Gaussian Process Surrogat.pdf:application/pdf;arXiv.org Snapshot:/Users/fb90/Zotero/storage/YJQDBMAL/2105.html:text/html}
+}
+
+@article{lustig-yaeger2019,
+	title = {The {Detectability} and {Characterization} of the {TRAPPIST}-1 {Exoplanet} {Atmospheres} with \textit{{JWST}}},
+	volume = {158},
+	issn = {1538-3881},
+	url = {https://iopscience.iop.org/article/10.3847/1538-3881/ab21e0},
+	doi = {10.3847/1538-3881/ab21e0},
+	abstract = {The James Webb Space Telescope (JWST) will offer the ﬁrst opportunity to characterize terrestrial exoplanets with sufﬁcient precision to identify high mean molecular weight atmospheres, and TRAPPIST-1ʼs seven known transiting Earth-sized planets are particularly favorable targets. To assist community preparations for JWST observations, we use simulations of plausible post-ocean-loss and habitable environments for the TRAPPIST-1 exoplanets, and test simulations of all bright object time-series spectroscopy modes and all Mid-Infrared Instrument photometry ﬁlters to determine optimal observing strategies for atmospheric detection and characterization using both transmission and emission observations. We ﬁnd that transmission spectroscopy with the Near-Infrared Spectrograph Prism is optimal for detecting terrestrial, CO2-containing atmospheres, potentially in fewer than 10 transits for all seven TRAPPIST-1 planets, if they lack high-altitude aerosols. If the TRAPPIST-1 planets possess Venus-like H2SO4 aerosols, up to 12 times more transits may be required to detect an atmosphere. We present optimal instruments and observing modes for the detection of individual molecular species in a given terrestrial atmosphere and an observational strategy for discriminating between evolutionary states. We ﬁnd that water may be prohibitively difﬁcult to detect in both Venus-like and habitable atmospheres, due to its presence lower in the atmosphere where transmission spectra are less sensitive. Although the presence of biogenic O2 and O3 will be extremely challenging to detect, abiotically produced oxygen from past ocean loss may be detectable for all seven TRAPPIST-1 planets via O2–O2 collisionally induced absorption at 1.06 and 1.27 μm, or via NIR O3 features for the outer three planets. Our results constitute a suite of hypotheses on the nature and detectability of highly evolved terrestrial exoplanet atmospheres that may be tested with JWST.},
+	language = {en},
+	number = {1},
+	urldate = {2021-05-31},
+	journal = {AJ},
+	author = {Lustig-Yaeger, Jacob and Meadows, Victoria S. and Lincowski, Andrew P.},
+	month = jun,
+	year = {2019},
+	pages = {27},
+	file = {Lustig-Yaeger et al. - 2019 - The Detectability and Characterization of the TRAP.pdf:/Users/fb90/Zotero/storage/3QFVTLVU/Lustig-Yaeger et al. - 2019 - The Detectability and Characterization of the TRAP.pdf:application/pdf}
+}
+
+@article{pass2019,
+	title = {Estimating dayside effective temperatures of hot {Jupiters} and associated uncertainties through {Gaussian} process regression},
+	volume = {489},
+	issn = {0035-8711, 1365-2966},
+	url = {https://academic.oup.com/mnras/article/489/1/941/5548807},
+	doi = {10.1093/mnras/stz2226},
+	abstract = {In this work, we outline a new method for estimating dayside effective temperatures of exoplanets and associated uncertainties using Gaussian process (GP) regression. By applying our method to simulated observations, we show that the GP method estimates uncertainty more robustly than other model-independent approaches. We ﬁnd that unbiased estimates of effective temperatures can be made using as few as three broad-band measurements (whitelight HST WFC3 and the two warm Spitzer IRAC channels), although we caution that estimates made using only IRAC can be signiﬁcantly biased. We then apply our GP method to the 12 hot Jupiters in the literature whose secondary eclipse depths have been measured by WFC3 and IRAC channels 1 and 2: CoRoT-2 b; HAT-P-7 b; HD 189733 b; HD 209458 b; Kepler-13A b; TrES-3 b; WASP-4 b; WASP-12 b; WASP-18 b; WASP-33 b; WASP-43 b; and WASP103 b. We present model-independent dayside effective temperatures for these planets, with uncertainty estimates that range from ±66 to ±136 K.},
+	language = {en},
+	number = {1},
+	urldate = {2021-05-31},
+	journal = {Monthly Notices of the Royal Astronomical Society},
+	author = {Pass, Emily K and Cowan, Nicolas B and Cubillos, Patricio E and Sklar, Jack G},
+	month = oct,
+	year = {2019},
+	pages = {941--950},
+	file = {Pass et al. - 2019 - Estimating dayside effective temperatures of hot J.pdf:/Users/fb90/Zotero/storage/G2MANZZT/Pass et al. - 2019 - Estimating dayside effective temperatures of hot J.pdf:application/pdf}
+}
+
+@article{adams2018,
+	title = {Reassessing {Exoplanet} {Light} {Curves} with a {Thermal} {Model}},
+	volume = {156},
+	issn = {1538-3881},
+	url = {https://iopscience.iop.org/article/10.3847/1538-3881/aac437},
+	doi = {10.3847/1538-3881/aac437},
+	abstract = {We present a uniform assessment of existing near-infrared Spitzer Space Telescope observations of planet-bearing stars. Using a simple four-parameter blackbody thermal model, we analyze stars for which photometry in at least one of Spitzer’s IRAC bands has been obtained over either the entirety or a signiﬁcant fraction of the planetary orbit. Systems in this category comprise 10 well-studied systems with hot Jupiters on circular or near-circular orbits (HAT-P-7, HD 149026, HD 189733, HD 209458, WASP-12, WASP-14, WASP-18, WASP-19, WASP-33, and WASP-43), as well as three stars harboring planets on signiﬁcantly eccentric orbits (GJ 436, HAT-P-2, and HD 80606). We ﬁnd that our simple model, in almost all cases, accurately reproduces the minimum and maximum planetary emission, as well as the phase offsets of these extrema with respect to transits/secondary eclipses. For one notable exception, WASP-12 b, adding an additional parameter to account for its tidal distortion is not sufﬁcient to reproduce its photometric features. Full-orbit photometry is available in multiple wavelengths for 10 planets. We ﬁnd that the returned parameter values for independent ﬁts to each band are largely in agreement. However, disagreements in nightside temperature suggest distinct atmospheric layers, each with their own characteristic minimum temperature. In addition, a diversity in albedos suggests variation in the opacity of the photospheres. While previous works have pointed out trends in photometric features based on system properties, we cannot conclusively identify analogous trends for physical model parameters. To make the connection between full-phase data and physical models more robust, a higher signal-to-noise ratio must come from both increased resolution and a careful treatment of instrumental systematics.},
+	language = {en},
+	number = {1},
+	urldate = {2021-05-31},
+	journal = {AJ},
+	author = {Adams, Arthur D. and Laughlin, Gregory},
+	month = jun,
+	year = {2018},
+	pages = {28},
+	file = {Adams and Laughlin - 2018 - Reassessing Exoplanet Light Curves with a Thermal .pdf:/Users/fb90/Zotero/storage/93PWIXFY/Adams and Laughlin - 2018 - Reassessing Exoplanet Light Curves with a Thermal .pdf:application/pdf}
+}
+
+@article{stansberry1997,
+	title = {Violent silicate volcanism on {Io} in 1996},
+	volume = {24},
+	issn = {0094-8276},
+	url = {http://adsabs.harvard.edu/abs/1997GeoRL..24.2455S},
+	doi = {10.1029/97GL02593},
+	abstract = {We monitored Io's volcanic thermal emission from 1.7 to 4.8 micron in 1995/96. The data reveal a number of brightenings when Io's thermal emission increased several-fold. We use a model of emission from lava flows to understand observations of two brightenings in 1996. The brightenings were caused by eruptions approximately = 3 km2 in extent, with eruptive rates of 104-106
+m2s-1, and with maximum lava temperatures greater than or = 1400 K. These events akes and/or fire fountains.},
+	urldate = {2021-06-01},
+	journal = {Geophysical Research Letters},
+	author = {Stansberry, J. A. and Spencer, J. R. and Howell, R. R. and Dumas, C. and Vakil, D.},
+	month = oct,
+	year = {1997},
+	keywords = {Volcanoes, Thermal Emission, Atmospheric Radiation, Atmospheric Temperature, Extraterrestrial Environments, Infrared Spectrometers},
+	pages = {2455},
+	file = {Full Text:/Users/fb90/Zotero/storage/QWRQLZBB/Stansberry et al. - 1997 - Violent silicate volcanism on Io in 1996.pdf:application/pdf}
+}
+
+@article{tate2020,
+	title = {Volcanic {Outbursts} on {Io} from {Ground}-based {Observations} 2016–2020},
+	volume = {52},
+	url = {http://adsabs.harvard.edu/abs/2020DPS....5231504T},
+	abstract = {While Galileo and other missions, as well as ground-based observations, have taught us much about Io's frequent and diverse forms of volcanism, the stochastic nature of volcanic outbursts remains a poorly constrained phenomenon. Outbursts have been outliers in many Io observation
+campaigns since the 1980s (Veeder 1994; Stansberry 1997; Howell, de Kleer 2016), and we present another data-set with which to derive cases and statistics of volcanic outbursts. We define outbursts as a
+brightness greater than 80 GW/sr/micron above Io's background
+brightness, in the L' filter. Of 120 observations with NASA's Infrared Telescope Facility (IRFT) 2016-2020, three definitive outbursts were identified on May 10, 2018; May 28, 2019; and June 25, 2019. On May 28 and June 25 of 2019, we observed Io in eclipse and throughout its occultation with the L' band (3.5 microns). On May 10, 2018, we observed Io in reflected sunlight using the K, L', and M bands. While the emission includes all of Io, we expect the outburst to dominate at these shorter infrared wavelengths. Fitting a single temperature blackbody to the measured emission suggests that this outburst is composed of localized silicate lava-flows with temperatures greater than 1,100 K over areas less than 30 km2. The locations of these three outbursts are consistent with several known active Ionian volcanoes, although the low spatial resolution does not allow us to determine the exact source. Images from Juno's instrument are used to constrain the afterglow location for the June 2019 outburst.
+
+Variations in volcanism on Io, particularly large outbursts, are the most plausible explanation for variations in Jupiter's magnetosphere and aurora. If outbursts are a major source of changes in Jupiter's
+magnetosphere and aurorae, our observations suggest such changes would have occurred in mid-2018 and mid-2019.
+
+We also present the time-series of Io's total eclipse brightness and Loki's brightness for the duration of this observation campaign. The outburst times do not correlate with Loki's periodic brightening events or any other pattern discernable in the time-series.},
+	urldate = {2021-06-01},
+	author = {Tate, C. and Rathbun, J. and Hayes, A.},
+	month = oct,
+	year = {2020},
+	note = {Conference Name: AAS/Division for Planetary Sciences Meeting Abstracts},
+	pages = {315.04}
+}
+
+@article{hodges2020,
+	title = {Simulations of {Potential} {Radio} {Occultation} {Studies} of {Jupiter}'s {Atmosphere} using the {Juno} {Spacecraft}},
+	volume = {2020},
+	url = {https://ui.adsabs.harvard.edu/abs/2020AGUFMP012...07H/abstract},
+	abstract = {The potential extension of NASA's Mission Juno could provide multiple opportunities to conduct radio occultation measurements of Jupiter's upper atmosphere and ionosphere from 2023 through 2025. Using X-band and Ka-band signals, Juno would be able to provide both ionospheric electron density profiles and atmospheric temperature-pressure profiles down to altitudes with pressures up to 500 mbars. The potential occultations would cover a wide range of latitudes including the auroral regions of Jupiter, which have not been measured in previous missions. Occultations of the neutral atmosphere would provide additional reference temperatures for T-p profiles used in retrievals of data from the Juno Microwave Radiometer (MWR). Additionally, occultations of the auroral regions could verify previous MWR data that suggests the auroral zones have significantly higher electron densities than the non-auroral ionosphere. This study shows simulated occultations displaying the doppler shifts caused by ray bending in the atmosphere and ionosphere due to the refractive effects at X and Ka-band. Variation in signal intensity due to refractive defocusing, antenna mispointing and absorption from ammonia are also shown. {\textless}P /{\textgreater}This work was supported by NASA Contract NNM06AA75C from the Marshall Space Flight Center supporting the Juno Mission Science team members at SwRI and Georgia Tech and under NASA contract NNN12AA01C supporting team members at the Jet Propulsion Laboratory, California Institute of Technology.},
+	language = {en},
+	urldate = {2021-06-03},
+	journal = {AGU Fall Meeting Abstracts},
+	author = {Hodges, A. L. and Steffes, P. G. and Gladstone, R. and Folkner, W. M. and Buccino, D. and Bolton, S. J. and Levin, S.},
+	month = dec,
+	year = {2020},
+	pages = {P012--07},
+	file = {Snapshot:/Users/fb90/Zotero/storage/ZX5E4JNB/abstract.html:text/html}
+}
+
+@article{lainey2009,
+	title = {Strong tidal dissipation in {Io} and {Jupiter} from astrometric observations},
+	volume = {459},
+	issn = {0028-0836},
+	url = {http://adsabs.harvard.edu/abs/2009Natur.459..957L},
+	doi = {10.1038/nature08108},
+	abstract = {Io is the volcanically most active body in the Solar System and has a large surface heat flux. The geological activity is thought to be the result of tides raised by Jupiter, but it is not known whether the current tidal heat production is sufficiently high to generate the observed surface heat flow. Io's tidal heat comes from the orbital energy of the Io-Jupiter system (resulting in orbital acceleration), whereas dissipation of energy in Jupiter causes Io's orbital motion to decelerate. Here we report a determination of the tidal dissipation in Io and Jupiter through its effect on the orbital motions of the Galilean moons. Our results show that the rate of internal energy dissipation in Io (k2/Q = 0.015+/-0.003, where k2 is the Love number and Q is the quality factor) is in good agreement with the observed surface heat flow, and suggest that Io is close to thermal equilibrium. Dissipation in Jupiter (k2/Q =
+(1.102+/-0.203)×10-5) is close to the upper bound of
+its average value expected from the long-term evolution of the system, and dissipation in extrasolar planets may be higher than presently assumed. The measured secular accelerations indicate that Io is evolving inwards, towards Jupiter, and that the three innermost Galilean moons (Io, Europa and Ganymede) are evolving out of the exact Laplace
+resonance.},
+	urldate = {2021-06-03},
+	journal = {Nature},
+	author = {Lainey, Valéry and Arlot, Jean-Eudes and Karatekin, Özgür and van Hoolst, Tim},
+	month = jun,
+	year = {2009},
+	pages = {957--959}
+}
+
+@article{luger2021b,
+	title = {Analytic {Light} {Curves} in {Reflected} {Light}: {Phase} {Curves}, {Occultations}, and {Non}-{Lambertian} {Scattering} for {Spherical} {Planets} and {Moons}},
+	volume = {2103},
+	shorttitle = {Analytic {Light} {Curves} in {Reflected} {Light}},
+	url = {http://adsabs.harvard.edu/abs/2021arXiv210306275L},
+	abstract = {We derive efficient, closed form, differentiable, and numerically stable 
+solutions for the flux measured from a spherical planet or moon seen in
+reflected light, either in or out of occultation. Our expressions apply
+to the computation of scattered light phase curves of exoplanets,
+secondary eclipse light curves in the optical, or future measurements of
+planet-moon and planet-planet occultations, as well as to photometry of
+solar system bodies. We derive our solutions for Lambertian bodies
+illuminated by a point source, but extend them to model illumination
+sources of finite angular size and rough surfaces with phase-dependent
+scattering. Our algorithm is implemented in Python within the
+open-source starry mapping framework and is designed with efficient
+gradient-based inference in mind. The algorithm is 4-5 orders of
+magnitude faster than direct numerical evaluation methods and about 10
+orders of magnitude more precise. We show how the techniques developed
+here may one day lead to the construction of two-dimensional maps of
+terrestrial planet surfaces, potentially enabling the detection of
+continents and oceans on exoplanets in the habitable zone.},
+	urldate = {2021-06-04},
+	journal = {arXiv e-prints},
+	author = {Luger, Rodrigo and Agol, Eric and Bartolić, Fran and Foreman-Mackey, Daniel},
+	month = mar,
+	year = {2021},
+	keywords = {Astrophysics - Instrumentation and Methods for Astrophysics, Astrophysics - Earth and Planetary Astrophysics},
+	pages = {arXiv:2103.06275},
+	file = {Full Text PDF:/Users/fb90/Zotero/storage/AMW3EH8Y/Luger et al. - 2021 - Analytic Light Curves in Reflected Light Phase Cu.pdf:application/pdf}
 }
