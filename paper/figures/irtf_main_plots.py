@@ -12,6 +12,7 @@ from matplotlib import colors
 import matplotlib.gridspec as gridspec
 from matplotlib.ticker import FormatStrFormatter, AutoMinorLocator
 from matplotlib.lines import Line2D
+import matplotlib.cm as cm
 import seaborn as sns
 
 from volcano.utils import *
@@ -174,7 +175,7 @@ def make_plots(
         res_eg = f_obs_eg - f_eg_median
 
     # Set up the plot
-    resol = 300
+    resol = 100
     nim = 7
 
     fig = plt.figure(figsize=(10, 9))
@@ -226,7 +227,6 @@ def make_plots(
         ax=ax_map_in,
         projection="Mollweide",
         norm=cmap_norm,
-        colorbar=False,
         cmap=cmap,
     )
     map.show(
@@ -234,12 +234,15 @@ def make_plots(
         ax=ax_map_eg,
         projection="Mollweide",
         norm=cmap_norm,
-        colorbar=True,
         cmap=cmap,
     )
-    
-    ax_map_in.set_title("Ingress map\n", {lc_in.time[0].datetime.strftime("%Y-%m-%d %H:%M")})
-    ax_map_eg.set_title("Egress map\n", {lc_eg.time[0].datetime.strftime("%Y-%m-%d %H:%M")})
+
+    ax_map_in.set_title(
+        "Ingress map\n" + lc_in.time[0].datetime.strftime("%Y-%m-%d %H:%M")
+    )
+    ax_map_eg.set_title(
+        "Egress map\n" + lc_eg.time[0].datetime.strftime("%Y-%m-%d %H:%M")
+    )
 
     # Plot minimaps
     xo_im_in = np.linspace(xo_in[0], xo_in[-1], nim)
@@ -375,13 +378,13 @@ def make_plots(
         alpha=0.4,
     )
 
-    # Legend
-    #    if gp:
-    #        custom_lines = [
-    #            Line2D([0], [0], color="C1", linestyle="-"),
-    #            Line2D([0], [0], color="C1", linestyle="dashed"),
-    #        ]
-    #        ax_lc[0].legend(custom_lines, ["Full model", "Excluding GP"])
+    # Colorbar
+    cbar_ax = fig.add_axes([0.92, 0.72, 0.014, 0.15])
+    fig.colorbar(
+        cm.ScalarMappable(norm=cmap_norm, cmap=cmap),
+        cax=cbar_ax,
+        label="Spectral flux\n [GW/um]",
+    )
 
     #  Ticks
     for a in ax_lc:
@@ -417,12 +420,12 @@ def make_plots(
 
     year = lc_in.time[0].isot[:4]
     if gp:
-        fig.savefig(f"irtf_{year}.pdf", bbox_inches="tight", dpi=500)
+        fig.savefig(f"irtf_{year}.pdf", bbox_inches="tight", dpi=400)
     else:
         fig.savefig(
             f"irtf_{year}_no_GP.pdf",
             bbox_inches="tight",
-            dpi=500,
+            dpi=400,
         )
 
 

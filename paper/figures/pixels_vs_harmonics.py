@@ -34,7 +34,7 @@ def get_median_map(
     inc=90,
     theta=0.0,
     nsamples=100,
-    resol=300,
+    resol=250,
 ):
     imgs = []
     map = starry.Map(ydeg=ydeg_inf)
@@ -167,9 +167,10 @@ def model_ylm_prior():
     numpyro.deterministic("p", jnp.dot(Y2P, x[:, None]).reshape(-1))
 
 
-prior_samples = Predictive(model_ylm_prior, {}, num_samples=5000)(
-    random.PRNGKey(1)
-)
+rng_key = random.PRNGKey(0)
+rng_key, rng_key_ = random.split(rng_key)
+
+prior_samples = Predictive(model_ylm_prior, {}, num_samples=5000)(rng_key)
 std_p = np.std(prior_samples["p"], axis=0)
 
 
@@ -207,23 +208,20 @@ nuts_kernel = NUTS(
     target_accept_prob=0.95,
 )
 
-mcmc = MCMC(nuts_kernel, num_warmup=1000, num_samples=2000, num_chains=1)
-rng_key = random.PRNGKey(2)
+mcmc = MCMC(nuts_kernel, num_warmup=500, num_samples=1500, num_chains=2)
+rng_key, rng_key_ = random.split(rng_key)
 mcmc.run(rng_key)
 samples_pix = mcmc.get_samples()
 
 
 # Compute median maps
-resol = 300
+resol = 200
 
 median_map_moll_ylm = get_median_map(ydeg_inf, samples_ylm["x"], resol=resol)
 median_map_moll_pix = get_median_map(ydeg_inf, samples_pix["x"], resol=resol)
 true_map_image = map_true.render(res=resol, projection="Mollweide")
 
-fig = plt.figure(figsize=(14, 16))
-
-# Set up the plot
-resol = 300
+fig = plt.figure(figsize=(13, 16))
 
 # True and inferred maps
 gs = fig.add_gridspec(
@@ -259,10 +257,10 @@ ax_res = [
 ]
 
 # Plot true map
-cmap_norm = colors.Normalize(vmin=0.0, vmax=50.0)
+cmap_norm = colors.Normalize(vmin=0.0, vmax=1.0)
 cmap = "OrRd"
 map.show(
-    image=true_map_image,
+    image=true_map_image / np.nanmax(true_map_image),
     ax=ax_true_map,
     projection="Mollweide",
     norm=cmap_norm,
@@ -272,18 +270,18 @@ map.show(
 
 # Plot inferred maps
 map.show(
-    image=median_map_moll_ylm,
+    image=median_map_moll_ylm / np.nanmax(true_map_image),
     ax=ax_inf_map[0],
     projection="Mollweide",
     norm=cmap_norm,
     colorbar=False,
     cmap=cmap,
 )
-ax_true_map.set_title("Simulated map\n")
+ax_true_map.set_title("Simulated map")
 
 ax_inf_map[0].set_title("Spherical harmonic model\n(Gaussian prior)")
 map.show(
-    image=median_map_moll_pix,
+    image=median_map_moll_pix / np.nanmax(true_map_image),
     ax=ax_inf_map[1],
     projection="Mollweide",
     norm=cmap_norm,
@@ -451,12 +449,12 @@ fig.text(
 )
 
 # Colorbar
-cbar_ax = fig.add_axes([0.73, 0.74, 0.01, 0.11])
+cbar_ax = fig.add_axes([0.73, 0.74, 0.014, 0.11])
 fig.colorbar(
     cm.ScalarMappable(norm=cmap_norm, cmap=cmap),
     cax=cbar_ax,
-    ticks=[0, 25, 50],
+    ticks=[0, 0.5, 1],
 )
 
 # Save
-fig.savefig("pixels_vs_harmonics.pdf", bbox_inches="tight", dpi=500)
+fig.savefig("pixels_vs_harmonics.pdf", bbox_inches="tight", dpi=400)

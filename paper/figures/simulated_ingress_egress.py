@@ -1,5 +1,6 @@
 import numpy as np
 from matplotlib import pyplot as plt
+import matplotlib.cm as cm
 
 import starry
 from scipy import optimize
@@ -20,6 +21,7 @@ np.random.seed(42)
 starry.config.lazy = False
 numpyro.enable_x64()
 numpyro.set_host_device_count(4)
+
 
 xo_eg = np.linspace(37.15, 39.43, 150)
 yo_eg = np.linspace(-8.284, -8.27, 150)
@@ -45,6 +47,7 @@ map_true.add_spot(
     amp=0.3, sigma=spot_sigma, lat=-15.0, lon=-40.0, relative=False
 )
 map_true.amp = 20
+map_true_img = map_true.render(res=250, projection="Mollweide")
 
 # Smooth the true map
 sigma_s = 2 / ydeg_true
@@ -186,31 +189,61 @@ nuts_kernel = NUTS(
 )
 
 # Run MCMC
-mcmc = MCMC(nuts_kernel, num_warmup=1000, num_samples=2000, num_chains=2)
+nwarmup = 500
+nsamples = 1000
+mcmc = MCMC(
+    nuts_kernel, num_warmup=nwarmup, num_samples=nsamples, num_chains=2
+)
+
 rng_key = random.PRNGKey(0)
+rng_key, rng_key_ = random.split(rng_key)
+
 mcmc.run(rng_key, f_obs_in_50, f_obs_eg_50, f_err_in_50, f_err_eg_50)
 samples_50 = mcmc.get_samples()
 
-mcmc = MCMC(nuts_kernel, num_warmup=1000, num_samples=2000, num_chains=2)
-rng_key = random.PRNGKey(1)
+mcmc = MCMC(
+    nuts_kernel, num_warmup=nwarmup, num_samples=nsamples, num_chains=2
+)
+rng_key, rng_key_ = random.split(rng_key)
 mcmc.run(rng_key, f_obs_in_10, f_obs_eg_10, f_err_in_10, f_err_eg_10)
 samples_10 = mcmc.get_samples()
 
 # Compute median maps
-median_map_moll_50 = get_median_map(ydeg_inf, samples_50["x"])
+resol = 250
+median_map_moll_50 = get_median_map(ydeg_inf, samples_50["x"], resol=resol)
 median_map_in_50 = get_median_map(
-    ydeg_inf, samples_50["x"], projection=None, theta=theta_in, nsamples=50
+    ydeg_inf,
+    samples_50["x"],
+    projection=None,
+    theta=theta_in,
+    nsamples=50,
+    resol=resol,
 )
 median_map_eg_50 = get_median_map(
-    ydeg_inf, samples_50["x"], projection=None, theta=theta_eg, nsamples=50
+    ydeg_inf,
+    samples_50["x"],
+    projection=None,
+    theta=theta_eg,
+    nsamples=50,
+    resol=resol,
 )
 
-median_map_moll_10 = get_median_map(ydeg_inf, samples_10["x"])
+median_map_moll_10 = get_median_map(ydeg_inf, samples_10["x"], resol=resol)
 median_map_in_10 = get_median_map(
-    ydeg_inf, samples_10["x"], projection=None, theta=theta_in, nsamples=50
+    ydeg_inf,
+    samples_10["x"],
+    projection=None,
+    theta=theta_in,
+    nsamples=50,
+    resol=resol,
 )
 median_map_eg_10 = get_median_map(
-    ydeg_inf, samples_10["x"], projection=None, theta=theta_eg, nsamples=50
+    ydeg_inf,
+    samples_10["x"],
+    projection=None,
+    theta=theta_eg,
+    nsamples=50,
+    resol=resol,
 )
 
 
@@ -261,13 +294,13 @@ def plot(
     res_in = f_obs_in - flux_obs_in
     res_eg = f_obs_eg - flux_obs_eg
 
-    fig = plt.figure(figsize=(8, 10))
+    fig = plt.figure(figsize=(8, 12))
 
     # Set up the plot
-    nim = 7
-    cmap_norm = colors.Normalize(vmin=0.0, vmax=300)
-    cmap = "Oranges"
-    resol = 300
+    nim = 6
+    cmap_norm = colors.Normalize(vmin=0.0, vmax=1.0)
+    cmap = "OrRd"
+    resol = 200
 
     # True and inferred maps
     gs1 = fig.add_gridspec(
@@ -322,10 +355,10 @@ def plot(
 
     #  True map
     map_true.show(
+        image=map_true_img / (np.nanmax(map_true_img) * 0.95),
         ax=ax_true_map,
         projection="molleweide",
         norm=cmap_norm,
-        colorbar=True,
         res=resol,
         cmap=cmap,
     )
@@ -333,11 +366,10 @@ def plot(
 
     # Inferred mean map
     im = map.show(
-        image=median_map_moll,
+        image=median_map_moll / (np.nanmax(map_true_img) * 0.95),
         ax=ax_inf_map,
         projection="Mollweide",
         norm=cmap_norm,
-        colorbar=True,
         cmap=cmap,
     )
     ax_inf_map.set_title("Inferred map")
@@ -375,7 +407,7 @@ def plot(
             # Show the image
             if j == 0:
                 map.show(
-                    image=median_map_in,
+                    image=median_map_in / (np.nanmax(map_true_img) * 0.95),
                     ax=a[n],
                     grid=False,
                     norm=cmap_norm,
@@ -383,7 +415,7 @@ def plot(
                 )
             else:
                 map.show(
-                    image=median_map_eg,
+                    image=median_map_eg / (np.nanmax(map_true_img) * 0.95),
                     ax=a[n],
                     grid=False,
                     norm=cmap_norm,
@@ -509,6 +541,14 @@ def plot(
 
     for a in ax_lc + ax_res:
         a.grid(alpha=0.5)
+
+    # Colorbar
+    cbar_ax = fig.add_axes([0.82, 0.58, 0.017, 0.25])
+    fig.colorbar(
+        cm.ScalarMappable(norm=cmap_norm, cmap=cmap),
+        cax=cbar_ax,
+        ticks=[0, 0.5, 1],
+    )
 
     # Set common labels
     fig.text(
